@@ -6,13 +6,13 @@
 	<property name="doc.dir"         value="doc" />
 	<property name="src.dir"         value="src" />
 	<property name="build.dir"       value="classes" />
+	
+	<property environment="env"/>
+	<property file="build.properties"/>
+	<property name="project" value="java_memcached"/>
 
-    <property environment="env"/>
-    <property file="build.properties"/>
-    <property name="project" value="java_memcached"/>
-
-    <path id="project.class.path">
-        <pathelement path = "lib/log4j.jar"/>
+	<path id="project.class.path">
+		<pathelement path = "lib/log4j.jar"/>
 	</path>
 
 	<!-- package release -->
@@ -78,30 +78,30 @@
 	</target>
 
 	<!-- javadocs -->
-    <target name="javadoc" depends="clean, setup, log4j, logger">
+	<target name="javadoc" depends="clean, setup, log4j, logger">
 		<delete>
 			<fileset dir="java_memcached-${ver}/javadocs" />
 		</delete>
 
 		<javadoc sourcepath="java_memcached-${ver}/src"
 			destdir="java_memcached-${ver}/javadocs"
-            packagenames= "com.danga.*"
-            author= "true"
-            private="true"
+			packagenames= "com.danga.*"
+			author= "true"
+			private="true"
 			version="true"
 			defaultexcludes="yes"
 			use="true"
 			windowtitle="java memcached client api documentation"
-            doctitle="&lt;h1&gt;${project.title} documentation (Version ${ver})&lt;/h1&gt;"
-            bottom="Copyright &#169; 2005 - greg whalin">
+			doctitle="&lt;h1&gt;${project.title} documentation (Version ${ver})&lt;/h1&gt;"
+			bottom="Copyright &#169; 2005 - greg whalin">
     	</javadoc>
-    </target> 
+	</target> 
 
 	<!-- compilation target for packeging operations -->
 	<target name="pkg-compile" depends="clean, setup, log4j, logger">
 		<javac debug="yes" srcdir="java_memcached-${ver}/src" destdir="java_memcached-${ver}/classes" deprecation="true">
-            <classpath refid="project.class.path"/>
-        </javac>
+			<classpath refid="project.class.path"/>
+		</javac>
 	</target>
 
 	<target name="jar" depends="pkg-compile">
@@ -111,8 +111,8 @@
 	<!-- compilation target for dev work -->
 	<target name="compile">
 		<mkdir dir="${build.dir}"/>
-        <javac debug="yes" srcdir="${src.dir}" destdir="${build.dir}" deprecation="true" source="1.4">
-            <classpath refid="project.class.path"/>
-        </javac>
-    </target>
+		<javac debug="yes" srcdir="${src.dir}" destdir="${build.dir}" deprecation="true" source="1.4">
+			<classpath refid="project.class.path"/>
+		</javac>
+	</target>
 </project>
