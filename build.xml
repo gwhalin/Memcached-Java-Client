@@ -97,7 +97,7 @@
     	</javadoc>
 	</target> 
 
-	<!-- compilation target for packeging operations -->
+	<!-- blah compilation target for packeging operations -->
 	<target name="pkg-compile" depends="clean, setup, log4j, logger">
 		<javac debug="yes" srcdir="java_memcached-${ver}/src" destdir="java_memcached-${ver}/classes" deprecation="true">
 			<classpath refid="project.class.path"/>
