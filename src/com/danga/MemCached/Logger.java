@@ -97,6 +97,7 @@ public class Logger {
 
 		} else {
 			log = new Logger(name);
+			loggers.put( name, log );
 		}
 
 		return log;
