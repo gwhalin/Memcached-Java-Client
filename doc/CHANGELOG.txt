@@ -1,0 +1,146 @@
+20 Mar 2005 (whalin)
+	-- released as version 1.2.1
+	-- make non-blocking connect optional
+	-- better ant scripts for dev work and packaging
+	-- moved into dedicated subversion repo
+
+19 Jan 2005
+    -- bugfix to remove tmp array copy in String deoding (Popescu)
+
+10 Jan 2005
+	-- released as version 1.2
+    -- spawn thread for initial socket connection so we can enforce a shorter
+       timeout on connections (whalin)
+
+03 Jan 2005
+    -- add custom serialization for Date objects
+       for greater space savings (whalin)
+
+13 Dec 2004
+	-- custom serialize primitive objects for greater
+       space savings (burton)
+	
+12 Dec 2004
+	-- set maint thread as a daemon thread (k. burton)
+
+29 Nov 2004
+	-- released as version 1.1
+	-- switched to LGPL from GPL (whalin)
+
+18 Sept 2004
+	--- released as version 1.0
+	-- built generic logging class so can remove dependancy on other loggers
+       (still easy for client to use their own logger) (whalin)
+	-- fixed bad case for maxcreate when poolmultiplier was greater than
+       minConn (defaults to minConn now) (thanks to Daryn @ Spam Arrest)
+	-- fixed bad loop logic when creating new connections when conns <
+       minConn. (thanks to Daryn @ Spam Arrest)
+	-- retagged as a release 1.0
+
+27 July 2004
+	-- released as version 0.9.8a
+	-- change default hashing to native as it is faster (whalin)
+
+26 July 2004
+	-- released as version 0.9.8
+	-- added flushAll method, which allows invalidating the entire cache on
+		all servers (or subset). (whalin)
+	-- added stats methods to pull back statistics from the caching servers
+		(or subset).  Data is pulled back in data structure for end user to
+		format. (whalin)
+	-- fixup to counter code (whalin)
+	-- add in new hashing code based on CRC32 (whalin)
+
+01 Jun 2004
+	-- released as version 0.9.7
+	-- clear pool for a given host when we detect it is dead. (whalin)
+	-- changed failver code to rehash in a better manner (more efficient when
+		a server dies) (russo)
+	-- add optional custom hashing method, which should be compatable with
+		other memcached clients (perl/php/python, etc), but will be slower
+		Java's built in hashCode for String (due to String pooling). (whalin,
+		russo)
+	-- fixed Java to actually return modulus (instead of remainder) when
+		selecting a bucket (russo)
+	-- fixed a typo in the getNagle method (whalin)
+
+26 May 2004
+	-- released as version 0.9.6
+	-- Fixed bug where reading from socket when server dies will cause tight
+		loop.  Also cleaned up error handling to throw exceptions in more
+		failed situations. (whalin)
+
+25 May 2004
+	-- released as version 0.9.5
+	-- Heavy cleanup of client code to better deal with error conditions, use
+		java naming conventions, and remove some of the overloaded convenience
+		methods.  Also changed how client deals with pulling objects from
+		cache when not serialized to be more type safe.
+	-- Created connection pool to manage connections to various caching servers
+		maintaining persistent connections.
+	-- Changed SockIO to be internal static class to the pool.
+	-- Added support for more socket options (nagle, timeout).
+	-- Removed deprecated stream operations.
+	-- Heavyily javadoc'd
+	-- Added in useage of log4j (could use J2SE logger as well)
+	-- NOTE: Not backwards compatible with earlier versions!!!
+
+12 Oct 2003
+	-- released as version 0.9.1
+	-- Altered the SockIO helper class, so it no longer allows accessing
+		the streams it contains directly, instead it has methods
+		with identical signatures to the methods that were called
+		on the streams... This makes the client code prettier.
+	-- Changed looped non blocking read to blocking read, for getting
+		items from the server. This probably reduces CPU usage in
+		cases where the retrieval would block, and cleans up the
+		code a bit.  We're blocking on retrieval anyhow.
+	-- Made get() not call get_multi(), and added single socket
+		optimization. This parallels recent changes to the perl
+		client
+	-- Changed a few for loops to use iterators instead, since it's
+		probably marginally more efficient, and it's probably
+		better coding practice.
+	-- Actually spell checked. :)
+
+29 Sep 2003
+	-- released as version 0.9.0
+	-- Renumbered to reflect that it's not been realworld tested
+	-- changed package to danga.com.MemCached (thanks)
+	-- added dates to changelog
+	-- added .txt to text files
+	-- added to official memcached site :)
+
+28 Sep 2003
+	-- released as version 1.0
+	-- Adjusted namespacing for SockIO, it shouldn't have been public; is now package level.
+		As a bonus, this means I don't have to Javadoc it. :)
+	-- Finished adding complete Javadoc to MemCachedClient.
+	-- spellchecked
+	-- added a couple versions of function variations that I missed. for example, some that
+		didn't take an int directly as a hash value, and i missed a get_multi w/out hashes.
+	-- removed java.net.Socket reference from MemCachedClient, SockIO has a new constructor which
+		takes hostname and port number
+	-- switched to three part version number
+
+27 Sep 2003
+	-- released as version 0.3
+	-- Compression, for strings/stringified numbers, this is compatible w/ perl
+		Serialized objects are incompatible w/ perl for obvious reasons. :)
+	-- Added PORTABILITY file, to include information about using the client
+		with various JVM's
+	-- Updated string parsing to StreamTokenizer rather than regexp's in an 
+		effort to get sablevm to like the client
+
+24 Sep 2003
+	-- released as version 0.2
+	-- Serialization works
+	-- Possible BUG: Only the lower byte of the characters of keys are sent
+		This is only a problem if the memcache server can handle
+		unicode keys. (I haven't checked)
+	-- Server Failures handled gracefully
+	-- Partial Javadoc
+
+23 Sep 2003
+	-- Initial Release 0.1
+	-- Storing and Retrieving numbers and strings works

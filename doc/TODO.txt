@@ -1,0 +1,6 @@
+To Do:
+
+- make reconnection after a server failure an optional value
+- back socket connection thread w/ a thread pool
+- Try different compression streams as gzip stream is slow. (JNI??)
+- Try to improve CRC32 hashing performance (java.zip.CRC32 is slooooow)

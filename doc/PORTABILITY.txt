@@ -1,0 +1,6 @@
+This file lists the portability status of this client.  Please send me any
+additional information (greg@meetup.com).
+
+The newest release has only been tested on:
+
+Sun's JRE 1.4.2 on Linux/i86
