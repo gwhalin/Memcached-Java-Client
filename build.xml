@@ -90,6 +90,7 @@
 			private="true"
 			version="true"
 			defaultexcludes="yes"
+			classpathref="project.class.path"
 			use="true"
 			windowtitle="java memcached client api documentation"
 			doctitle="&lt;h1&gt;${project.title} documentation (Version ${ver})&lt;/h1&gt;"
