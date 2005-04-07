@@ -40,74 +40,74 @@ public class UnitTests {
 
     public static MemCachedClient mc = null;
 
-    public static void test1() throws Exception {
+    public static void test1() {
         mc.set( "foo", Boolean.TRUE );
         Boolean b = (Boolean)mc.get( "foo" );
 		assert b.booleanValue();
     }
 
-    public static void test2() throws Exception {
+    public static void test2() {
         mc.set( "foo", new Integer( Integer.MAX_VALUE ) );
         Integer i = (Integer)mc.get( "foo" );
         assert i.intValue() == Integer.MAX_VALUE;
     }
 
-    public static void test3() throws Exception {
+    public static void test3() {
         String input = "test of string encoding";
         mc.set( "foo", input );
         String s = (String)mc.get( "foo" );
 		assert s.equals( input );
     }
     
-    public static void test4() throws Exception {
+    public static void test4() {
         mc.set( "foo", new Character( 'z' ) );
         Character c = (Character)mc.get( "foo" );
 		assert c.charValue() == 'z';
     }
 
-    public static void test5() throws Exception {
+    public static void test5() {
         mc.set( "foo", new Byte( (byte)127 ) );
         Byte b = (Byte)mc.get( "foo" );
 		assert b.byteValue() == 127;
     }
 
-    public static void test6() throws Exception {
+    public static void test6() {
         mc.set( "foo", new StringBuffer( "hello" ) );
         StringBuffer o = (StringBuffer)mc.get( "foo" );
 		assert o.toString().equals( "hello" );
     }
 
-    public static void test7() throws Exception {
+    public static void test7() {
         mc.set( "foo", new Short( (short)100 ) );
         Short o = (Short)mc.get( "foo" );
 		assert o.shortValue() == 100;
     }
 
-    public static void test8() throws Exception {
+    public static void test8() {
         mc.set( "foo", new Long( Long.MAX_VALUE ) );
         Long o = (Long)mc.get( "foo" );
 		assert o.longValue() == Long.MAX_VALUE;
     }
 
-    public static void test9() throws Exception {
+    public static void test9() {
         mc.set( "foo", new Double( 1.1 ) );
         Double o = (Double)mc.get( "foo" );
 		assert o.doubleValue() == 1.1;
     }
 
-    public static void test10() throws Exception {
+    public static void test10() {
         mc.set( "foo", new Float( 1.1f ) );
         Float o = (Float)mc.get( "foo" );
 		assert o.floatValue() == 1.1f;
     }
 
-    public static void test11() throws Exception {
+    public static void test11() {
         mc.set( "foo", new Integer( 100 ), new Date( System.currentTimeMillis() ));
         Thread.sleep( 1000 );
         assert mc.get( "foo" ) != null;
     }
 
-	public static void test12() throws Exception {
+	public static void test12() {
 		long i = 0;
 		mc.storeCounter("foo", i);
 		mc.incr("foo"); // foo now == 1
@@ -117,11 +117,16 @@ public class UnitTests {
 		assert j == mc.getCounter( "foo" );
 	}
 
-	public static void test13() throws Exception {
+	public static void test13() {
 		Date d1 = new Date();
 		mc.set("foo", d1);
 		Date d2 = (Date) mc.get("foo");
 		assert d.equals( d2 );
+	}
+
+	public static void test14() {
+		assert !mc.keyExists( "bar" );
+		assert mc.keyExists( "foo" );
 	}
     
 	/**
@@ -134,7 +139,7 @@ public class UnitTests {
 	 *
 	 * @param args the command line arguments
 	 */
-	public static void main(String[] args) throws Exception {
+	public static void main(String[] args) {
 
 		String[] serverlist = { "192.168.1.1:1624"  };
 
@@ -160,5 +165,6 @@ public class UnitTests {
         test11();
         test12();
 		test13();
+		test14();
 	}
 }
