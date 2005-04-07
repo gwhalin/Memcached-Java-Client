@@ -877,6 +877,23 @@ public class MemCachedClient {
 		return get( key, null, false );
 	}
 
+	/** 
+	 * Retrieve a key from the server, using a specific hash.
+	 *
+	 *  If the data was compressed or serialized when compressed, it will automatically<br/>
+	 *  be decompressed or serialized, as appropriate. (Inclusive or)<br/>
+	 *<br/>
+	 *  Non-serialized data will be returned as a string, so explicit conversion to<br/>
+	 *  numeric types will be necessary, if desired<br/>
+	 *
+	 * @param key key where data is stored
+	 * @param hashCode if not null, then the int hashcode to use
+	 * @return the object that was previously stored, or null if it was not previously stored
+	 */
+	public Object get( String key, Integer hashCode ) {
+		return get( key, hashCode, false );
+	}
+
 	/**
 	 * Retrieve a key from the server, using a specific hash.
 	 *
@@ -888,6 +905,7 @@ public class MemCachedClient {
 	 *
 	 * @param key key where data is stored
 	 * @param hashCode if not null, then the int hashcode to use
+	 * @param asString if true, then return string val
 	 * @return the object that was previously stored, or null if it was not previously stored
 	 */
 	public Object get( String key, Integer hashCode, boolean asString ) {
@@ -949,7 +967,7 @@ public class MemCachedClient {
 	 * @return Object array ordered in same order as key array containing results
 	 */
 	public Object[] getMultiArray( String[] keys ) {
-		return getMultiArray( keys, null );
+		return getMultiArray( keys, null, false );
 	}
 
 	/** 
@@ -963,8 +981,23 @@ public class MemCachedClient {
 	 * @return Object array ordered in same order as key array containing results
 	 */
 	public Object[] getMultiArray( String[] keys, Integer[] hashCodes ) {
+		return getMultiArray( keys, hashCodes, false );
+	}
 
-		Map data = getMulti( keys, hashCodes, false );
+	/** 
+	 * Retrieve multiple objects from the memcache.
+	 *
+	 *  This is recommended over repeated calls to {@link #get(String) get()}, since it<br/>
+	 *  is more efficient.<br/>
+	 *
+	 * @param keys String array of keys to retrieve
+	 * @param hashCodes if not null, then the Integer array of hashCodes
+	 * @param asString if true, retrieve string vals
+	 * @return Object array ordered in same order as key array containing results
+	 */
+	public Object[] getMultiArray( String[] keys, Integer[] hashCodes, boolean asString ) {
+
+		Map data = getMulti( keys, hashCodes, asString );
 
 		Object[] res = new Object[keys.length];
 		for (int i = 0; i < keys.length; i++) {
@@ -997,6 +1030,23 @@ public class MemCachedClient {
 	 *
 	 * @param keys keys to retrieve
 	 * @param hashCodes if not null, then the Integer array of hashCodes
+	 * @return a hashmap with entries for each key is found by the server,
+	 *      keys that are not found are not entered into the hashmap, but attempting to
+	 *      retrieve them from the hashmap gives you null.
+	 */
+	public Map getMulti( String[] keys, Integer[] hashCodes ) {
+		return getMulti( keys, hashCodes, false );
+	}
+
+	/**
+	 * Retrieve multiple keys from the memcache.
+	 *
+	 *  This is recommended over repeated calls to {@link #get(String) get()}, since it<br/>
+	 *  is more efficient.<br/>
+	 *
+	 * @param keys keys to retrieve
+	 * @param hashCodes if not null, then the Integer array of hashCodes
+	 * @param asString if true then retrieve using String val
 	 * @return a hashmap with entries for each key is found by the server,
 	 *      keys that are not found are not entered into the hashmap, but attempting to
 	 *      retrieve them from the hashmap gives you null.
