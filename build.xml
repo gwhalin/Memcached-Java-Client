@@ -88,6 +88,7 @@
 			packagenames= "com.danga.*"
 			author= "true"
 			private="true"
+			source="1.4"
 			version="true"
 			defaultexcludes="yes"
 			classpathref="project.class.path"
