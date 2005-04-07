@@ -257,6 +257,16 @@ public class MemCachedClient {
 	public void setCompressThreshold(long compressThreshold) {
 		this.compressThreshold = compressThreshold;
 	}
+
+	/** 
+	 * Checks to see if key exists in cache. 
+	 * 
+	 * @param key the key to look for
+	 * @return true if key found in cache, false if not (or if cache is down)
+	 */
+	public boolean keyExists( String key ) {
+		return ( this.get( key ) != null );
+	}
 	
 	/**
 	 * Deletes an object from cache given cache key.
@@ -531,9 +541,9 @@ public class MemCachedClient {
 		// byte array to hold data
 		byte[] val;
 
-        if (NativeHandler.isHandled(value)) {
+        if ( NativeHandler.isHandled( value ) ) {
 			
-			if (asString) {
+			if ( asString ) {
 				// useful for sharing data between java and non-java
 				// and also for storing ints for the increment method
 				log.info("++++ storing data as a string for key: " + key + " for class: " + value.getClass().getName());
@@ -709,7 +719,7 @@ public class MemCachedClient {
 	public long getCounter(String key, Integer hashCode) {
 		long counter = -1;
 		try {
-			counter = ((Long) get(key, hashCode)).longValue();
+			counter = ((Long)get( key, hashCode, true )).longValue();
 		}
 		catch (Exception ex) {
 			// not found or error getting out
@@ -864,7 +874,7 @@ public class MemCachedClient {
 	 * @return the object that was previously stored, or null if it was not previously stored
 	 */
 	public Object get(String key) {
-		return get(key, null);
+		return get( key, null, false );
 	}
 
 	/**
@@ -880,7 +890,7 @@ public class MemCachedClient {
 	 * @param hashCode if not null, then the int hashcode to use
 	 * @return the object that was previously stored, or null if it was not previously stored
 	 */
-	public Object get(String key, Integer hashCode) {
+	public Object get( String key, Integer hashCode, boolean asString ) {
 
 		// get SockIO obj using cache key
 		SockIOPool.SockIO sock = SockIOPool.getInstance().getSock(key, hashCode);
@@ -892,13 +902,13 @@ public class MemCachedClient {
 			String cmd = "get " + key + "\r\n";
 			log.debug("++++ memcache get command: " + cmd);
 
-			sock.write(cmd.getBytes());
+			sock.write( cmd.getBytes() );
 			sock.flush();
 
 			// build empty map
 			// and fill it from server
 			Map hm = new HashMap();
-			loadItems(sock, hm);
+			loadItems( sock, hm, asString );
 
 			// debug code
 			log.debug("++++ memcache: got back " + hm.size() + " results");
@@ -938,8 +948,8 @@ public class MemCachedClient {
 	 * @param keys String array of keys to retrieve
 	 * @return Object array ordered in same order as key array containing results
 	 */
-	public Object[] getMultiArray(String[] keys) {
-		return getMultiArray(keys, null);
+	public Object[] getMultiArray( String[] keys ) {
+		return getMultiArray( keys, null );
 	}
 
 	/** 
@@ -952,9 +962,9 @@ public class MemCachedClient {
 	 * @param hashCodes if not null, then the Integer array of hashCodes
 	 * @return Object array ordered in same order as key array containing results
 	 */
-	public Object[] getMultiArray(String[] keys, Integer[] hashCodes) {
+	public Object[] getMultiArray( String[] keys, Integer[] hashCodes ) {
 
-		Map data = getMulti(keys, hashCodes);
+		Map data = getMulti( keys, hashCodes, false );
 
 		Object[] res = new Object[keys.length];
 		for (int i = 0; i < keys.length; i++) {
@@ -975,8 +985,8 @@ public class MemCachedClient {
 	 *      keys that are not found are not entered into the hashmap, but attempting to
 	 *      retrieve them from the hashmap gives you null.
 	 */
-	public Map getMulti(String[] keys) {
-		return getMulti(keys, null);
+	public Map getMulti( String[] keys ) {
+		return getMulti( keys, null, false );
 	}
     
 	/**
@@ -991,15 +1001,14 @@ public class MemCachedClient {
 	 *      keys that are not found are not entered into the hashmap, but attempting to
 	 *      retrieve them from the hashmap gives you null.
 	 */
-	public Map getMulti(String[] keys, Integer[] hashCodes) {
+	public Map getMulti( String[] keys, Integer[] hashCodes, boolean asString ) {
 		Map sockKeys = new HashMap();
 
 		for (int i = 0; i < keys.length; ++i) {
 
 			Integer hash = null;
-			if (hashCodes != null && hashCodes.length > i) {
+			if ( hashCodes != null && hashCodes.length > i )
 				hash = hashCodes[i];
-			}
 
 			// get SockIO obj from cache key
 			SockIOPool.SockIO sock = SockIOPool.getInstance().getSock(keys[i], hash);
@@ -1008,9 +1017,8 @@ public class MemCachedClient {
 				continue;
 
 			// store in map and list if not already
-			if (!sockKeys.containsKey(sock.getHost())) {
-				sockKeys.put(sock.getHost(), new StringBuffer());
-			}
+			if ( !sockKeys.containsKey( sock.getHost() ) )
+				sockKeys.put( sock.getHost(), new StringBuffer() );
 
 			((StringBuffer) sockKeys.get(sock.getHost())).append(" " + keys[i]);
 
@@ -1028,11 +1036,11 @@ public class MemCachedClient {
 			SockIOPool.SockIO sock = SockIOPool.getInstance().getConnection(host);
 
 			try {
-				String cmd = "get" + (StringBuffer) sockKeys.get(host) + "\r\n";
-				log.debug("++++ memcache getMulti cmd: " + cmd);
-				sock.write(cmd.getBytes());
+				String cmd = "get" + (StringBuffer) sockKeys.get( host ) + "\r\n";
+				log.debug( "++++ memcache getMulti cmd: " + cmd );
+				sock.write( cmd.getBytes() );
 				sock.flush();
-				loadItems(sock, ret);
+				loadItems( sock, ret, asString );
 			}
 			catch (IOException e) {
 				// exception thrown
@@ -1068,12 +1076,14 @@ public class MemCachedClient {
 	 * 
 	 * @param sock socket waiting to pass back data
 	 * @param hm hashmap to store data into
+	 * @param asString if true, and if we are using NativehHandler, return string val
 	 * @throws IOException if io exception happens while reading from socket
 	 */
-	private void loadItems(SockIOPool.SockIO sock, Map hm) throws IOException {
-		while (true) {
+	private void loadItems( SockIOPool.SockIO sock, Map hm, boolean asString ) throws IOException {
+
+		while ( true ) {
 			String line = sock.readLine();
-			log.debug("++++ line: " + line);
+			log.debug( "++++ line: " + line );
 
 			if (line.startsWith(VALUE)) {
 				String[] info = line.split(" ");
@@ -1121,10 +1131,10 @@ public class MemCachedClient {
 
 				// we can only take out serialized objects
 				if ((flag & F_SERIALIZED) == 0) {
-					if (primitiveAsString) {
+					if ( primitiveAsString || asString ) {
 						// pulling out string value
 						log.info("++++ retrieving object and stuffing into a string.");
-						o = new String(buf, defaultEncoding);
+						o = new String( buf, defaultEncoding );
 					}
 					else {
 						// decoding object
@@ -1139,7 +1149,7 @@ public class MemCachedClient {
 				}
 				else {
 					// deserialize if the data is serialized
-					ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(buf));
+					ObjectInputStream ois = new ObjectInputStream( new ByteArrayInputStream( buf ) );
 					try {
 						o = ois.readObject();
 						log.info("++++ deserializing " + o.getClass());
@@ -1151,9 +1161,9 @@ public class MemCachedClient {
 				}
 
 				// store the object into the cache
-				hm.put(key, o);
+				hm.put( key, o );
 			}
-			else if (END.equals(line)) {
+			else if ( END.equals( line ) ) {
 				log.debug("++++ finished reading from cache server");
 				break;
 			}
