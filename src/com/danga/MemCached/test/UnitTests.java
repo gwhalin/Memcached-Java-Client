@@ -41,160 +41,87 @@ public class UnitTests {
     public static MemCachedClient mc = null;
 
     public static void test1() throws Exception {
-
         mc.set( "foo", Boolean.TRUE );
         Boolean b = (Boolean)mc.get( "foo" );
-
-        //FIXME: assert the value is correct
-
-        if ( ! b.booleanValue() )
-            throw new Exception();
-
+		assert b.booleanValue();
     }
 
     public static void test2() throws Exception {
-
         mc.set( "foo", new Integer( Integer.MAX_VALUE ) );
         Integer i = (Integer)mc.get( "foo" );
-
-        //FIXME: assert the value is correct
-
-        if ( i.intValue() != Integer.MAX_VALUE )
-            throw new Exception();
-        
+        assert i.intValue() == Integer.MAX_VALUE;
     }
 
     public static void test3() throws Exception {
-
         String input = "test of string encoding";
-        
         mc.set( "foo", input );
         String s = (String)mc.get( "foo" );
-
-        //FIXME: assert the value is correct
-
-        //if ( i.intValue() != Integer.MAX_VALUE )
-        //throw new Exception();
-        
-        if ( s.equals( input ) == false )
-            throw new Exception();
-        
+		assert s.equals( input );
     }
     
     public static void test4() throws Exception {
-
         mc.set( "foo", new Character( 'z' ) );
         Character c = (Character)mc.get( "foo" );
-
-        if ( c.charValue() != 'z' )
-            throw new Exception();
-        
+		assert c.charValue() == 'z';
     }
 
     public static void test5() throws Exception {
-
         mc.set( "foo", new Byte( (byte)127 ) );
         Byte b = (Byte)mc.get( "foo" );
-
-        if ( b.byteValue() != 127 )
-            throw new Exception();
-        
+		assert b.byteValue() == 127;
     }
 
     public static void test6() throws Exception {
-
         mc.set( "foo", new StringBuffer( "hello" ) );
         StringBuffer o = (StringBuffer)mc.get( "foo" );
-
-        if ( o.toString().equals( "hello" ) == false )
-            throw new Exception();
-        
+		assert o.toString().equals( "hello" );
     }
 
     public static void test7() throws Exception {
-
         mc.set( "foo", new Short( (short)100 ) );
         Short o = (Short)mc.get( "foo" );
-
-        if ( o.shortValue() != 100 )
-            throw new Exception();
-        
+		assert o.shortValue() == 100;
     }
 
     public static void test8() throws Exception {
-
         mc.set( "foo", new Long( Long.MAX_VALUE ) );
         Long o = (Long)mc.get( "foo" );
-
-        if ( o.longValue() != Long.MAX_VALUE )
-            throw new Exception();
-
-        mc.getCounter( "foo" );
-
+		assert o.longValue() == Long.MAX_VALUE;
     }
 
     public static void test9() throws Exception {
-
         mc.set( "foo", new Double( 1.1 ) );
         Double o = (Double)mc.get( "foo" );
-
-        if ( o.doubleValue() != 1.1 )
-            throw new Exception();
-        
+		assert o.doubleValue() == 1.1;
     }
 
     public static void test10() throws Exception {
-
         mc.set( "foo", new Float( 1.1f ) );
         Float o = (Float)mc.get( "foo" );
-
-        System.out.println( o.floatValue() );
-        
-        if ( o.floatValue() != 1.1f )
-            throw new Exception();
-        
+		assert o.floatValue() == 1.1f;
     }
 
     public static void test11() throws Exception {
-
-        mc.set( "foo", new Integer( 100 ) );
-        //Float o = (Float)mc.get( "foo" );
-
-        long l = mc.decr( "foo" );
-
-        //if ( l != 99 )
-        //    throw new Exception( "" + l );
-
-    }
-
-    public static void test12() throws Exception {
-
         mc.set( "foo", new Integer( 100 ), new Date( System.currentTimeMillis() ));
         Thread.sleep( 1000 );
-        
         assert mc.get( "foo" ) != null;
     }
 
-	public static void test13() throws Exception {
-
+	public static void test12() throws Exception {
 		long i = 0;
 		mc.storeCounter("foo", i);
 		mc.incr("foo"); // foo now == 1
 		mc.incr("foo", (long)5); // foo now == 6
 		long j = mc.decr("foo", (long)2); // foo now == 4
-
 		assert j != 4;
 		assert j == mc.getCounter( "foo" );
 	}
 
-	public static void test14() throws Exception {
+	public static void test13() throws Exception {
 		Date d1 = new Date();
 		mc.set("foo", d1);
-
 		Date d2 = (Date) mc.get("foo");
-
-		if (d1.compareTo(d2) != 0)
-			throw new Exception("date mismatch");
+		assert d.equals( d2 );
 	}
     
 	/**
@@ -233,10 +160,5 @@ public class UnitTests {
         test11();
         test12();
 		test13();
-		test14();
-
-        //FIXME: test replace()
-
-        //FIXME: test expiration..
 	}
 }
