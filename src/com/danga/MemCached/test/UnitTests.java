@@ -170,12 +170,9 @@ public class UnitTests {
     public static void test12() throws Exception {
 
         mc.set( "foo", new Integer( 100 ), new Date( System.currentTimeMillis() ));
-
         Thread.sleep( 1000 );
         
-        if ( mc.get( "foo" ) != null )
-            throw new Exception();
-        
+        assert mc.get( "foo" ) != null;
     }
 
 	public static void test13() throws Exception {
@@ -186,8 +183,8 @@ public class UnitTests {
 		mc.incr("foo", (long)5); // foo now == 6
 		long j = mc.decr("foo", (long)2); // foo now == 4
 
-		if (j != 4)
-			throw new Exception();
+		assert j != 4;
+		assert j == mc.getCounter( "foo" );
 	}
 
 	public static void test14() throws Exception {
@@ -212,7 +209,7 @@ public class UnitTests {
 	 */
 	public static void main(String[] args) throws Exception {
 
-		String[] serverlist = { "cache0.int.meetup.com:1624"  };
+		String[] serverlist = { "192.168.1.1:1624"  };
 
 		// initialize the pool for memcache servers
 		SockIOPool pool = SockIOPool.getInstance();
