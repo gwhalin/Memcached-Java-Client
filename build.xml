@@ -100,7 +100,7 @@
 
 	<!-- compilation target for packeging operations -->
 	<target name="pkg-compile" depends="clean, setup, log4j, logger">
-		<javac debug="yes" srcdir="java_memcached-${ver}/src" destdir="java_memcached-${ver}/classes" deprecation="true">
+		<javac debug="yes" srcdir="java_memcached-${ver}/src" destdir="java_memcached-${ver}/classes" deprecation="true" source="1.4">
 			<classpath refid="project.class.path"/>
 		</javac>
 	</target>
