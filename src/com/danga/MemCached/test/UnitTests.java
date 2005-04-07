@@ -103,7 +103,7 @@ public class UnitTests {
 
     public static void test11() {
         mc.set( "foo", new Integer( 100 ), new Date( System.currentTimeMillis() ));
-        Thread.sleep( 1000 );
+        try { Thread.sleep( 1000 ); } catch ( Exception ex ) { }
         assert mc.get( "foo" ) != null;
     }
 
@@ -121,7 +121,7 @@ public class UnitTests {
 		Date d1 = new Date();
 		mc.set("foo", d1);
 		Date d2 = (Date) mc.get("foo");
-		assert d.equals( d2 );
+		assert d1.equals( d2 );
 	}
 
 	public static void test14() {
