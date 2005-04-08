@@ -2,6 +2,7 @@
 	-- fixed getCounter
 	-- added method to check for existance of key
 	-- update to unit tests
+	-- support multiple pools in SockIOPool
 
 20 Mar 2005 (whalin)
 	-- released as version 1.2.1

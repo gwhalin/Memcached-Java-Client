@@ -119,8 +119,8 @@ public class SockIOPool {
 	private static Logger log =
 		Logger.getLogger(SockIOPool.class.getName());
 
-	// static pool instance
-	private static SockIOPool instance = new SockIOPool();
+	// store instances of pools
+	private static Map pools = new HashMap();
 
 	// Constants
 	public static final int NATIVE_HASH = 0;					// native String.hashCode();
@@ -128,8 +128,8 @@ public class SockIOPool {
 	public static final int NEW_COMPAT_HASH = 2;				// new CRC32 based compatibility hashing algorithm (works with other clients)
 
 	// Pool data
+	private MaintThread maintThread;
 	private boolean initialized        = false;
-	private boolean maintThreadRunning = false;
 	private int maxCreate              = 1;					// this will be initialized by pool when the pool is initialized
 	private Map createShift;
 
@@ -164,10 +164,30 @@ public class SockIOPool {
 	// empty constructor
 	protected SockIOPool() { }
 	
-	// this pool is a singleton
-	// and the factory should be synchronized ??? 
-	public static SockIOPool getInstance() {
-		return instance;
+	/** 
+	 * Factory to create/retrieve new pools given a unique poolName. 
+	 * 
+	 * @param poolName unique name of the pool
+	 * @return instance of SockIOPool
+	 */
+	public static synchronized SockIOPool getInstance( String poolName ) {
+		if ( pools.containsKey( poolName ) )
+			return (SockIOPool)pools.get( poolName );
+
+		SockIOPool pool = new SockIOPool();
+		pools.put( poolName, pool );
+
+		return pool;
+	}
+
+	/** 
+	 * Single argument version of factory used for back compat.
+	 * Simply creates a pool named "default". 
+	 * 
+	 * @return instance of SockIOPool
+	 */
+	public static synchronized SockIOPool getInstance() {
+		return getInstance( "default" );
 	}
 
 	/** 
@@ -364,10 +384,10 @@ public class SockIOPool {
 	public synchronized void initialize() {
 
 		// check to see if already initialized
-		if (initialized
-				&& (buckets != null)
-				&& (availPool != null)
-				&& (busyPool != null)) {
+		if ( initialized
+				&& ( buckets != null )
+				&& ( availPool != null )
+				&& ( busyPool != null ) ) {
 			log.error("++++ trying to initialize an already initialized pool");
 			return;
 		}
@@ -447,7 +467,7 @@ public class SockIOPool {
 	 * @param host host:port to connect to
 	 * @return SockIO obj or null if failed to create
 	 */
-	private SockIO createSocket(String host) {
+	protected SockIO createSocket(String host) {
 
 		SockIO socket = null;
 
@@ -462,7 +482,7 @@ public class SockIOPool {
 		}
 
 		try {
-			socket = new SockIO(host, this.socketTO, this.socketConnectTO, this.nagle);
+			socket = new SockIO( this, host, this.socketTO, this.socketConnectTO, this.nagle );
 
 			if (!socket.isConnected()) {
 				log.error("++++ failed to get SockIO obj for: " + host + " -- new socket is not connected");
@@ -612,7 +632,7 @@ public class SockIOPool {
 	 * @param key String to hash
 	 * @return hashCode for this string using our own hashing algorithm
 	 */
-	private static int origCompatHashingAlg(String key) {
+	protected static int origCompatHashingAlg(String key) {
 		int hash = 0;
 		char[] cArr = key.toCharArray();
 
@@ -634,7 +654,7 @@ public class SockIOPool {
 	 * @param key 
 	 * @return 
 	 */
-	private static int newCompatHashingAlg(String key) {
+	protected static int newCompatHashingAlg(String key) {
 		CRC32 checksum = new CRC32();
 		checksum.update(key.getBytes());
 		int crc = (int) checksum.getValue();
@@ -743,7 +763,7 @@ public class SockIOPool {
 	 * @param host host this socket is connected to
 	 * @param socket socket to add
 	 */
-	private synchronized void addSocketToPool(Map pool, String host, SockIO socket) {
+	protected synchronized void addSocketToPool(Map pool, String host, SockIO socket) {
 
 		if (pool.containsKey(host)) {
 			Map sockets = (Map) pool.get(host);
@@ -767,7 +787,7 @@ public class SockIOPool {
 	 * @param host host pool
 	 * @param socket socket to remove
 	 */
-	private synchronized void removeSocketFromPool(Map pool, String host, SockIO socket) {
+	protected synchronized void removeSocketFromPool(Map pool, String host, SockIO socket) {
 		if (pool.containsKey(host)) {
 			Map sockets = (Map) pool.get(host);
 			if (sockets != null) {
@@ -784,7 +804,7 @@ public class SockIOPool {
 	 * @param pool pool to clear
 	 * @param host host to clear
 	 */
-	private synchronized void clearHostFromPool(Map pool, String host) {
+	protected synchronized void clearHostFromPool(Map pool, String host) {
 		if (pool.containsKey(host)) {
 			Map sockets = (Map) pool.get(host);
 			if (sockets != null && sockets.size() > 0) {
@@ -849,7 +869,7 @@ public class SockIOPool {
 	 * 
 	 * @param pool pool to close
 	 */
-	private void closePool(Map pool) {
+	protected void closePool(Map pool) {
 
 		 for (Iterator i = pool.keySet().iterator(); i.hasNext();) {
 			 String host = (String) i.next();
@@ -880,12 +900,12 @@ public class SockIOPool {
 	 */
 	public synchronized void shutDown() {
 		log.debug("++++ SockIOPool shutting down...");
-		if (maintThreadRunning)
+		if ( maintThread != null && maintThread.isRunning() )
 			stopMaintThread();
 
 		log.debug("++++ closing all internal pools.");
-		closePool(availPool);
-		closePool(busyPool);
+		closePool( availPool );
+		closePool( busyPool );
 		availPool   = null;
 		busyPool    = null;
 		buckets     = null;
@@ -902,29 +922,30 @@ public class SockIOPool {
 	 * as well as move any closed, but not checked in sockets<br/>
 	 * back to the available pool.
 	 */
-	private synchronized void startMaintThread() {
-		if (this.maintThreadRunning) {
-			return;
-		}
+	protected synchronized void startMaintThread() {
 
-		MaintThread t = MaintThread.getInstance();
-		t.setInterval(this.maintSleep);
-		t.start();
-		this.maintThreadRunning = true;
+		if ( maintThread != null ) {
+
+			if ( maintThread.isRunning() ) {
+				log.error( "main thread already running" );
+			}
+			else {
+				maintThread.start();
+			}
+		}
+		else {
+			maintThread = new MaintThread( this );
+			maintThread.setInterval( this.maintSleep );
+			maintThread.start();
+		}
 	}
 
 	/** 
 	 * Stops the maintenance thread.
 	 */
-	private synchronized void stopMaintThread() {
-		if (!this.maintThreadRunning) {
-			log.error("++++ maint thread not running, so can't stop it");
-			return;
-		}
-
-		MaintThread t = MaintThread.getInstance();
-		t.stopThread();
-		this.maintThreadRunning = false;
+	protected synchronized void stopMaintThread() {
+		if ( maintThread != null && maintThread.isRunning() )
+			maintThread.stopThread();
 	}
 
 	/** 
@@ -932,7 +953,7 @@ public class SockIOPool {
 	 *
 	 * This is typically called by the maintenance thread to manage pool size. 
 	 */
-	private synchronized void selfMaint() {
+	protected synchronized void selfMaint() {
 		log.debug("++++ Starting self maintenance....");
 
 		// go through avail sockets and create/destroy sockets
@@ -959,7 +980,8 @@ public class SockIOPool {
 					addSocketToPool(availPool, host, socket);
 				}
 
-			} else if (sockets.size() > maxConn) {
+			}
+			else if (sockets.size() > maxConn) {
 				// need to close down some sockets
 				int diff = sockets.size() - maxConn;
 				int needToClose = (diff <= poolMultiplier)
@@ -1008,32 +1030,23 @@ public class SockIOPool {
 	 * @author greg whalin <greg@meetup.com>
 	 * @version 1.2
 	 */
-	private static class MaintThread extends Thread {
+	protected static class MaintThread extends Thread {
 
+		private SockIOPool pool;
 		private long interval = 1000 * 3; // every 3 seconds
 		private boolean stopThread = false;
+		private boolean running;
 
-		// single instance of MaintThread
-		private static MaintThread thread = null;
-
-		private MaintThread() {
+		protected MaintThread( SockIOPool pool ) {
+			this.pool = pool;
 			this.setDaemon(true);
 		}
 
-		/** 
-		 * this is a singleton as we only ever want one thread 
-		 * 
-		 * @return MainThread object
-		 */
-		public synchronized static MaintThread getInstance() {
-			if (thread == null) {
-				thread = new MaintThread();
-			}
-
-			return thread;
-		}
-
 		public void setInterval(long interval) { this.interval = interval; }
+		
+		public boolean isRunning() {
+			return this.running;
+		}
 
 		/** 
 		 * sets stop variable
@@ -1048,20 +1061,24 @@ public class SockIOPool {
 		 * Start the thread.
 		 */
 		public void run() {
-			while (!this.stopThread) {
+			this.running = true;
+
+			while ( !this.stopThread ) {
 				try {
-					this.sleep(interval);
+					this.sleep( interval );
 
 					// if pool is initialized, then
 					// run the maintenance method on itself
-					SockIOPool poolObj = SockIOPool.getInstance();
-					if (poolObj.isInitialized())
-						poolObj.selfMaint();
+					if ( pool.isInitialized() )
+						pool.selfMaint();
 
-				} catch (Exception e) {
+				}
+				catch (Exception e) {
 					break;
 				}
 			}
+
+			this.running = false;
 		}
 	}
 
@@ -1080,6 +1097,9 @@ public class SockIOPool {
 		private static Logger log =
 			Logger.getLogger(SockIO.class.getName());
 
+		// pool
+		private SockIOPool pool;
+
 		// data
 		private String host;
 		private Socket sock;
@@ -1090,6 +1110,7 @@ public class SockIOPool {
 		 * creates a new SockIO object wrapping a socket
 		 * connection to host:port, and its input and output streams
 		 * 
+		 * @param pool Pool this object is tied to
 		 * @param host host to connect to
 		 * @param port port to connect to
 		 * @param timeout int ms to block on data for read
@@ -1098,7 +1119,9 @@ public class SockIOPool {
 		 * @throws IOException if an io error occurrs when creating socket
 		 * @throws UnknownHostException if hostname is invalid
 		 */
-		SockIO(String host, int port, int timeout, int connectTimeout, boolean noDelay) throws IOException, UnknownHostException {
+		public SockIO( SockIOPool pool, String host, int port, int timeout, int connectTimeout, boolean noDelay ) throws IOException, UnknownHostException {
+
+			this.pool = pool;
 
 			sock = ( connectTimeout > 0 )
 				? getSocket( host, port, connectTimeout )
@@ -1128,7 +1151,9 @@ public class SockIOPool {
 		 * @throws IOException if an io error occurrs when creating socket
 		 * @throws UnknownHostException if hostname is invalid
 		 */
-		SockIO(String host, int timeout, int connectTimeout, boolean noDelay) throws IOException, UnknownHostException {
+		public SockIO( SockIOPool pool, String host, int timeout, int connectTimeout, boolean noDelay ) throws IOException, UnknownHostException {
+
+			this.pool = pool;
 
 			String[] ip = host.split(":");
 
@@ -1161,7 +1186,7 @@ public class SockIOPool {
 		 * @return connected socket
 		 * @throws IOException if errors connecting or if connection times out
 		 */
-		private static Socket getSocket( String host, int port, int timeout ) throws IOException {
+		protected static Socket getSocket( String host, int port, int timeout ) throws IOException {
 
 			// Create a new thread which will attempt to connect to host:port, and start it running
 			ConnectThread thread = new ConnectThread(host, port);
@@ -1261,8 +1286,8 @@ public class SockIOPool {
 			}
 
 			// check in to pool
-			if (sock != null)
-				SockIOPool.getInstance().checkIn(this, false);
+			if ( sock != null )
+				pool.checkIn( this, false );
 
 			in = null;
 			out = null;
@@ -1280,7 +1305,7 @@ public class SockIOPool {
 			log.debug("++++ marking socket (" + this.toString() + ") as closed and available to return to avail pool");
 
 			// check in to pool
-			SockIOPool.getInstance().checkIn(this);
+			pool.checkIn( this );
 		}
 		
 		/** 

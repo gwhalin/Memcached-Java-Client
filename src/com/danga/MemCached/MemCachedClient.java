@@ -175,6 +175,9 @@ public class MemCachedClient {
 	private static final String ERROR        = "ERROR";			// invalid command name from client
 	private static final String CLIENT_ERROR = "CLIENT_ERROR";	// client error in input line - invalid protocol
 	private static final String SERVER_ERROR = "SERVER_ERROR";	// server error
+
+	// default compression threshold
+	private static final int COMPRESS_THRESH = 30720;
     
 	// values for cache flags 
 	//
@@ -188,6 +191,9 @@ public class MemCachedClient {
 	private boolean compressEnable;
 	private long compressThreshold;
 	private String defaultEncoding;
+
+	// which pool to use
+	private String poolName;
 
 	/**
 	 * Creates a new instance of MemCachedClient.
@@ -204,8 +210,19 @@ public class MemCachedClient {
 	private void init() {
 		this.primitiveAsString   = false;
 		this.compressEnable      = true;
-		this.compressThreshold   = 15360;
+		this.compressThreshold   = COMPRESS_THRESH;
 		this.defaultEncoding     = "UTF-8";
+		this.poolName            = "default";
+	}
+
+	/** 
+	 * Sets the pool that this instance of the client will use.
+	 * The pool must already be initialized or none of this will work.
+	 * 
+	 * @param poolName name of the pool to use
+	 */
+	public void setPoolName( String poolName ) {
+		this.poolName = poolName;
 	}
 
 	/** 
@@ -213,7 +230,7 @@ public class MemCachedClient {
 	 * 
 	 * @param primitiveAsString if true, then store all primitives as their string value.
 	 */
-	public void setPrimitiveAsString(boolean primitiveAsString) {
+	public void setPrimitiveAsString( boolean primitiveAsString ) {
 		this.primitiveAsString = primitiveAsString;
 	}
 
@@ -306,7 +323,7 @@ public class MemCachedClient {
 	public boolean delete(String key, Integer hashCode, Date expiry) {
 
 		// get SockIO obj from hash or from key
-		SockIOPool.SockIO sock = SockIOPool.getInstance().getSock(key, hashCode);
+		SockIOPool.SockIO sock = SockIOPool.getInstance( poolName ).getSock(key, hashCode);
 
 		// return false if unable to get SockIO obj
 		if (sock == null)
@@ -527,7 +544,7 @@ public class MemCachedClient {
 	private boolean set(String cmdname, String key, Object value, Date expiry, Integer hashCode, boolean asString) {
 
 		// get SockIO obj
-		SockIOPool.SockIO sock = SockIOPool.getInstance().getSock(key, hashCode);
+		SockIOPool.SockIO sock = SockIOPool.getInstance( poolName ).getSock(key, hashCode);
 		
 		if (sock == null)
 			return false;
@@ -719,7 +736,7 @@ public class MemCachedClient {
 	public long getCounter(String key, Integer hashCode) {
 		long counter = -1;
 		try {
-			counter = ((Long)get( key, hashCode, true )).longValue();
+			counter = Long.parseLong( (String)get( key, hashCode, true ) );
 		}
 		catch (Exception ex) {
 			// not found or error getting out
@@ -813,7 +830,7 @@ public class MemCachedClient {
 	private long incrdecr(String cmdname, String key, long inc, Integer hashCode) {
 
 		// get SockIO obj for given cache key
-		SockIOPool.SockIO sock = SockIOPool.getInstance().getSock(key, hashCode);
+		SockIOPool.SockIO sock = SockIOPool.getInstance( poolName ).getSock(key, hashCode);
 
 		if (sock == null)
 			return -1;
@@ -911,7 +928,7 @@ public class MemCachedClient {
 	public Object get( String key, Integer hashCode, boolean asString ) {
 
 		// get SockIO obj using cache key
-		SockIOPool.SockIO sock = SockIOPool.getInstance().getSock(key, hashCode);
+		SockIOPool.SockIO sock = SockIOPool.getInstance( poolName ).getSock(key, hashCode);
 	    
 	    if (sock == null)
 			return null;
@@ -1061,7 +1078,7 @@ public class MemCachedClient {
 				hash = hashCodes[i];
 
 			// get SockIO obj from cache key
-			SockIOPool.SockIO sock = SockIOPool.getInstance().getSock(keys[i], hash);
+			SockIOPool.SockIO sock = SockIOPool.getInstance( poolName ).getSock(keys[i], hash);
 
 			if (sock == null)
 				continue;
@@ -1083,7 +1100,7 @@ public class MemCachedClient {
 		for (Iterator i = sockKeys.keySet().iterator(); i.hasNext();) {
 			// get SockIO obj from hostname
 			String host = (String) i.next();
-			SockIOPool.SockIO sock = SockIOPool.getInstance().getConnection(host);
+			SockIOPool.SockIO sock = SockIOPool.getInstance( poolName ).getConnection(host);
 
 			try {
 				String cmd = "get" + (StringBuffer) sockKeys.get( host ) + "\r\n";
@@ -1243,7 +1260,7 @@ public class MemCachedClient {
 	public boolean flushAll(String[] servers) {
 
 		// get SockIOPool instance
-		SockIOPool pool = SockIOPool.getInstance();
+		SockIOPool pool = SockIOPool.getInstance( poolName );
 
 		// return false if unable to get SockIO obj
 		if (pool == null) {
@@ -1335,7 +1352,7 @@ public class MemCachedClient {
 	public Map stats(String[] servers) {
 
 		// get SockIOPool instance
-		SockIOPool pool = SockIOPool.getInstance();
+		SockIOPool pool = SockIOPool.getInstance( poolName );
 
 		// return false if unable to get SockIO obj
 		if (pool == null) {
