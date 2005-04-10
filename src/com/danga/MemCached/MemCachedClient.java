@@ -1087,7 +1087,7 @@ public class MemCachedClient {
 			if ( !sockKeys.containsKey( sock.getHost() ) )
 				sockKeys.put( sock.getHost(), new StringBuffer() );
 
-			((StringBuffer) sockKeys.get(sock.getHost())).append(" " + keys[i]);
+			((StringBuffer)sockKeys.get( sock.getHost() )).append( " " + keys[i] );
 
 			// return to pool
 			sock.close();
