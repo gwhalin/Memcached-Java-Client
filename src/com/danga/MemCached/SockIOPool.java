@@ -661,7 +661,25 @@ public class SockIOPool {
 			// if we failed to get a socket from this server
 			// then we try again by adding an incrementer to the
 			// current hash and then rehashing 
-			hv += ("" + hv + tries).hashCode();
+			switch ( hashingAlg ) {
+				case NATIVE_HASH:
+					hv += ("" + tries + key).hashCode();
+					break;
+
+				case OLD_COMPAT_HASH:
+					hv += origCompatHashingAlg( "" + tries + key );
+					break;
+
+				case NEW_COMPAT_HASH:
+					hv += newCompatHashingAlg( "" + tries + key );
+					break;
+
+				default:
+					// use the native hash as a default
+					hv += ("" + tries + key).hashCode();
+					hashingAlg = NATIVE_HASH;
+					break;
+			}
 		}
 
 		return null;
