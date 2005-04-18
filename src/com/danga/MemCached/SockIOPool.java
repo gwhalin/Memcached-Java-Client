@@ -542,6 +542,7 @@ public class SockIOPool {
 		catch ( Exception ex ) {
 			log.error( "++++ failed to get SockIO obj for: " + host );
 			log.error( ex.getMessage(), ex );
+			socket = null;
 		}
 
 		// if we failed to get socket, then mark
@@ -660,7 +661,7 @@ public class SockIOPool {
 
 			// if we failed to get a socket from this server
 			// then we try again by adding an incrementer to the
-			// current hash and then rehashing 
+			// current key and then rehashing 
 			switch ( hashingAlg ) {
 				case NATIVE_HASH:
 					hv += ("" + tries + key).hashCode();
