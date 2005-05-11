@@ -73,6 +73,7 @@ import org.apache.log4j.Logger;
  *		int minSpareConnections = 5;
  *		int maxSpareConnections = 50;	
  *		long maxIdleTime        = 1000 * 60 * 30;	// 30 minutes
+ *		long maxBusyTime        = 1000 * 60 * 5;	// 5 minutes
  *		long maintThreadSleep   = 1000 * 5;			// 5 seconds
  *		int	socketTimeOut       = 1000 * 3;			// 3 seconds to block on reads
  *		int	socketConnectTO     = 1000 * 3;			// 3 seconds to block on initial connections.  If 0, then will use blocking connect (default)
@@ -80,17 +81,18 @@ import org.apache.log4j.Logger;
  *		boolean nagleAlg        = false;			// turn off Nagle's algorithm on all sockets in pool	
  *
  *		SockIOPool pool = SockIOPool.getInstance();
- *		pool.setServers(serverlist);
- *		pool.setWeights(weights);	
- *		pool.setInitConn(initialConnections);
- *		pool.setMinConn(minSpareConnections);
- *		pool.setMaxConn(maxSpareConnections);
- *		pool.setMaxIdle(maxIdleTime);
- *		pool.setMaintSleep(maintThreadSleep);
- *		pool.setSocketTO(socketTimeOut);	
- *		pool.setSocketConnectTO(socketConnectTO);	
- *		pool.setNagle(nagleAlg);	
- *		pool.setHashingAlg(SockIOPool.NEW_COMPAT_HASH);	
+ *		pool.setServers( serverlist );
+ *		pool.setWeights( weights );	
+ *		pool.setInitConn( initialConnections );
+ *		pool.setMinConn( minSpareConnections );
+ *		pool.setMaxConn( maxSpareConnections );
+ *		pool.setMaxIdle( maxIdleTime );
+ *		pool.setMaxBusyTime( maxBusyTime );
+ *		pool.setMaintSleep( maintThreadSleep );
+ *		pool.setSocketTO( socketTimeOut );
+ *		pool.setSocketConnectTO( socketConnectTO );	
+ *		pool.setNagle( nagleAlg );	
+ *		pool.setHashingAlg( SockIOPool.NEW_COMPAT_HASH );	
  *		pool.initialize();	
  *	}
  *  </pre> 
@@ -99,13 +101,13 @@ import org.apache.log4j.Logger;
  * The client must always close the SockIO object when finished, which will return the connection back to the pool.<br/> 
  * <h3>An example of retrieving a SockIO object:</h3>
  * <pre>
- *		SockIOPool.SockIO sock = SockIOPool.getInstance().getSock(key);
+ *		SockIOPool.SockIO sock = SockIOPool.getInstance().getSock( key );
  *		try {
- *			sock.write("version\r\n");	
+ *			sock.write( "version\r\n" );	
  *			sock.flush();	
- *			System.out.println("Version: " + sock.readLine());	
+ *			System.out.println( "Version: " + sock.readLine() );	
  *		}
- *		catch (IOException ioe) { System.out.println("io exception thrown") };	
+ *		catch (IOException ioe) { System.out.println( "io exception thrown" ) };	
  *
  *		sock.close();	
  * </pre> 
@@ -139,6 +141,7 @@ public class SockIOPool {
 	private int minConn               = 3;
 	private int maxConn               = 10;
 	private long maxIdle              = 1000 * 60 * 3;		// max idle time for avail sockets
+	private long maxBusyTime          = 1000 * 60 * 5;		// max idle time for avail sockets
 	private long maintSleep           = 1000 * 5;			// maintenance thread sleep time
 	private int socketTO              = 1000 * 10;			// default timeout of socket reads
 	private int socketConnectTO       = 0;			        // default timeout of socket connections
@@ -277,6 +280,20 @@ public class SockIOPool {
 	 * @return max idle setting in ms
 	 */
 	public long getMaxIdle()  { return this.maxIdle; }
+
+	/** 
+	 * Sets the max busy time for threads in the busy pool.
+	 * 
+	 * @param maxBusyTime idle time in ms
+	 */
+	public void setMaxBusyTime( long maxBusyTime ) { this.maxBusyTime = maxBusyTime; }
+	
+	/** 
+	 * Returns the current max busy setting. 
+	 * 
+	 * @return max busy setting in ms
+	 */
+	public long getMaxBusy()  { return this.maxBusyTime; }
 
 	/** 
 	 * Set the sleep time between runs of the pool maintenance thread.
@@ -988,9 +1005,7 @@ public class SockIOPool {
 		for ( Iterator i = availPool.keySet().iterator(); i.hasNext(); ) {
 			String host  = (String)i.next();
 			Map sockets  = (Map)availPool.get(host);
-			Map bSockets = (Map)busyPool.get(host);
-			log.debug( "++++ Size of avail pool for host (" + host + ") = " + sockets.size() );
-			log.debug( "++++ Size of busy pool for host (" + host + ")  = " + bSockets.size() );
+			log.error( "++++ Size of avail pool for host (" + host + ") = " + sockets.size() );
 
 			// if pool is too small (n < minSpare)
 			if ( sockets.size() < minConn ) {
@@ -1006,7 +1021,6 @@ public class SockIOPool {
 
 					addSocketToPool( availPool, host, socket );
 				}
-
 			}
 			else if ( sockets.size() > maxConn ) {
 				// need to close down some sockets
@@ -1022,7 +1036,7 @@ public class SockIOPool {
 
 					// remove stale entries
 					SockIO socket = (SockIO)j.next();
-					long expire   = ((Long)sockets.get(socket)).longValue();
+					long expire   = ((Long)sockets.get( socket )).longValue();
 
 					// if past idle time
 					// then close socket
@@ -1046,6 +1060,38 @@ public class SockIOPool {
 
 			// reset the shift value for creating new SockIO objects
 			createShift.put( host, new Integer( 0 ) );
+		}
+
+		// go through busy sockets and destroy sockets
+		// as needed to maintain pool settings
+		for ( Iterator i = busyPool.keySet().iterator(); i.hasNext(); ) {
+			String host = (String)i.next();
+			Map sockets = (Map)busyPool.get( host );
+			log.error( "++++ Size of busy pool for host (" + host + ")  = " + sockets.size() );
+
+			// loop through all connections and check to see if we have any hung connections
+			for ( Iterator j = sockets.keySet().iterator(); j.hasNext(); ) {
+				// remove stale entries
+				SockIO socket = (SockIO)j.next();
+				long hungTime = ((Long)sockets.get( socket )).longValue();
+
+				// if past max busy time
+				// then close socket
+				// and remove from pool
+				if ( (hungTime + maxBusyTime) < System.currentTimeMillis() ) {
+					log.error( "+++ removing potentially hung connection from busy pool ... socket in pool for " + (System.currentTimeMillis() - hungTime) + "ms" );
+					try {
+						socket.trueClose();
+					}
+					catch ( IOException ioe ) {
+						log.error( "failed to close socket" );
+						log.error( ioe.getMessage(), ioe );
+					}
+
+					j.remove();
+					socket = null;
+				}
+			}
 		}
 
 		log.debug( "+++ ending self maintenance." );
@@ -1189,15 +1235,15 @@ public class SockIOPool {
 				? getSocket( ip[ 0 ], Integer.parseInt( ip[ 1 ] ), connectTimeout )
 				: new Socket( ip[ 0 ], Integer.parseInt( ip[ 1 ] ) );
 
-			if (timeout >= 0)
-				sock.setSoTimeout(timeout);
+			if ( timeout >= 0 )
+				sock.setSoTimeout( timeout );
 
 			// testing only
-			sock.setTcpNoDelay(noDelay);
+			sock.setTcpNoDelay( noDelay );
 
 			// wrap streams
-			in   = new DataInputStream(sock.getInputStream());
-			out  = new BufferedOutputStream(sock.getOutputStream());
+			in   = new DataInputStream( sock.getInputStream() );
+			out  = new BufferedOutputStream( sock.getOutputStream() );
 			this.host = host;
 		}
 
@@ -1216,30 +1262,30 @@ public class SockIOPool {
 		protected static Socket getSocket( String host, int port, int timeout ) throws IOException {
 
 			// Create a new thread which will attempt to connect to host:port, and start it running
-			ConnectThread thread = new ConnectThread(host, port);
+			ConnectThread thread = new ConnectThread( host, port );
 			thread.start();
 
 			Socket socket = null;
 			int timer     = 0;
 			int sleep     = 25;
 
-			while (timer < timeout) {
+			while ( timer < timeout ) {
 
 				// if the thread has a connected socket
 				// then return it
-				if (thread.isConnected())
+				if ( thread.isConnected() )
 					return thread.getSocket();
 
 				// if the thread had an error
 				// then throw a new IOException
-				if (thread.isError())
+				if ( thread.isError() )
 					throw new IOException();
 
 				try {
 					// sleep for short time before polling again
-					Thread.sleep(sleep);
+					Thread.sleep( sleep );
 				}
-				catch (InterruptedException ie) { }
+				catch ( InterruptedException ie ) { }
 
 				// Increment timer
 				timer += sleep;
@@ -1247,7 +1293,7 @@ public class SockIOPool {
 
 			// made it through loop without getting connection
 			// the connection thread will timeout on its own at OS timeout
-			throw new IOException("Could not connect for " + timeout + " milliseconds");
+			throw new IOException( "Could not connect for " + timeout + " milliseconds" );
 		}
 
 		/** 
@@ -1263,51 +1309,51 @@ public class SockIOPool {
 		 * @throws IOException if fails to close streams or socket
 		 */
 		void trueClose() throws IOException {
-			log.debug("++++ Closing socket for real: " + toString());
+			log.debug( "++++ Closing socket for real: " + toString() );
 
 			boolean err = false;
 			StringBuffer errMsg = new StringBuffer();
 
-			if (in == null || out == null || sock == null) {
+			if ( in == null || out == null || sock == null ) {
 				err = true;
-				errMsg.append("++++ socket or its streams already null in trueClose call");
+				errMsg.append( "++++ socket or its streams already null in trueClose call" );
 			}
 
-			if (in != null) {
+			if ( in != null ) {
 				try {
 					in.close();
 				}
-				catch(IOException ioe) {
-					log.error("++++ error closing input stream for socket: " + toString() + " for host: " + getHost());
-					log.error(ioe.getMessage(), ioe);
-					errMsg.append("++++ error closing input stream for socket: " + toString() + " for host: " + getHost() + "\n");
-					errMsg.append(ioe.getMessage());
+				catch( IOException ioe ) {
+					log.error( "++++ error closing input stream for socket: " + toString() + " for host: " + getHost() );
+					log.error( ioe.getMessage(), ioe );
+					errMsg.append( "++++ error closing input stream for socket: " + toString() + " for host: " + getHost() + "\n" );
+					errMsg.append( ioe.getMessage() );
 					err = true;
 				}
 			}
 
-			if (out != null) {
+			if ( out != null ) {
 				try {
 					out.close();
 				}
-				catch (IOException ioe) {
-					log.error("++++ error closing output stream for socket: " + toString() + " for host: " + getHost());
-					log.error(ioe.getMessage(), ioe);
-					errMsg.append("++++ error closing output stream for socket: " + toString() + " for host: " + getHost() + "\n");
-					errMsg.append(ioe.getMessage());
+				catch ( IOException ioe ) {
+					log.error( "++++ error closing output stream for socket: " + toString() + " for host: " + getHost() );
+					log.error( ioe.getMessage(), ioe );
+					errMsg.append( "++++ error closing output stream for socket: " + toString() + " for host: " + getHost() + "\n" );
+					errMsg.append( ioe.getMessage() );
 					err = true;
 				}
 			}
 
-			if (sock != null) {
+			if ( sock != null ) {
 				try {
 					sock.close();
 				}
-				catch (IOException ioe) {
-					log.error("++++ error closing socket: " + toString() + " for host: " + getHost());
-					log.error(ioe.getMessage(), ioe);
-					errMsg.append("++++ error closing socket: " + toString() + " for host: " + getHost() + "\n");
-					errMsg.append(ioe.getMessage());
+				catch ( IOException ioe ) {
+					log.error( "++++ error closing socket: " + toString() + " for host: " + getHost() );
+					log.error( ioe.getMessage(), ioe );
+					errMsg.append( "++++ error closing socket: " + toString() + " for host: " + getHost() + "\n" );
+					errMsg.append( ioe.getMessage() );
 					err = true;
 				}
 			}
@@ -1320,8 +1366,8 @@ public class SockIOPool {
 			out = null;
 			sock = null;
 
-			if (err)
-				throw new IOException(errMsg.toString());
+			if ( err )
+				throw new IOException( errMsg.toString() );
 		}
 
 		/** 
@@ -1329,9 +1375,8 @@ public class SockIOPool {
 		 * but does not close connections
 		 */
 		void close() {
-			log.debug("++++ marking socket (" + this.toString() + ") as closed and available to return to avail pool");
-
 			// check in to pool
+			log.debug("++++ marking socket (" + this.toString() + ") as closed and available to return to avail pool");
 			pool.checkIn( this );
 		}
 		
