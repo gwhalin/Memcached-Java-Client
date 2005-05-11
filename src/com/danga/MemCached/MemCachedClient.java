@@ -320,60 +320,62 @@ public class MemCachedClient {
 	 * @param expiry when to expire the record.
 	 * @return <code>true</code>, if the data was deleted successfully
 	 */
-	public boolean delete(String key, Integer hashCode, Date expiry) {
+	public boolean delete( String key, Integer hashCode, Date expiry ) {
 
 		// get SockIO obj from hash or from key
-		SockIOPool.SockIO sock = SockIOPool.getInstance( poolName ).getSock(key, hashCode);
+		SockIOPool.SockIO sock = SockIOPool.getInstance( poolName ).getSock( key, hashCode );
 
 		// return false if unable to get SockIO obj
-		if (sock == null)
+		if ( sock == null )
 			return false;
 
 		// build command
-		StringBuffer command = new StringBuffer("delete " + key);
-		if (expiry != null) {
-			command.append(" " + expiry.getTime() / 1000);
-		}
-		command.append("\r\n");
+		StringBuffer command = new StringBuffer( "delete " ).append( key );
+		if ( expiry != null )
+			command.append( " " + expiry.getTime() / 1000 );
+
+		command.append( "\r\n" );
 		
 		try {
-			sock.write(command.toString().getBytes());
+			sock.write( command.toString().getBytes() );
 			sock.flush();
 			
 			// if we get appropriate response back, then we return true
 			String line = sock.readLine();
-			if (DELETED.equals(line)) {
-				log.info("++++ deletion of key: " + key + " from cache was a success");
+			if ( DELETED.equals( line ) ) {
+				log.info( "++++ deletion of key: " + key + " from cache was a success" );
 
 				// return sock to pool and bail here
 				sock.close();
+				sock = null;
 				return true;
-
-			} else if (NOTFOUND.equals(line)) {
-				log.info("++++ deletion of key: " + key + " from cache failed as the key was not found");
-
-			} else {
-				log.error("++++ error deleting key: " + key);
-				log.error(line);
+			}
+			else if ( NOTFOUND.equals( line ) ) {
+				log.info( "++++ deletion of key: " + key + " from cache failed as the key was not found" );
+			}
+			else {
+				log.error( "++++ error deleting key: " + key );
+				log.error( line );
 			}
 		}
-		catch (IOException e) {
+		catch ( IOException e ) {
 			// exception thrown
-			log.error("++++ exception thrown while writing bytes to server on delete");
-			log.error(e.getMessage(), e);
+			log.error( "++++ exception thrown while writing bytes to server on delete" );
+			log.error( e.getMessage(), e );
 
 			try {
 				sock.trueClose();
 			}
-			catch(IOException ioe) {
-				log.error("++++ failed to close socket : " + sock.toString());
+			catch ( IOException ioe ) {
+				log.error( "++++ failed to close socket : " + sock.toString() );
 			}
 
 			sock = null;
 		}
 
-		if (sock != null)
+		if ( sock != null )
 			sock.close();
+
 		return false;
 	}
     
@@ -384,8 +386,8 @@ public class MemCachedClient {
 	 * @param value value to store
 	 * @return true, if the data was successfully stored
 	 */
-	public boolean set(String key, Object value) {
-		return set("set", key, value, null, null, primitiveAsString);
+	public boolean set( String key, Object value ) {
+		return set( "set", key, value, null, null, primitiveAsString );
 	}
 
 	/**
@@ -396,8 +398,8 @@ public class MemCachedClient {
 	 * @param hashCode if not null, then the int hashcode to use
 	 * @return true, if the data was successfully stored
 	 */
-	public boolean set(String key, Object value, Integer hashCode) {
-		return set("set", key, value, null, hashCode, primitiveAsString);
+	public boolean set( String key, Object value, Integer hashCode ) {
+		return set( "set", key, value, null, hashCode, primitiveAsString );
 	}
 
 	/**
@@ -408,8 +410,8 @@ public class MemCachedClient {
 	 * @param expiry when to expire the record
 	 * @return true, if the data was successfully stored
 	 */
-	public boolean set(String key, Object value, Date expiry) {
-		return set("set", key, value, expiry, null, primitiveAsString);
+	public boolean set( String key, Object value, Date expiry ) {
+		return set( "set", key, value, expiry, null, primitiveAsString );
 	}
 
 	/**
@@ -541,15 +543,15 @@ public class MemCachedClient {
 	 * @param asString store this object as a string?
 	 * @return true/false indicating success
 	 */
-	private boolean set(String cmdname, String key, Object value, Date expiry, Integer hashCode, boolean asString) {
+	private boolean set( String cmdname, String key, Object value, Date expiry, Integer hashCode, boolean asString ) {
 
 		// get SockIO obj
-		SockIOPool.SockIO sock = SockIOPool.getInstance( poolName ).getSock(key, hashCode);
+		SockIOPool.SockIO sock = SockIOPool.getInstance( poolName ).getSock( key, hashCode );
 		
-		if (sock == null)
+		if ( sock == null )
 			return false;
 		
-		if (expiry == null)
+		if ( expiry == null )
 			expiry = new Date(0);
 
 		// store flags
@@ -563,13 +565,14 @@ public class MemCachedClient {
 			if ( asString ) {
 				// useful for sharing data between java and non-java
 				// and also for storing ints for the increment method
-				log.info("++++ storing data as a string for key: " + key + " for class: " + value.getClass().getName());
+				log.info( "++++ storing data as a string for key: " + key + " for class: " + value.getClass().getName() );
 				try {
-					val = value.toString().getBytes(defaultEncoding);
+					val = value.toString().getBytes( defaultEncoding );
 				}
-				catch (UnsupportedEncodingException ue) {
-					log.error("invalid encoding type used: " + defaultEncoding);
+				catch ( UnsupportedEncodingException ue ) {
+					log.error( "invalid encoding type used: " + defaultEncoding );
 					sock.close();
+					sock = null;
 					return false;
 				}
 			}
@@ -579,57 +582,58 @@ public class MemCachedClient {
 				try {
 					val = NativeHandler.encode( value );
 				}
-				catch (Exception e) {
-					log.error("Failed to native handle obj", e);
+				catch ( Exception e ) {
+					log.error( "Failed to native handle obj", e );
 
 					sock.close();
+					sock = null;
 					return false;
 				}
 			}
 		}
 		else {
 			// always serialize for non-primitive types
-			log.info("++++ serializing for key: " + key + " for class: " + value.getClass().getName());
+			log.info( "++++ serializing for key: " + key + " for class: " + value.getClass().getName() );
 			try {
 				ByteArrayOutputStream bos = new ByteArrayOutputStream();
-				(new ObjectOutputStream(bos)).writeObject(value);
+				(new ObjectOutputStream( bos )).writeObject( value );
 				val = bos.toByteArray();
 				flags |= F_SERIALIZED;
 			}
-			catch (IOException e) {
+			catch ( IOException e ) {
 				// if we fail to serialize, then
 				// we bail
-				log.error("failed to serialize obj", e);
-				log.error(value.toString());
+				log.error( "failed to serialize obj", e );
+				log.error( value.toString() );
 
 				// return socket to pool and bail
 				sock.close();
+				sock = null;
 				return false;
 			}
 		}
 		
 		// now try to compress if we want to
 		// and if the length is over the threshold 
-		if (compressEnable && val.length > compressThreshold) {
-			log.info("++++ trying to compress data");
-			log.info("++++ size prior to compression: " + val.length);
+		if ( compressEnable && val.length > compressThreshold ) {
+			log.info( "++++ trying to compress data" );
+			log.info( "++++ size prior to compression: " + val.length );
 
 			try {
-				ByteArrayOutputStream bos = new ByteArrayOutputStream(val.length);
-				GZIPOutputStream gos = new GZIPOutputStream(bos);
-				gos.write(val, 0, val.length);
+				ByteArrayOutputStream bos = new ByteArrayOutputStream( val.length );
+				GZIPOutputStream gos = new GZIPOutputStream( bos );
+				gos.write( val, 0, val.length );
 				gos.finish();
 				
 				// store it and set compression flag
 				val = bos.toByteArray();
 				flags |= F_COMPRESSED;
 
-				log.info("++++ compression succeeded, size after: " + val.length);
-
+				log.info( "++++ compression succeeded, size after: " + val.length );
 			}
 			catch (IOException e) {
-				log.error("IOException while compressing stream: " + e.getMessage());
-				log.error("storing data uncompressed");
+				log.error( "IOException while compressing stream: " + e.getMessage() );
+				log.error( "storing data uncompressed" );
 			}
 		}
 
@@ -637,46 +641,45 @@ public class MemCachedClient {
 		try {
 			String cmd = cmdname + " " + key + " " + flags + " "
 				+ expiry.getTime() / 1000 + " " + val.length + "\r\n";
-			sock.write(cmd.getBytes());
-			sock.write(val);
-			sock.write("\r\n".getBytes());
+			sock.write( cmd.getBytes() );
+			sock.write( val );
+			sock.write( "\r\n".getBytes() );
 			sock.flush();
 
 			// get result code
 			String line = sock.readLine();
-			log.info("++++ memcache cmd (result code): " + cmd + " (" + line + ")");
+			log.info( "++++ memcache cmd (result code): " + cmd + " (" + line + ")" );
 
-			if (STORED.equals(line)) {
-				log.info("++++ data successfully stored for key: " + key);
+			if ( STORED.equals( line ) ) {
+				log.info("++++ data successfully stored for key: " + key );
 				sock.close();
+				sock = null;
 				return true;
-
 			}
-			else if (NOTSTORED.equals(line)) {
-				log.info("++++ data not stored in cache for key: " + key);
-
+			else if ( NOTSTORED.equals( line ) ) {
+				log.info( "++++ data not stored in cache for key: " + key );
 			}
 			else {
-				log.error("++++ error storing data in cache for key: " + key + " -- length: " + val.length);
-				log.error(line);
+				log.error( "++++ error storing data in cache for key: " + key + " -- length: " + val.length );
+				log.error( line );
 			}
 		}
-		catch (IOException e) {
+		catch ( IOException e ) {
 			// exception thrown
-			log.error("++++ exception thrown while writing bytes to server on delete");
-			log.error(e.getMessage(), e);
+			log.error( "++++ exception thrown while writing bytes to server on delete" );
+			log.error( e.getMessage(), e );
 
 			try {
 				sock.trueClose();
 			}
-			catch (IOException ioe) {
-				log.error("++++ failed to close socket : " + sock.toString());
+			catch ( IOException ioe ) {
+				log.error( "++++ failed to close socket : " + sock.toString() );
 			}
 
 			sock = null;
 		}
 
-		if (sock != null)
+		if ( sock != null )
 			sock.close();
 
 		return false;
@@ -689,8 +692,8 @@ public class MemCachedClient {
 	 * @param counter number to store
 	 * @return true/false indicating success
 	 */
-	public boolean storeCounter(String key, long counter) {
-		return set("set", key, new Long(counter), null, null, true);
+	public boolean storeCounter( String key, long counter ) {
+		return set( "set", key, new Long(counter), null, null, true );
 	}
 
 	/** 
@@ -700,8 +703,8 @@ public class MemCachedClient {
 	 * @param counter number to store
 	 * @return true/false indicating success
 	 */
-	public boolean storeCounter(String key, Long counter) {
-		return set("set", key, counter, null, null, true);
+	public boolean storeCounter( String key, Long counter ) {
+		return set( "set", key, counter, null, null, true );
 	}
     
 	/** 
