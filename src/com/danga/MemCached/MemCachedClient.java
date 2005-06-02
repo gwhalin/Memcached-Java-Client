@@ -240,7 +240,7 @@ public class MemCachedClient {
 	 * 
 	 * @param defaultEncoding 
 	 */
-	public void setDefaultEncoding(String defaultEncoding) {
+	public void setDefaultEncoding( String defaultEncoding ) {
 		this.defaultEncoding = defaultEncoding;
 	}
 
@@ -257,7 +257,7 @@ public class MemCachedClient {
 	 *
 	 * @param compressEnable <CODE>true</CODE> to enable compression, <CODE>false</CODE> to disable compression
 	 */
-	public void setCompressEnable(boolean compressEnable) {
+	public void setCompressEnable( boolean compressEnable ) {
 		this.compressEnable = compressEnable;
 	}
     
@@ -271,7 +271,7 @@ public class MemCachedClient {
 	 *
 	 * @param compressThreshold required length of data to consider compression
 	 */
-	public void setCompressThreshold(long compressThreshold) {
+	public void setCompressThreshold( long compressThreshold ) {
 		this.compressThreshold = compressThreshold;
 	}
 
@@ -291,8 +291,8 @@ public class MemCachedClient {
 	 * @param key the key to be removed
 	 * @return <code>true</code>, if the data was deleted successfully
 	 */
-	public boolean delete(String key) {
-		return delete(key, null, null);
+	public boolean delete( String key ) {
+		return delete( key, null, null );
 	}
 
 	/** 
@@ -302,8 +302,8 @@ public class MemCachedClient {
 	 * @param expiry when to expire the record.
 	 * @return <code>true</code>, if the data was deleted successfully
 	 */
-	public boolean delete(String key, Date expiry) {
-		return delete(key, null, expiry);
+	public boolean delete( String key, Date expiry ) {
+		return delete( key, null, expiry );
 	}
 
 	/**
@@ -321,6 +321,11 @@ public class MemCachedClient {
 	 * @return <code>true</code>, if the data was deleted successfully
 	 */
 	public boolean delete( String key, Integer hashCode, Date expiry ) {
+
+		if ( key == null ) {
+			log.error( "null value for key passed to delete()" );
+			return false;
+		}
 
 		// get SockIO obj from hash or from key
 		SockIOPool.SockIO sock = SockIOPool.getInstance( poolName ).getSock( key, hashCode );
@@ -423,8 +428,8 @@ public class MemCachedClient {
 	 * @param hashCode if not null, then the int hashcode to use
 	 * @return true, if the data was successfully stored
 	 */
-	public boolean set(String key, Object value, Date expiry, Integer hashCode) {
-		return set("set", key, value, expiry, hashCode, primitiveAsString);
+	public boolean set( String key, Object value, Date expiry, Integer hashCode ) {
+		return set( "set", key, value, expiry, hashCode, primitiveAsString );
 	}
 
 	/**
@@ -434,8 +439,8 @@ public class MemCachedClient {
 	 * @param value value to store
 	 * @return true, if the data was successfully stored
 	 */
-	public boolean add(String key, Object value) {
-		return set("add", key, value, null, null, primitiveAsString);
+	public boolean add( String key, Object value ) {
+		return set( "add", key, value, null, null, primitiveAsString );
 	}
 
 	/**
@@ -446,8 +451,8 @@ public class MemCachedClient {
 	 * @param hashCode if not null, then the int hashcode to use
 	 * @return true, if the data was successfully stored
 	 */
-	public boolean add(String key, Object value, Integer hashCode) {
-		return set("add", key, value, null, hashCode, primitiveAsString);
+	public boolean add( String key, Object value, Integer hashCode ) {
+		return set( "add", key, value, null, hashCode, primitiveAsString );
 	}
 
 	/**
@@ -458,8 +463,8 @@ public class MemCachedClient {
 	 * @param expiry when to expire the record
 	 * @return true, if the data was successfully stored
 	 */
-	public boolean add(String key, Object value, Date expiry) {
-		return set("add", key, value, expiry, null, primitiveAsString);
+	public boolean add( String key, Object value, Date expiry ) {
+		return set( "add", key, value, expiry, null, primitiveAsString );
 	}
 
 	/**
@@ -471,8 +476,8 @@ public class MemCachedClient {
 	 * @param hashCode if not null, then the int hashcode to use
 	 * @return true, if the data was successfully stored
 	 */
-	public boolean add(String key, Object value, Date expiry, Integer hashCode) {
-		return set("add", key, value, expiry, hashCode, primitiveAsString);
+	public boolean add( String key, Object value, Date expiry, Integer hashCode ) {
+		return set( "add", key, value, expiry, hashCode, primitiveAsString );
 	}
 
 	/**
@@ -482,8 +487,8 @@ public class MemCachedClient {
 	 * @param value value to store
 	 * @return true, if the data was successfully stored
 	 */
-	public boolean replace(String key, Object value) {
-		return set("replace", key, value, null, null, primitiveAsString);
+	public boolean replace( String key, Object value ) {
+		return set( "replace", key, value, null, null, primitiveAsString );
 	}
 
 	/**
@@ -494,8 +499,8 @@ public class MemCachedClient {
 	 * @param hashCode if not null, then the int hashcode to use
 	 * @return true, if the data was successfully stored
 	 */
-	public boolean replace(String key, Object value, Integer hashCode) {
-		return set("replace", key, value, null, hashCode, primitiveAsString);
+	public boolean replace( String key, Object value, Integer hashCode ) {
+		return set( "replace", key, value, null, hashCode, primitiveAsString );
 	}
 
 	/**
@@ -506,8 +511,8 @@ public class MemCachedClient {
 	 * @param expiry when to expire the record
 	 * @return true, if the data was successfully stored
 	 */
-	public boolean replace(String key, Object value, Date expiry) {
-		return set("replace", key, value, expiry, null, primitiveAsString);
+	public boolean replace( String key, Object value, Date expiry ) {
+		return set( "replace", key, value, expiry, null, primitiveAsString );
 	}
 
 	/**
@@ -519,8 +524,8 @@ public class MemCachedClient {
 	 * @param hashCode if not null, then the int hashcode to use
 	 * @return true, if the data was successfully stored
 	 */
-	public boolean replace(String key, Object value, Date expiry, Integer hashCode) {
-		return set("replace", key, value, expiry, hashCode, primitiveAsString);
+	public boolean replace( String key, Object value, Date expiry, Integer hashCode ) {
+		return set( "replace", key, value, expiry, hashCode, primitiveAsString );
 	}
 
 	/** 
@@ -544,6 +549,11 @@ public class MemCachedClient {
 	 * @return true/false indicating success
 	 */
 	private boolean set( String cmdname, String key, Object value, Date expiry, Integer hashCode, boolean asString ) {
+
+		if ( cmdname == null || cmdname.trim().equals( "" ) || key == null ) {
+			log.error( "key is null or cmd is null/empty for set()" );
+			return false;
+		}
 
 		// get SockIO obj
 		SockIOPool.SockIO sock = SockIOPool.getInstance( poolName ).getSock( key, hashCode );
@@ -693,7 +703,7 @@ public class MemCachedClient {
 	 * @return true/false indicating success
 	 */
 	public boolean storeCounter( String key, long counter ) {
-		return set( "set", key, new Long(counter), null, null, true );
+		return set( "set", key, new Long( counter ), null, null, true );
 	}
 
 	/** 
@@ -715,8 +725,8 @@ public class MemCachedClient {
 	 * @param hashCode if not null, then the int hashcode to use
 	 * @return true/false indicating success
 	 */
-	public boolean storeCounter(String key, Long counter, Integer hashCode) {
-		return set("set", key, counter, null, hashCode, true);
+	public boolean storeCounter( String key, Long counter, Integer hashCode ) {
+		return set( "set", key, counter, null, hashCode, true );
 	}
 
 	/** 
@@ -725,8 +735,8 @@ public class MemCachedClient {
 	 * @param key cache ket
 	 * @return counter value or -1 if not found
 	 */
-	public long getCounter(String key) {
-		return getCounter(key, null);
+	public long getCounter( String key ) {
+		return getCounter( key, null );
 	}
 
 	/** 
@@ -736,14 +746,20 @@ public class MemCachedClient {
 	 * @param hashCode if not null, then the int hashcode to use
 	 * @return counter value or -1 if not found
 	 */
-	public long getCounter(String key, Integer hashCode) {
+	public long getCounter( String key, Integer hashCode ) {
+
+		if ( key == null ) {
+			log.error( "null key for getCounter()" );
+			return -1;
+		}
+
 		long counter = -1;
 		try {
 			counter = Long.parseLong( (String)get( key, hashCode, true ) );
 		}
-		catch (Exception ex) {
+		catch ( Exception ex ) {
 			// not found or error getting out
-			log.error("counter not found at key: " + key);
+			log.error( "counter not found at key: " + key );
 		}
 		
 		return counter;
@@ -755,8 +771,8 @@ public class MemCachedClient {
 	 * @param key key where the data is stored
 	 * @return -1, if the key is not found, the value after incrementing otherwise
 	 */
-	public long incr(String key) {
-		return incrdecr("incr", key, 1, null);
+	public long incr( String key ) {
+		return incrdecr( "incr", key, 1, null );
 	}
 
 	/** 
@@ -766,8 +782,8 @@ public class MemCachedClient {
 	 * @param inc how much to increment by
 	 * @return -1, if the key is not found, the value after incrementing otherwise
 	 */
-	public long incr(String key, long inc) {
-		return incrdecr("incr", key, inc, null);
+	public long incr( String key, long inc ) {
+		return incrdecr( "incr", key, inc, null );
 	}
 
 	/**
@@ -778,8 +794,8 @@ public class MemCachedClient {
 	 * @param hashCode if not null, then the int hashcode to use
 	 * @return -1, if the key is not found, the value after incrementing otherwise
 	 */
-	public long incr(String key, long inc, Integer hashCode) {
-		return incrdecr("incr", key, inc, hashCode);
+	public long incr( String key, long inc, Integer hashCode ) {
+		return incrdecr( "incr", key, inc, hashCode );
 	}
 	
 	/**
@@ -788,8 +804,8 @@ public class MemCachedClient {
 	 * @param key key where the data is stored
 	 * @return -1, if the key is not found, the value after incrementing otherwise
 	 */
-	public long decr(String key) {
-		return incrdecr("decr", key, 1, null);
+	public long decr( String key ) {
+		return incrdecr( "decr", key, 1, null );
 	}
 
 	/**
@@ -799,8 +815,8 @@ public class MemCachedClient {
 	 * @param inc how much to increment by
 	 * @return -1, if the key is not found, the value after incrementing otherwise
 	 */
-	public long decr(String key, long inc) {
-		return incrdecr("decr", key, inc, null);
+	public long decr( String key, long inc ) {
+		return incrdecr( "decr", key, inc, null );
 	}
 
 	/**
@@ -811,8 +827,8 @@ public class MemCachedClient {
 	 * @param hashCode if not null, then the int hashcode to use
 	 * @return -1, if the key is not found, the value after incrementing otherwise
 	 */
-	public long decr(String key, long inc, Integer hashCode) {
-		return incrdecr("decr", key, inc, hashCode);
+	public long decr( String key, long inc, Integer hashCode ) {
+		return incrdecr( "decr", key, inc, hashCode );
 	}
 
 	/** 
