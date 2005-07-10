@@ -136,7 +136,7 @@ public class SockIOPool {
 	private Map createShift;
 
 	// initial, min and max pool sizes
-	private final int poolMultiplier  = 4;
+	private int poolMultiplier        = 4;
 	private int initConn              = 3;
 	private int minConn               = 3;
 	private int maxConn               = 10;
@@ -532,7 +532,8 @@ public class SockIOPool {
 
 		// if host is dead, then we don't need to try again
 		// until the dead status has expired
-		if ( hostDead.containsKey( host ) && hostDeadDur.containsKey( host ) ) {
+		// we do not try to put back in if failover is off
+		if ( failover && hostDead.containsKey( host ) && hostDeadDur.containsKey( host ) ) {
 
 			Date store  = (Date)hostDead.get( host );
 			long expire = ((Long)hostDeadDur.get( host )).longValue();
@@ -1138,7 +1139,7 @@ public class SockIOPool {
 
 			while ( !this.stopThread ) {
 				try {
-					this.sleep( interval );
+					Thread.sleep( interval );
 
 					// if pool is initialized, then
 					// run the maintenance method on itself
