@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <project name="java_memcached" default="package" basedir=".">
 
+	<property name="build.compiler"   value="jikes" />
+	<property name="build.compiler.emacs" value="true"/>
+
 	<property name="project.title"   value="java memcached client" />
 	<property name="code.dir"        value="src/com/danga/MemCached" />
 	<property name="doc.dir"         value="doc" />
