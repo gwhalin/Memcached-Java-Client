@@ -1006,7 +1006,7 @@ public class SockIOPool {
 		for ( Iterator i = availPool.keySet().iterator(); i.hasNext(); ) {
 			String host  = (String)i.next();
 			Map sockets  = (Map)availPool.get(host);
-			log.error( "++++ Size of avail pool for host (" + host + ") = " + sockets.size() );
+			log.debug( "++++ Size of avail pool for host (" + host + ") = " + sockets.size() );
 
 			// if pool is too small (n < minSpare)
 			if ( sockets.size() < minConn ) {
@@ -1068,7 +1068,7 @@ public class SockIOPool {
 		for ( Iterator i = busyPool.keySet().iterator(); i.hasNext(); ) {
 			String host = (String)i.next();
 			Map sockets = (Map)busyPool.get( host );
-			log.error( "++++ Size of busy pool for host (" + host + ")  = " + sockets.size() );
+			log.debug( "++++ Size of busy pool for host (" + host + ")  = " + sockets.size() );
 
 			// loop through all connections and check to see if we have any hung connections
 			for ( Iterator j = sockets.keySet().iterator(); j.hasNext(); ) {
