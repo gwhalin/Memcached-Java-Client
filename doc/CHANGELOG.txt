@@ -1,3 +1,9 @@
+09 Sep 2005 (whalin)
+	-- fix keyExists for counters
+	-- stop using jikes
+	-- add code to pool to try to recover from a hung connection
+	   (should never happen)
+
 07 Apr 2005 (whalin)
 	-- fixed getCounter
 	-- added method to check for existance of key
