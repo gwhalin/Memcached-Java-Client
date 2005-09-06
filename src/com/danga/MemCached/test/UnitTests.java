@@ -126,8 +126,13 @@ public class UnitTests {
 	}
 
 	public static void test14() {
-		assert !mc.keyExists( "bar" );
-		assert mc.keyExists( "foo" );
+		assert !mc.keyExists( "foobar123" );
+		mc.set( "foobar123", new Integer( 100000) );
+		assert mc.keyExists( "foobar123" );
+
+		assert !mc.keyExists( "counterTest123" );
+		mc.storeCounter( "counterTest123", 0 );
+		assert mc.keyExists( "counterTest123" );
 	}
     
 	/**
