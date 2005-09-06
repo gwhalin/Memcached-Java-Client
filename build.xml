@@ -16,6 +16,7 @@
 	</path>
 
 	<!-- package release -->
+	<!-- ant package -Dver=release_1.3 -Dlog4j=1 -->
 	<target name="package" depends="clean, setup, log4j, logger, pkg-compile, jar, javadoc">
 		<tar tarfile="java_memcached-${ver}.tar.gz" basedir="." includes="java_memcached-${ver}/**" compression="gzip"/>
 		<zip destfile="java_memcached-${ver}.zip" basedir="." includes="java_memcached-${ver}/**"/>
