@@ -282,7 +282,7 @@ public class MemCachedClient {
 	 * @return true if key found in cache, false if not (or if cache is down)
 	 */
 	public boolean keyExists( String key ) {
-		return ( this.get( key ) != null );
+		return ( this.get( key, null, true ) != null );
 	}
 	
 	/**
