@@ -1,9 +1,6 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <project name="java_memcached" default="package" basedir=".">
 
-	<property name="build.compiler"   value="jikes" />
-	<property name="build.compiler.emacs" value="true"/>
-
 	<property name="project.title"   value="java memcached client" />
 	<property name="code.dir"        value="src/com/danga/MemCached" />
 	<property name="doc.dir"         value="doc" />
@@ -91,7 +88,6 @@
 			packagenames= "com.danga.*"
 			author= "true"
 			private="true"
-			source="1.4"
 			version="true"
 			defaultexcludes="yes"
 			classpathref="project.class.path"
@@ -104,7 +100,7 @@
 
 	<!-- compilation target for packeging operations -->
 	<target name="pkg-compile" depends="clean, setup, log4j, logger">
-		<javac debug="yes" srcdir="java_memcached-${ver}/src" destdir="java_memcached-${ver}/classes" deprecation="true" source="1.4">
+		<javac debug="yes" srcdir="java_memcached-${ver}/src" destdir="java_memcached-${ver}/classes" deprecation="true">
 			<classpath refid="project.class.path"/>
 		</javac>
 	</target>
@@ -116,7 +112,7 @@
 	<!-- compilation target for dev work -->
 	<target name="compile">
 		<mkdir dir="${build.dir}"/>
-		<javac debug="yes" srcdir="${src.dir}" destdir="${build.dir}" deprecation="true" source="1.4">
+		<javac debug="yes" srcdir="${src.dir}" destdir="${build.dir}" deprecation="true">
 			<classpath refid="project.class.path"/>
 		</javac>
 	</target>
