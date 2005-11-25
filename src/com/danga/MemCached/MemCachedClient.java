@@ -166,6 +166,7 @@ public class MemCachedClient {
 	// return codes
 	private static final String VALUE        = "VALUE";			// start of value line from server
 	private static final String STATS        = "STAT";			// start of stats line from server
+	private static final String ITEM         = "ITEM";			// start of item line from server
 	private static final String DELETED      = "DELETED";		// successful deletion
 	private static final String NOTFOUND     = "NOT_FOUND";		// record not found for delete or incr/decr
 	private static final String STORED       = "STORED";		// successful store of data
@@ -195,10 +196,24 @@ public class MemCachedClient {
 	// which pool to use
 	private String poolName;
 
+	// optional passed in classloader
+	private ClassLoader classLoader;
+
 	/**
 	 * Creates a new instance of MemCachedClient.
 	 */
 	public MemCachedClient() {
+		init();
+	}
+
+	/** 
+	 * Creates a new instance of MemCacheClient but
+	 * acceptes a passed in ClassLoader.
+	 * 
+	 * @param classLoader ClassLoader object.
+	 */
+	public MemCachedClient( ClassLoader classLoader ) {
+		this.classLoader = classLoader;
 		init();
 	}
 
@@ -555,6 +570,11 @@ public class MemCachedClient {
 			return false;
 		}
 
+		if ( value == null ) {
+			log.error( "trying to store a null value to cache" );
+			return false;
+		}
+
 		// get SockIO obj
 		SockIOPool.SockIO sock = SockIOPool.getInstance( poolName ).getSock( key, hashCode );
 		
@@ -575,8 +595,8 @@ public class MemCachedClient {
 			if ( asString ) {
 				// useful for sharing data between java and non-java
 				// and also for storing ints for the increment method
-				log.info( "++++ storing data as a string for key: " + key + " for class: " + value.getClass().getName() );
 				try {
+					log.info( "++++ storing data as a string for key: " + key + " for class: " + value.getClass().getName() );
 					val = value.toString().getBytes( defaultEncoding );
 				}
 				catch ( UnsupportedEncodingException ue ) {
@@ -587,9 +607,8 @@ public class MemCachedClient {
 				}
 			}
 			else {
-				log.info( "Storing with native handler..." );
-
 				try {
+					log.info( "Storing with native handler..." );
 					val = NativeHandler.encode( value );
 				}
 				catch ( Exception e ) {
@@ -603,8 +622,8 @@ public class MemCachedClient {
 		}
 		else {
 			// always serialize for non-primitive types
-			log.info( "++++ serializing for key: " + key + " for class: " + value.getClass().getName() );
 			try {
+				log.info( "++++ serializing for key: " + key + " for class: " + value.getClass().getName() );
 				ByteArrayOutputStream bos = new ByteArrayOutputStream();
 				(new ObjectOutputStream( bos )).writeObject( value );
 				val = bos.toByteArray();
@@ -626,10 +645,10 @@ public class MemCachedClient {
 		// now try to compress if we want to
 		// and if the length is over the threshold 
 		if ( compressEnable && val.length > compressThreshold ) {
-			log.info( "++++ trying to compress data" );
-			log.info( "++++ size prior to compression: " + val.length );
 
 			try {
+				log.info( "++++ trying to compress data" );
+				log.info( "++++ size prior to compression: " + val.length );
 				ByteArrayOutputStream bos = new ByteArrayOutputStream( val.length );
 				GZIPOutputStream gos = new GZIPOutputStream( bos );
 				gos.write( val, 0, val.length );
@@ -946,10 +965,15 @@ public class MemCachedClient {
 	 */
 	public Object get( String key, Integer hashCode, boolean asString ) {
 
+		if ( key == null ) {
+			log.error( "key is null for get()" );
+			return null;
+		}
+
 		// get SockIO obj using cache key
 		SockIOPool.SockIO sock = SockIOPool.getInstance( poolName ).getSock(key, hashCode);
 	    
-	    if (sock == null)
+	    if ( sock == null )
 			return null;
 
 	    try {
@@ -1035,6 +1059,9 @@ public class MemCachedClient {
 
 		Map data = getMulti( keys, hashCodes, asString );
 
+		if ( data == null )
+			return null;
+
 		Object[] res = new Object[keys.length];
 		for (int i = 0; i < keys.length; i++) {
 			res[i] = data.get(keys[i]);
@@ -1088,6 +1115,12 @@ public class MemCachedClient {
 	 *      retrieve them from the hashmap gives you null.
 	 */
 	public Map getMulti( String[] keys, Integer[] hashCodes, boolean asString ) {
+
+		if ( keys == null || keys.length == 0 ) {
+			log.error( "missing keys for getMulti()" );
+			return null;
+		}
+
 		Map sockKeys = new HashMap();
 
 		for (int i = 0; i < keys.length; ++i) {
@@ -1235,7 +1268,8 @@ public class MemCachedClient {
 				}
 				else {
 					// deserialize if the data is serialized
-					ObjectInputStream ois = new ObjectInputStream( new ByteArrayInputStream( buf ) );
+					ContextObjectInputStream ois =
+						new ContextObjectInputStream( new ByteArrayInputStream( buf ), classLoader );
 					try {
 						o = ois.readObject();
 						log.info("++++ deserializing " + o.getClass());
@@ -1264,7 +1298,7 @@ public class MemCachedClient {
 	 * @return success true/false
 	 */
 	public boolean flushAll() {
-		return flushAll(null);
+		return flushAll( null );
 	}
 
 	/** 
@@ -1276,35 +1310,35 @@ public class MemCachedClient {
 	 * @param servers optional array of host(s) to flush (host:port)
 	 * @return success true/false
 	 */
-	public boolean flushAll(String[] servers) {
+	public boolean flushAll( String[] servers ) {
 
 		// get SockIOPool instance
 		SockIOPool pool = SockIOPool.getInstance( poolName );
 
 		// return false if unable to get SockIO obj
-		if (pool == null) {
-			log.error("++++ unable to get SockIOPool instance");
+		if ( pool == null ) {
+			log.error( "++++ unable to get SockIOPool instance" );
 			return false;
 		}
 
 		// get all servers and iterate over them
-		servers = (servers == null)
+		servers = ( servers == null )
 			? pool.getServers()
 			: servers;
 
 		// if no servers, then return early
-		if (servers == null || servers.length <= 0) {
-			log.error("++++ no servers to flush");
+		if ( servers == null || servers.length <= 0 ) {
+			log.error( "++++ no servers to flush" );
 			return false;
 		}
 
 		boolean success = true;
 
-		for (int i = 0; i < servers.length; i++) {
+		for ( int i = 0; i < servers.length; i++ ) {
 
-			SockIOPool.SockIO sock = pool.getConnection(servers[i]);
-			if (sock == null) {
-				log.error("++++ unable to get connection to : " + servers[i]);
+			SockIOPool.SockIO sock = pool.getConnection( servers[i] );
+			if ( sock == null ) {
+				log.error( "++++ unable to get connection to : " + servers[i] );
 				success = false;
 				continue;
 			}
@@ -1313,32 +1347,32 @@ public class MemCachedClient {
 			String command = "flush_all\r\n";
 
 			try {
-				sock.write(command.getBytes());
+				sock.write( command.getBytes() );
 				sock.flush();
 
 				// if we get appropriate response back, then we return true
 				String line = sock.readLine();
-				success = (OK.equals(line))
+				success = ( OK.equals( line ) )
 					? success && true
 					: false;
 			}
-			catch (IOException e) {
+			catch ( IOException e ) {
 				// exception thrown
-				log.error("++++ exception thrown while writing bytes to server on delete");
-				log.error(e.getMessage(), e);
+				log.error( "++++ exception thrown while writing bytes to server on delete" );
+				log.error( e.getMessage(), e );
 
 				try {
 					sock.trueClose();
 				}
-				catch (IOException ioe) {
-					log.error("++++ failed to close socket : " + sock.toString());
+				catch ( IOException ioe ) {
+					log.error( "++++ failed to close socket : " + sock.toString() );
 				}
 
 				success = false;
 				sock = null;
 			}
 
-			if (sock != null)
+			if ( sock != null )
 				sock.close();
 		}
 
@@ -1355,7 +1389,7 @@ public class MemCachedClient {
 	 * @return Stats map
 	 */
 	public Map stats() {
-		return stats(null);
+		return stats( null );
 	}
 
 	/** 
@@ -1365,17 +1399,109 @@ public class MemCachedClient {
 	 * The value is another map which contains stats
 	 * with stat name as key and value as value.
 	 * 
+	 * @param servers string array of servers to retrieve stats from, or all if this is null	 
+	 * @return Stats map
+	 */
+	public Map stats( String[] servers ) {
+		return stats( servers, "stats\r\n", STATS );
+	}	
+
+	/** 
+	 * Retrieves stats items for all servers.
+	 *
+	 * Returns a map keyed on the servername.
+	 * The value is another map which contains item stats
+	 * with itemname:number:field as key and value as value.
+	 * 
+	 * @return Stats map
+	 */
+	public Map statsItems() {
+		return statsItems( null );
+	}
+	
+	/** 
+	 * Retrieves stats for passed in servers (or all servers).
+	 *
+	 * Returns a map keyed on the servername.
+	 * The value is another map which contains item stats
+	 * with itemname:number:field as key and value as value.
+	 * 
 	 * @param servers string array of servers to retrieve stats from, or all if this is null
 	 * @return Stats map
 	 */
-	public Map stats(String[] servers) {
+	public Map statsItems( String[] servers ) {
+		return stats( servers, "stats items\r\n", STATS );
+	}
+	
+	/** 
+	 * Retrieves stats items for all servers.
+	 *
+	 * Returns a map keyed on the servername.
+	 * The value is another map which contains slabs stats
+	 * with slabnumber:field as key and value as value.
+	 * 
+	 * @return Stats map
+	 */
+	public Map statsSlabs() {
+		return statsSlabs( null );
+	}
+	
+	/** 
+	 * Retrieves stats for passed in servers (or all servers).
+	 *
+	 * Returns a map keyed on the servername.
+	 * The value is another map which contains slabs stats
+	 * with slabnumber:field as key and value as value.
+	 * 
+	 * @param servers string array of servers to retrieve stats from, or all if this is null
+	 * @return Stats map
+	 */
+	public Map statsSlabs( String[] servers ) {
+		return stats( servers, "stats slabs\r\n", STATS );
+	}
+	
+	/** 
+	 * Retrieves items cachedump for all servers.
+	 *
+	 * Returns a map keyed on the servername.
+	 * The value is another map which contains cachedump stats
+	 * with the cachekey as key and byte size and unix timestamp as value.
+	 * 
+	 * @param slabNumber the item number of the cache dump
+	 * @return Stats map
+	 */
+	public Map statsCacheDump( int slabNumber ) {
+		return statsCacheDump( null, slabNumber );
+	}
+	
+	/** 
+	 * Retrieves stats for passed in servers (or all servers).
+	 *
+	 * Returns a map keyed on the servername.
+	 * The value is another map which contains cachedump stats
+	 * with the cachekey as key and byte size and unix timestamp as value.
+	 * 
+	 * @param servers string array of servers to retrieve stats from, or all if this is null
+	 * @param slabNumber the item number of the cache dump
+	 * @return Stats map
+	 */
+	public Map statsCacheDump( String[] servers, int slabNumber ) {
+		return stats( servers, "stats cachedump " + String.valueOf( slabNumber ) + "\r\n", ITEM );
+	}
+		
+	private Map stats( String[] servers, String command, String lineStart ) {
+
+		if ( command == null || command.trim().equals( "" ) ) {
+			log.error( "++++ invalid / missing command for stats()" );
+			return null;
+		}
 
 		// get SockIOPool instance
 		SockIOPool pool = SockIOPool.getInstance( poolName );
 
 		// return false if unable to get SockIO obj
-		if (pool == null) {
-			log.error("++++ unable to get SockIOPool instance");
+		if ( pool == null ) {
+			log.error( "++++ unable to get SockIOPool instance" );
 			return null;
 		}
 
@@ -1385,73 +1511,70 @@ public class MemCachedClient {
 			: servers;
 
 		// if no servers, then return early
-		if (servers == null || servers.length <= 0) {
-			log.error("++++ no servers to check stats");
+		if ( servers == null || servers.length <= 0 ) {
+			log.error( "++++ no servers to check stats" );
 			return null;
 		}
 
 		// array of stats Maps
 		Map statsMaps = new HashMap();
 
-		for (int i = 0; i < servers.length; i++) {
+		for ( int i = 0; i < servers.length; i++ ) {
 
-			SockIOPool.SockIO sock = pool.getConnection(servers[i]);
-			if (sock == null) {
-				log.error("++++ unable to get connection to : " + servers[i]);
+			SockIOPool.SockIO sock = pool.getConnection( servers[i] );
+			if ( sock == null ) {
+				log.error( "++++ unable to get connection to : " + servers[i] );
 				continue;
 			}
 
 			// build command
-			String command = "stats\r\n";
-
 			try {
-				sock.write(command.getBytes());
+				sock.write( command.getBytes() );
 				sock.flush();
 
 				// map to hold key value pairs
 				Map stats = new HashMap();
 
 				// loop over results
-				while (true) {
+				while ( true ) {
 					String line = sock.readLine();
-					log.debug("++++ line: " + line);
+					log.debug( "++++ line: " + line );
 
-					if (line.startsWith(STATS)) {
-						String[] info = line.split(" ");
+					if ( line.startsWith( lineStart ) ) {
+						String[] info = line.split( " ", 3 );						
 						String key    = info[1];
 						String value  = info[2];
 
-						log.debug("++++ key  : " + key);
-						log.debug("++++ value: " + value);
+						log.debug( "++++ key  : " + key );
+						log.debug( "++++ value: " + value );
 
-						stats.put(key, value);
-
+						stats.put( key, value );
 					}
-					else if (END.equals(line)) {
+					else if ( END.equals( line ) ) {
 						// finish when we get end from server
-						log.debug("++++ finished reading from cache server");
+						log.debug( "++++ finished reading from cache server" );
 						break;
 					}
 
-					statsMaps.put(servers[i], stats);
+					statsMaps.put( servers[i], stats );
 				}
 			}
-			catch (IOException e) {
+			catch ( IOException e ) {
 				// exception thrown
-				log.error("++++ exception thrown while writing bytes to server on delete");
-				log.error(e.getMessage(), e);
+				log.error( "++++ exception thrown while writing bytes to server on delete" );
+				log.error( e.getMessage(), e );
 
 				try {
 					sock.trueClose();
 				}
-				catch (IOException ioe) {
-					log.error("++++ failed to close socket : " + sock.toString());
+				catch ( IOException ioe ) {
+					log.error( "++++ failed to close socket : " + sock.toString() );
 				}
 
 				sock = null;
 			}
 
-			if (sock != null)
+			if ( sock != null )
 				sock.close();
 		}
 
