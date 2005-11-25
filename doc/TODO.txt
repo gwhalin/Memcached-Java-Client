@@ -1,7 +1,5 @@
 To Do:
 
 - support collections in NativeHandler
-- clean up Logging code
+- clean up Logging code (auto-detect)
 - clean up and add more unit tests
-- Try different compression streams as gzip stream is slow. (JNI??)
-- Try to improve CRC32 hashing performance (java.zip.CRC32 is slooooow)
