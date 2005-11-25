@@ -1,5 +1,5 @@
 25 Nov 2005 (whalin, chawla, watts)
-	-- released as 1.3.1
+	-- released as 1.3.2
 	-- allow passing of classloader for use in deserialization (chawla)
 	-- additional param checking (bug reported by young)
 	-- additional stats methods (watts)
