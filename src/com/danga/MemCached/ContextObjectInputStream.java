@@ -25,6 +25,7 @@
  * class loader.
  * 
  * @author Vin Chawla <vin@tivo.com> 
+ * @version 1.3.1
  */
 package com.danga.MemCached;
 

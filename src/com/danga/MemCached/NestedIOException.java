@@ -19,7 +19,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307  USA
  *
  * @author Kevin A. Burton <burton@peerfear.org> 
- * @version 1.2
+ * @version 1.3.1
  */
 package com.danga.MemCached;
 
@@ -39,11 +39,8 @@ public class NestedIOException extends IOException {
      * @param cause object of type throwable
      */
     public NestedIOException( Throwable cause ) {
-
         super( cause.getMessage() );
-        
         super.initCause( cause );
-        
     }
 
     public NestedIOException( String message, Throwable cause ) {

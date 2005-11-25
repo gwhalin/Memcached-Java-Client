@@ -24,7 +24,9 @@
  * @author Greg Whalin <greg@meetup.com> 
  * @author Richard 'toast' Russo <russor@msoe.edu>
  * @author Kevin Burton <burton@peerfear.org>
- * @version 1.2
+ * @author Robert Watts <robert@wattsit.co.uk>
+ * @author Vin Chawla <vin@tivo.com>
+ * @version 1.3.1
  */
 package com.danga.MemCached;
 
@@ -155,7 +157,9 @@ import org.apache.log4j.Logger;
  * @author greg whalin <greg@meetup.com> 
  * @author Richard 'toast' Russo <russor@msoe.edu>
  * @author Kevin Burton <burton@peerfear.org>
- * @version 1.2
+ * @author Robert Watts <robert@wattsit.co.uk>
+ * @author Vin Chawla <vin@tivo.com>
+ * @version 1.3.1
  */
 public class MemCachedClient {
 
