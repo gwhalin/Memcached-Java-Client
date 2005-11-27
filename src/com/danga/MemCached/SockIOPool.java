@@ -24,7 +24,7 @@
  * @author greg whalin <greg@meetup.com> 
  * @author Richard 'toast' Russo <russor@msoe.edu>
  *
- * @version 1.3.1
+ * @version 1.3.2
  */
 package com.danga.MemCached;
 
@@ -113,7 +113,7 @@ import org.apache.log4j.Logger;
  * </pre> 
  *
  * @author greg whalin <greg@whalin.com> 
- * @version 1.3.1
+ * @version 1.3.2
  */
 public class SockIOPool {
 
@@ -1102,7 +1102,7 @@ public class SockIOPool {
 	 * Class which extends thread and handles maintenance of the pool.
 	 * 
 	 * @author greg whalin <greg@meetup.com>
-	 * @version 1.3.1
+	 * @version 1.3.2
 	 */
 	protected static class MaintThread extends Thread {
 

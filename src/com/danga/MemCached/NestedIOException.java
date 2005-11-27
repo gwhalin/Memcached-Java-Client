@@ -19,7 +19,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307  USA
  *
  * @author Kevin A. Burton <burton@peerfear.org> 
- * @version 1.3.1
+ * @version 1.3.2
  */
 package com.danga.MemCached;
 

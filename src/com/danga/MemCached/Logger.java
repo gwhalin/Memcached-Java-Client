@@ -22,7 +22,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307  USA
  *
  * @author Greg Whalin <greg@meetup.com> 
- * @version 1.3.1
+ * @version 1.3.2
  */
 package com.danga.MemCached;
 
@@ -36,7 +36,7 @@ import java.util.*;
  * log levels, but only wraps system.out.println.
  * 
  * @author Greg Whalin <greg@meetup.com>
- * @version 1.2
+ * @version 1.3.2
  */
 public class Logger {
 

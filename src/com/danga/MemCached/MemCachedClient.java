@@ -26,7 +26,7 @@
  * @author Kevin Burton <burton@peerfear.org>
  * @author Robert Watts <robert@wattsit.co.uk>
  * @author Vin Chawla <vin@tivo.com>
- * @version 1.3.1
+ * @version 1.3.2
  */
 package com.danga.MemCached;
 
@@ -159,7 +159,7 @@ import org.apache.log4j.Logger;
  * @author Kevin Burton <burton@peerfear.org>
  * @author Robert Watts <robert@wattsit.co.uk>
  * @author Vin Chawla <vin@tivo.com>
- * @version 1.3.1
+ * @version 1.3.2
  */
 public class MemCachedClient {
 

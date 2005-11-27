@@ -20,7 +20,7 @@
  *
  * @author Kevin A. Burton <burton@peerfear.org> 
  * @author Greg Whalin <greg@meetup.com> 
- * @version 1.3.1
+ * @version 1.3.2
  */
 package com.danga.MemCached;
 
