@@ -134,6 +134,20 @@ public class UnitTests {
 		mc.storeCounter( "counterTest123", 0 );
 		assert mc.keyExists( "counterTest123" );
 	}
+
+	public static void test15() {
+
+		Map stats = mc.statsItems();
+		assert stats != null;
+
+		stats = mc.statsSlabs();
+		assert stats != null;
+	}
+
+	public static void test16() {
+        assert !mc.set( "foo", null );
+	}
+
     
 	/**
 	 * This runs through some simple tests of the MemCacheClient.
@@ -172,5 +186,7 @@ public class UnitTests {
         test12();
 		test13();
 		test14();
+		test15();
+		test16();
 	}
 }
