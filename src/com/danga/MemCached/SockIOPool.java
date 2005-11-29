@@ -144,7 +144,7 @@ public class SockIOPool {
 	private long maxBusyTime          = 1000 * 60 * 5;		// max idle time for avail sockets
 	private long maintSleep           = 1000 * 5;			// maintenance thread sleep time
 	private int socketTO              = 1000 * 10;			// default timeout of socket reads
-	private int socketConnectTO       = 0;			        // default timeout of socket connections
+	private int socketConnectTO       = 1000 * 3;	        // default timeout of socket connections
 	private boolean failover          = true;				// default to failover in event of cache server dead
 	private boolean nagle             = true;				// enable/disable Nagle's algorithm
 	private int hashingAlg 		      = NATIVE_HASH;		// default to using the native hash as it is the fastest
@@ -1197,9 +1197,7 @@ public class SockIOPool {
 
 			this.pool = pool;
 
-			sock = ( connectTimeout > 0 )
-				? getSocket( host, port, connectTimeout )
-				: new Socket( host,port );
+			sock = getSocket( host, port, connectTimeout );
 
 			if (timeout >= 0)
 				sock.setSoTimeout( timeout );
@@ -1232,9 +1230,7 @@ public class SockIOPool {
 			String[] ip = host.split(":");
 
 			// get socket: default is to use non-blocking connect
-			sock = ( connectTimeout > 0 )
-				? getSocket( ip[ 0 ], Integer.parseInt( ip[ 1 ] ), connectTimeout )
-				: new Socket( ip[ 0 ], Integer.parseInt( ip[ 1 ] ) );
+			sock = getSocket( ip[ 0 ], Integer.parseInt( ip[ 1 ] ), connectTimeout );
 
 			if ( timeout >= 0 )
 				sock.setSoTimeout( timeout );
@@ -1261,40 +1257,9 @@ public class SockIOPool {
 		 * @throws IOException if errors connecting or if connection times out
 		 */
 		protected static Socket getSocket( String host, int port, int timeout ) throws IOException {
-
-			// Create a new thread which will attempt to connect to host:port, and start it running
-			ConnectThread thread = new ConnectThread( host, port );
-			thread.start();
-
-			Socket socket = null;
-			int timer     = 0;
-			int sleep     = 25;
-
-			while ( timer < timeout ) {
-
-				// if the thread has a connected socket
-				// then return it
-				if ( thread.isConnected() )
-					return thread.getSocket();
-
-				// if the thread had an error
-				// then throw a new IOException
-				if ( thread.isError() )
-					throw new IOException();
-
-				try {
-					// sleep for short time before polling again
-					Thread.sleep( sleep );
-				}
-				catch ( InterruptedException ie ) { }
-
-				// Increment timer
-				timer += sleep;
-			}
-
-			// made it through loop without getting connection
-			// the connection thread will timeout on its own at OS timeout
-			throw new IOException( "Could not connect for " + timeout + " milliseconds" );
+			Socket sock = new Socket();
+			sock.connect( new InetSocketAddress( host, port ), timeout );
+			return sock;
 		}
 
 		/** 
@@ -1527,85 +1492,6 @@ public class SockIOPool {
 		 */
 		public String toString() {
 			return (sock == null) ? "" : sock.toString();
-		}
-	}
-
-	/** 
-	 * Thread to attempt connection. 
-	 * This will be polled by the main thread. We run the risk of filling up w/
-	 * threads attempting connections if network is down.  However, the falling off
-	 * mech in the main code should limit this.
-	 * 
-	 * @author greg whalin <greg@meetup.com> 
-	 * @version 1.2
-	 */
-	static class ConnectThread extends Thread {
-
-		// logger
-		private static Logger log =
-			Logger.getLogger(ConnectThread.class.getName());
-
-		private Socket socket;
-		private String host;
-		private int port;
-		boolean error;
-
-		/** 
-		 * Constructor 
-		 * 
-		 * @param host 
-		 * @param port 
-		 */
-		public ConnectThread(String host, int port) {
-			this.host    = host;
-			this.port    = port;
-			this.socket  = null;
-			this.error   = false;
-			this.setDaemon(true);
-		}
-
-		/** 
-		 * start thread running.
-		 * This attempts to establish a connection. 
-		 */
-		public void run() {
-			try {
-				socket = new Socket(host, port);
-			}
-			catch (IOException ioe) {
-				error = true;
-			}
-
-			log.debug("socket creation thread leaving for host: " + host);
-		}
-
-		/** 
-		 * Is the new socket connected yet 
-		 * 
-		 * @return 
-		 */
-		public boolean isConnected() {
-			return (socket != null && socket.isConnected())
-				? true
-				: false;
-		}
-
-		/** 
-		 * Did we have an exception while connecting? 
-		 * 
-		 * @return 
-		 */
-		public boolean isError() {
-			return error;
-		}
-
-		/** 
-		 * Return the socket. 
-		 * 
-		 * @return 
-		 */
-		public Socket getSocket() {
-			return socket;
 		}
 	}
 }
