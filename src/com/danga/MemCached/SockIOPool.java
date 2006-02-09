@@ -122,7 +122,8 @@ public class SockIOPool {
 		Logger.getLogger( SockIOPool.class.getName() );
 
 	// store instances of pools
-	private static Map pools = new HashMap();
+	private static Map<String,SockIOPool> pools =
+		new HashMap<String,SockIOPool>();
 
 	// Constants
 	public static final int NATIVE_HASH = 0;					// native String.hashCode();
@@ -133,7 +134,7 @@ public class SockIOPool {
 	private MaintThread maintThread;
 	private boolean initialized        = false;
 	private int maxCreate              = 1;					// this will be initialized by pool when the pool is initialized
-	private Map createShift;
+	private Map<String,Integer> createShift;
 
 	// initial, min and max pool sizes
 	private int poolMultiplier        = 4;
@@ -152,17 +153,17 @@ public class SockIOPool {
 	// list of all servers
 	private String[] servers;
 	private Integer[] weights;
-	private List buckets;
+	private List<String> buckets;
 
 	// dead server map
-	private Map hostDead;
-	private Map hostDeadDur;
+	private Map<String,Date> hostDead;
+	private Map<String,Long> hostDeadDur;
 	
 	// map to hold all available sockets
-	private Map availPool;
+	private Map<String,Map<SockIO,Long>> availPool;
 
 	// map to hold busy sockets
-	private Map busyPool;
+	private Map<String,Map<SockIO,Long>> busyPool;
 	
 	// empty constructor
 	protected SockIOPool() { }
@@ -175,7 +176,7 @@ public class SockIOPool {
 	 */
 	public static synchronized SockIOPool getInstance( String poolName ) {
 		if ( pools.containsKey( poolName ) )
-			return (SockIOPool)pools.get( poolName );
+			return pools.get( poolName );
 
 		SockIOPool pool = new SockIOPool();
 		pools.put( poolName, pool );
@@ -449,12 +450,12 @@ public class SockIOPool {
 		}
 
 		// initialize empty maps
-		buckets     = new ArrayList();
-		availPool   = new Hashtable( servers.length * initConn );
-		busyPool    = new Hashtable( servers.length * initConn );
-		hostDeadDur = new Hashtable();
-		hostDead    = new Hashtable();
-		createShift = new Hashtable();
+		buckets     = new ArrayList<String>();
+		availPool   = new Hashtable<String,Map<SockIO,Long>>( servers.length * initConn );
+		busyPool    = new Hashtable<String,Map<SockIO,Long>>( servers.length * initConn );
+		hostDeadDur = new Hashtable<String,Long>();
+		hostDead    = new Hashtable<String,Date>();
+		createShift = new Hashtable<String,Integer>();
 		maxCreate   = (poolMultiplier > minConn) ? minConn : minConn / poolMultiplier;		// only create up to maxCreate connections at once
 
 		log.debug( "++++ initializing pool with following settings:" );
@@ -535,8 +536,8 @@ public class SockIOPool {
 		// we do not try to put back in if failover is off
 		if ( failover && hostDead.containsKey( host ) && hostDeadDur.containsKey( host ) ) {
 
-			Date store  = (Date)hostDead.get( host );
-			long expire = ((Long)hostDeadDur.get( host )).longValue();
+			Date store  = hostDead.get( host );
+			long expire = hostDeadDur.get( host ).longValue();
 
 			if ( (store.getTime() + expire) > System.currentTimeMillis() )
 				return null;
@@ -729,12 +730,13 @@ public class SockIOPool {
 		if ( availPool != null && !availPool.isEmpty() ) {
 
 			// take first connected socket
-			Map aSockets = (Map)availPool.get( host );
+			Map<SockIO,Long> aSockets =
+				availPool.get( host );
 
 			if ( aSockets != null && !aSockets.isEmpty() ) {
 
-				for ( Iterator i = aSockets.keySet().iterator(); i.hasNext(); ) {
-					SockIO socket = (SockIO)i.next();
+				for ( Iterator<SockIO> i = aSockets.keySet().iterator(); i.hasNext(); ) {
+					SockIO socket = i.next();
 
 					if ( socket.isConnected() ) {
 						log.debug( "++++ moving socket for host (" + host + ") to busy pool ... socket: " + socket );
@@ -762,7 +764,7 @@ public class SockIOPool {
 		
 		// if here, then we found no sockets in the pool
 		// try to create on a sliding scale up to maxCreate
-		Integer cShift = (Integer)createShift.get( host );
+		Integer cShift = createShift.get( host );
 		int shift = (cShift != null) ? cShift.intValue() : 0;
 
 		int create = 1 << shift;
@@ -807,17 +809,19 @@ public class SockIOPool {
 	 * @param host host this socket is connected to
 	 * @param socket socket to add
 	 */
-	protected synchronized void addSocketToPool( Map pool, String host, SockIO socket ) {
+	protected synchronized void addSocketToPool( Map<String,Map<SockIO,Long>> pool, String host, SockIO socket ) {
 
 		if ( pool.containsKey( host ) ) {
-			Map sockets = (Map)pool.get( host );
+			Map<SockIO,Long> sockets = pool.get( host );
+
 			if ( sockets != null ) {
 				sockets.put( socket, new Long( System.currentTimeMillis() ) );
 				return;
 			}
 		}
 
-		Map sockets = new Hashtable();
+		Map<SockIO,Long> sockets =
+			new Hashtable<SockIO,Long>();
 		sockets.put( socket, new Long( System.currentTimeMillis() ) );
 		pool.put( host, sockets );
 	}
@@ -831,12 +835,11 @@ public class SockIOPool {
 	 * @param host host pool
 	 * @param socket socket to remove
 	 */
-	protected synchronized void removeSocketFromPool( Map pool, String host, SockIO socket ) {
+	protected synchronized void removeSocketFromPool( Map<String,Map<SockIO,Long>> pool, String host, SockIO socket ) {
 		if ( pool.containsKey( host ) ) {
-			Map sockets = (Map)pool.get( host );
-			if ( sockets != null ) {
+			Map<SockIO,Long> sockets = pool.get( host );
+			if ( sockets != null )
 				sockets.remove( socket );
-			}
 		}
 	}
 
@@ -848,13 +851,14 @@ public class SockIOPool {
 	 * @param pool pool to clear
 	 * @param host host to clear
 	 */
-	protected synchronized void clearHostFromPool( Map pool, String host ) {
+	protected synchronized void clearHostFromPool( Map<String,Map<SockIO,Long>> pool, String host ) {
+
 		if ( pool.containsKey( host ) ) {
-			Map sockets = (Map)pool.get( host );
+			Map<SockIO,Long> sockets = pool.get( host );
 
 			if ( sockets != null && sockets.size() > 0 ) {
-				for ( Iterator i = sockets.keySet().iterator(); i.hasNext(); ) {
-					SockIO socket = (SockIO)i.next();
+				for ( Iterator<SockIO> i = sockets.keySet().iterator(); i.hasNext(); ) {
+					SockIO socket = i.next();
 					try {
 						socket.trueClose();
 					}
@@ -914,14 +918,14 @@ public class SockIOPool {
 	 * 
 	 * @param pool pool to close
 	 */
-	protected void closePool( Map pool ) {
+	protected void closePool( Map<String,Map<SockIO,Long>> pool ) {
 
-		 for ( Iterator i = pool.keySet().iterator(); i.hasNext(); ) {
-			 String host = (String)i.next();
-			 Map sockets = (Map)pool.get( host );
+		 for ( Iterator<String> i = pool.keySet().iterator(); i.hasNext(); ) {
+			 String host = i.next();
+			 Map<SockIO,Long> sockets = pool.get( host );
 
-			 for ( Iterator j = sockets.keySet().iterator(); j.hasNext(); ) {
-				 SockIO socket = (SockIO)j.next();
+			 for ( Iterator<SockIO> j = sockets.keySet().iterator(); j.hasNext(); ) {
+				 SockIO socket = j.next();
 
 				 try {
 					 socket.trueClose();
@@ -1003,9 +1007,9 @@ public class SockIOPool {
 
 		// go through avail sockets and create/destroy sockets
 		// as needed to maintain pool settings
-		for ( Iterator i = availPool.keySet().iterator(); i.hasNext(); ) {
-			String host  = (String)i.next();
-			Map sockets  = (Map)availPool.get(host);
+		for ( Iterator<String> i = availPool.keySet().iterator(); i.hasNext(); ) {
+			String host              = i.next();
+			Map<SockIO,Long> sockets = availPool.get(host);
 			log.debug( "++++ Size of avail pool for host (" + host + ") = " + sockets.size() );
 
 			// if pool is too small (n < minSpare)
@@ -1031,13 +1035,14 @@ public class SockIOPool {
 					: (diff) / poolMultiplier;
 
 				log.debug( "++++ need to remove " + needToClose + " spare sockets for pool for host: " + host );
-				for ( Iterator j = sockets.keySet().iterator(); j.hasNext(); ) {
+				for ( Iterator<SockIO> j = sockets.keySet().iterator(); j.hasNext(); ) {
+
 					if ( needToClose <= 0 )
 						break;
 
 					// remove stale entries
-					SockIO socket = (SockIO)j.next();
-					long expire   = ((Long)sockets.get( socket )).longValue();
+					SockIO socket = j.next();
+					long expire   = sockets.get( socket ).longValue();
 
 					// if past idle time
 					// then close socket
@@ -1065,16 +1070,18 @@ public class SockIOPool {
 
 		// go through busy sockets and destroy sockets
 		// as needed to maintain pool settings
-		for ( Iterator i = busyPool.keySet().iterator(); i.hasNext(); ) {
-			String host = (String)i.next();
-			Map sockets = (Map)busyPool.get( host );
+		for ( Iterator<String> i = busyPool.keySet().iterator(); i.hasNext(); ) {
+
+			String host              = i.next();
+			Map<SockIO,Long> sockets = busyPool.get( host );
+
 			log.debug( "++++ Size of busy pool for host (" + host + ")  = " + sockets.size() );
 
 			// loop through all connections and check to see if we have any hung connections
-			for ( Iterator j = sockets.keySet().iterator(); j.hasNext(); ) {
+			for ( Iterator<SockIO> j = sockets.keySet().iterator(); j.hasNext(); ) {
 				// remove stale entries
-				SockIO socket = (SockIO)j.next();
-				long hungTime = ((Long)sockets.get( socket )).longValue();
+				SockIO socket = j.next();
+				long hungTime = sockets.get( socket ).longValue();
 
 				// if past max busy time
 				// then close socket
@@ -1278,7 +1285,7 @@ public class SockIOPool {
 			log.debug( "++++ Closing socket for real: " + toString() );
 
 			boolean err = false;
-			StringBuffer errMsg = new StringBuffer();
+			StringBuilder errMsg = new StringBuilder();
 
 			if ( in == null || out == null || sock == null ) {
 				err = true;
@@ -1363,23 +1370,23 @@ public class SockIOPool {
 		 * @throws IOException if io problems during read
 		 */
 		String readLine() throws IOException {
-			if (sock == null || !sock.isConnected()) {
-				log.error("++++ attempting to read from closed socket");
-				throw new IOException("++++ attempting to read from closed socket");
+			if ( sock == null || !sock.isConnected() ) {
+				log.error( "++++ attempting to read from closed socket" );
+				throw new IOException( "++++ attempting to read from closed socket" );
 			}
 
 			byte[] b = new byte[1];
 			ByteArrayOutputStream bos = new ByteArrayOutputStream();
 			boolean eol = false;
 
-			while (in.read(b, 0, 1) != -1) {
+			while ( in.read( b, 0, 1 ) != -1 ) {
 
-				if (b[0] == 13) {
+				if ( b[0] == 13 ) {
 					eol = true;
-
-				} else {
-					if (eol) {
-						if (b[0] == 10)
+				}
+				else {
+					if ( eol ) {
+						if ( b[0] == 10 )
 							break;
 
 						eol = false;
@@ -1387,11 +1394,11 @@ public class SockIOPool {
 				}
 
 				// cast byte into char array
-				bos.write(b, 0, 1);
+				bos.write( b, 0, 1 );
 			}
 
-			if (bos == null || bos.size() <= 0) {
-				throw new IOException("++++ Stream appears to be dead, so closing it down");
+			if ( bos == null || bos.size() <= 0 ) {
+				throw new IOException( "++++ Stream appears to be dead, so closing it down" );
 			}
 
 			// else return the string
@@ -1404,24 +1411,24 @@ public class SockIOPool {
 		 * @throws IOException if io problems during read
 		 */
 		void clearEOL() throws IOException {
-			if (sock == null || !sock.isConnected()) {
-				log.error("++++ attempting to read from closed socket");
-				throw new IOException("++++ attempting to read from closed socket");
+			if ( sock == null || !sock.isConnected() ) {
+				log.error( "++++ attempting to read from closed socket" );
+				throw new IOException( "++++ attempting to read from closed socket" );
 			}
 
 			byte[] b = new byte[1];
 			boolean eol = false;
-			while (in.read(b, 0, 1) != -1) {
+			while ( in.read( b, 0, 1 ) != -1 ) {
 
 				// only stop when we see
 				// \r (13) followed by \n (10)
-				if (b[0] == 13) {
+				if ( b[0] == 13 ) {
 					eol = true;
 					continue;
 				}
 
-				if (eol) {
-					if (b[0] == 10)
+				if ( eol ) {
+					if ( b[0] == 10 )
 						break;
 
 					eol = false;
@@ -1435,15 +1442,15 @@ public class SockIOPool {
 		 * @param b byte array
 		 * @throws IOException if io problems during read
 		 */
-		void read(byte[] b) throws IOException {
-			if (sock == null || !sock.isConnected()) {
-				log.error("++++ attempting to read from closed socket");
-				throw new IOException("++++ attempting to read from closed socket");
+		void read( byte[] b ) throws IOException {
+			if ( sock == null || !sock.isConnected() ) {
+				log.error( "++++ attempting to read from closed socket" );
+				throw new IOException( "++++ attempting to read from closed socket" );
 			}
 
 			int count = 0;
-			while (count < b.length) {
-				int cnt = in.read(b, count, (b.length - count));
+			while ( count < b.length ) {
+				int cnt = in.read( b, count, (b.length - count) );
 				count += cnt;
 			}
 		}
@@ -1454,9 +1461,9 @@ public class SockIOPool {
 		 * @throws IOException if io problems during read
 		 */
 		void flush() throws IOException {
-			if (sock == null || !sock.isConnected()) {
-				log.error("++++ attempting to write to closed socket");
-				throw new IOException("++++ attempting to write to closed socket");
+			if ( sock == null || !sock.isConnected() ) {
+				log.error( "++++ attempting to write to closed socket" );
+				throw new IOException( "++++ attempting to write to closed socket" );
 			}
 			out.flush();
 		}
@@ -1467,12 +1474,12 @@ public class SockIOPool {
 		 * @param b byte array to write
 		 * @throws IOException if an io error happens
 		 */
-		void write(byte[] b) throws IOException {
-			if (sock == null || !sock.isConnected()) {
-				log.error("++++ attempting to write to closed socket");
-				throw new IOException("++++ attempting to write to closed socket");
+		void write( byte[] b ) throws IOException {
+			if ( sock == null || !sock.isConnected() ) {
+				log.error( "++++ attempting to write to closed socket" );
+				throw new IOException( "++++ attempting to write to closed socket" );
 			}
-			out.write(b);
+			out.write( b );
 		}
 
 		/** 

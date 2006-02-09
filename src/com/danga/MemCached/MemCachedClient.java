@@ -165,7 +165,7 @@ public class MemCachedClient {
 
 	// logger
 	private static Logger log =
-		Logger.getLogger(MemCachedClient.class.getName());
+		Logger.getLogger( MemCachedClient.class.getName() );
 
 	// return codes
 	private static final String VALUE        = "VALUE";			// start of value line from server
@@ -354,7 +354,7 @@ public class MemCachedClient {
 			return false;
 
 		// build command
-		StringBuffer command = new StringBuffer( "delete " ).append( key );
+		StringBuilder command = new StringBuilder( "delete " ).append( key );
 		if ( expiry != null )
 			command.append( " " + expiry.getTime() / 1000 );
 
@@ -586,7 +586,7 @@ public class MemCachedClient {
 			return false;
 		
 		if ( expiry == null )
-			expiry = new Date(0);
+			expiry = new Date( 0 );
 
 		// store flags
 		int flags = 0;
@@ -869,7 +869,7 @@ public class MemCachedClient {
 	 * @param hashCode if not null, then the int hashcode to use
 	 * @return new value or -1 if not exist
 	 */
-	private long incrdecr(String cmdname, String key, long inc, Integer hashCode) {
+	private long incrdecr( String cmdname, String key, long inc, Integer hashCode ) {
 
 		// get SockIO obj for given cache key
 		SockIOPool.SockIO sock = SockIOPool.getInstance( poolName ).getSock(key, hashCode);
@@ -879,44 +879,45 @@ public class MemCachedClient {
 		
 		try {
 			String cmd = cmdname + " " + key + " " + inc + "\r\n";
-			log.debug("++++ memcache incr/decr command: " + cmd);
+			log.debug( "++++ memcache incr/decr command: " + cmd );
 
-			sock.write(cmd.getBytes());
+			sock.write( cmd.getBytes() );
 			sock.flush();
 
 			// get result back
 			String line = sock.readLine();
 
-			if (line.matches("\\d+")) {
+			if ( line.matches( "\\d+" ) ) {
 
 				// return sock to pool and return result
 				sock.close();
-				return Long.parseLong(line);
-
-			} else if (NOTFOUND.equals(line)) {
-				log.info("++++ key not found to incr/decr for key: " + key);
-
-			} else {
-				log.error("error incr/decr key: " + key);
+				return Long.parseLong( line );
+			}
+			else if ( NOTFOUND.equals( line ) ) {
+				log.info( "++++ key not found to incr/decr for key: " + key );
+			}
+			else {
+				log.error( "error incr/decr key: " + key );
 			}
 		}
-		catch (IOException e) {
+		catch ( IOException e ) {
 			// exception thrown
-			log.error("++++ exception thrown while writing bytes to server on incr/decr");
-			log.error(e.getMessage(), e);
+			log.error( "++++ exception thrown while writing bytes to server on incr/decr" );
+			log.error( e.getMessage(), e );
 
 			try {
 				sock.trueClose();
 			}
-			catch(IOException ioe) {
-				log.error("++++ failed to close socket : " + sock.toString());
+			catch ( IOException ioe ) {
+				log.error( "++++ failed to close socket : " + sock.toString() );
 			}
 
 			sock = null;
 		}
 		
-		if (sock != null)
+		if ( sock != null )
 			sock.close();
+
 		return -1;
 	}
 
@@ -932,7 +933,7 @@ public class MemCachedClient {
 	 * @param key key where data is stored
 	 * @return the object that was previously stored, or null if it was not previously stored
 	 */
-	public Object get(String key) {
+	public Object get( String key ) {
 		return get( key, null, false );
 	}
 
@@ -975,7 +976,7 @@ public class MemCachedClient {
 		}
 
 		// get SockIO obj using cache key
-		SockIOPool.SockIO sock = SockIOPool.getInstance( poolName ).getSock(key, hashCode);
+		SockIOPool.SockIO sock = SockIOPool.getInstance( poolName ).getSock( key, hashCode );
 	    
 	    if ( sock == null )
 			return null;
@@ -989,33 +990,33 @@ public class MemCachedClient {
 
 			// build empty map
 			// and fill it from server
-			Map hm = new HashMap();
+			Map<String,Object> hm =
+				new HashMap<String,Object>();
 			loadItems( sock, hm, asString );
 
 			// debug code
-			log.debug("++++ memcache: got back " + hm.size() + " results");
+			log.debug( "++++ memcache: got back " + hm.size() + " results" );
 
 			// return the value for this key if we found it
 			// else return null 
 			sock.close();
-			return hm.get(key);
-
+			return hm.get( key );
 	    }
-		catch (IOException e) {
+		catch ( IOException e ) {
 			// exception thrown
-			log.error("++++ exception thrown while trying to get object from cache for key: " + key);
-			log.error(e.getMessage(), e);
+			log.error( "++++ exception thrown while trying to get object from cache for key: " + key );
+			log.error( e.getMessage(), e );
 
 			try {
 				sock.trueClose();
 			}
-			catch(IOException ioe) {
-				log.error("++++ failed to close socket : " + sock.toString());
+			catch ( IOException ioe ) {
+				log.error( "++++ failed to close socket : " + sock.toString() );
 			}
 			sock = null;
 	    }
 
-		if (sock != null)
+		if ( sock != null )
 			sock.close();
 
 		return null;
@@ -1061,14 +1062,15 @@ public class MemCachedClient {
 	 */
 	public Object[] getMultiArray( String[] keys, Integer[] hashCodes, boolean asString ) {
 
-		Map data = getMulti( keys, hashCodes, asString );
+		Map<String,Object> data = getMulti( keys, hashCodes, asString );
 
 		if ( data == null )
 			return null;
 
-		Object[] res = new Object[keys.length];
-		for (int i = 0; i < keys.length; i++) {
-			res[i] = data.get(keys[i]);
+		Object[] res = new Object[ keys.length ];
+
+		for ( int i = 0; i < keys.length; i++ ) {
+			res[i] = data.get( keys[i] );
 		}
 
 		return res;
@@ -1085,7 +1087,7 @@ public class MemCachedClient {
 	 *      keys that are not found are not entered into the hashmap, but attempting to
 	 *      retrieve them from the hashmap gives you null.
 	 */
-	public Map getMulti( String[] keys ) {
+	public Map<String,Object> getMulti( String[] keys ) {
 		return getMulti( keys, null, false );
 	}
     
@@ -1101,7 +1103,7 @@ public class MemCachedClient {
 	 *      keys that are not found are not entered into the hashmap, but attempting to
 	 *      retrieve them from the hashmap gives you null.
 	 */
-	public Map getMulti( String[] keys, Integer[] hashCodes ) {
+	public Map<String,Object> getMulti( String[] keys, Integer[] hashCodes ) {
 		return getMulti( keys, hashCodes, false );
 	}
 
@@ -1118,32 +1120,33 @@ public class MemCachedClient {
 	 *      keys that are not found are not entered into the hashmap, but attempting to
 	 *      retrieve them from the hashmap gives you null.
 	 */
-	public Map getMulti( String[] keys, Integer[] hashCodes, boolean asString ) {
+	public Map<String,Object> getMulti( String[] keys, Integer[] hashCodes, boolean asString ) {
 
 		if ( keys == null || keys.length == 0 ) {
 			log.error( "missing keys for getMulti()" );
 			return null;
 		}
 
-		Map sockKeys = new HashMap();
+		Map<String,StringBuilder> sockKeys =
+			new HashMap<String,StringBuilder>();
 
-		for (int i = 0; i < keys.length; ++i) {
+		for ( int i = 0; i < keys.length; ++i ) {
 
 			Integer hash = null;
 			if ( hashCodes != null && hashCodes.length > i )
-				hash = hashCodes[i];
+				hash = hashCodes[ i ];
 
 			// get SockIO obj from cache key
-			SockIOPool.SockIO sock = SockIOPool.getInstance( poolName ).getSock(keys[i], hash);
+			SockIOPool.SockIO sock = SockIOPool.getInstance( poolName ).getSock( keys[i], hash );
 
-			if (sock == null)
+			if ( sock == null )
 				continue;
 
 			// store in map and list if not already
 			if ( !sockKeys.containsKey( sock.getHost() ) )
-				sockKeys.put( sock.getHost(), new StringBuffer() );
+				sockKeys.put( sock.getHost(), new StringBuilder() );
 
-			((StringBuffer)sockKeys.get( sock.getHost() )).append( " " + keys[i] );
+			sockKeys.get( sock.getHost() ).append( " " + keys[i] );
 
 			// return to pool
 			sock.close();
@@ -1152,23 +1155,25 @@ public class MemCachedClient {
 		log.info( "multi get socket count : " + sockKeys.size() );
 
 		// now query memcache
-		Map ret = new HashMap();
-		for (Iterator i = sockKeys.keySet().iterator(); i.hasNext();) {
+		Map<String,Object> ret =
+			new HashMap<String,Object>( keys.length );
+
+		for ( Iterator<String> i = sockKeys.keySet().iterator(); i.hasNext(); ) {
 			// get SockIO obj from hostname
-			String host = (String) i.next();
+			String host = i.next();
 			SockIOPool.SockIO sock = SockIOPool.getInstance( poolName ).getConnection(host);
 
 			try {
-				String cmd = "get" + (StringBuffer) sockKeys.get( host ) + "\r\n";
+				String cmd = "get" + sockKeys.get( host ) + "\r\n";
 				log.debug( "++++ memcache getMulti cmd: " + cmd );
 				sock.write( cmd.getBytes() );
 				sock.flush();
 				loadItems( sock, ret, asString );
 			}
-			catch (IOException e) {
+			catch ( IOException e ) {
 				// exception thrown
-				log.error("++++ exception thrown while getting from cache on getMulti");
-				log.error(e.getMessage(), e);
+				log.error( "++++ exception thrown while getting from cache on getMulti" );
+				log.error( e.getMessage(), e );
 
 				// clear this sockIO obj from the list
 				// and from the map containing keys
@@ -1176,18 +1181,18 @@ public class MemCachedClient {
 				try {
 					sock.trueClose();
 				}
-				catch(IOException ioe) {
-					log.error("++++ failed to close socket : " + sock.toString());
+				catch ( IOException ioe ) {
+					log.error( "++++ failed to close socket : " + sock.toString() );
 				}
 				sock = null;
 			}
 
 			// Return socket to pool
-			if (sock != null)
+			if ( sock != null )
 				sock.close();
 		}
 		
-		log.debug("++++ memcache: got back " + ret.size() + " results");
+		log.debug( "++++ memcache: got back " + ret.size() + " results" );
 		return ret;
 	}
     
@@ -1202,61 +1207,61 @@ public class MemCachedClient {
 	 * @param asString if true, and if we are using NativehHandler, return string val
 	 * @throws IOException if io exception happens while reading from socket
 	 */
-	private void loadItems( SockIOPool.SockIO sock, Map hm, boolean asString ) throws IOException {
+	private void loadItems( SockIOPool.SockIO sock, Map<String,Object> hm, boolean asString ) throws IOException {
 
 		while ( true ) {
 			String line = sock.readLine();
 			log.debug( "++++ line: " + line );
 
-			if (line.startsWith(VALUE)) {
+			if ( line.startsWith( VALUE ) ) {
 				String[] info = line.split(" ");
 				String key    = info[1];
-				int flag      = Integer.parseInt(info[2]);
-				int length    = Integer.parseInt(info[3]);
+				int flag      = Integer.parseInt( info[2] );
+				int length    = Integer.parseInt( info[3] );
 
-				log.debug("++++ key: " + key);
-				log.debug("++++ flags: " + flag);
-				log.debug("++++ length: " + length);
+				log.debug( "++++ key: " + key );
+				log.debug( "++++ flags: " + flag );
+				log.debug( "++++ length: " + length );
 				
 				// read obj into buffer
 				byte[] buf = new byte[length];
-				sock.read(buf);
+				sock.read( buf );
 				sock.clearEOL();
 
 				// ready object
 				Object o;
 				
 				// check for compression
-				if ((flag & F_COMPRESSED) != 0) {
+				if ( (flag & F_COMPRESSED) != 0 ) {
 					try {
 						// read the input stream, and write to a byte array output stream since
 						// we have to read into a byte array, but we don't know how large it
 						// will need to be, and we don't want to resize it a bunch
-						GZIPInputStream gzi = new GZIPInputStream(new ByteArrayInputStream(buf));
-						ByteArrayOutputStream bos = new ByteArrayOutputStream(buf.length);
+						GZIPInputStream gzi = new GZIPInputStream( new ByteArrayInputStream( buf ) );
+						ByteArrayOutputStream bos = new ByteArrayOutputStream( buf.length );
 						
 						int count;
 						byte[] tmp = new byte[2048];
-						while ((count = gzi.read(tmp)) != -1) {
-							bos.write(tmp, 0, count);
+						while ( (count = gzi.read(tmp)) != -1 ) {
+							bos.write( tmp, 0, count );
 						}
 
 						// store uncompressed back to buffer
 						buf = bos.toByteArray();
 						gzi.close();
 					}
-					catch (IOException e) {
-						log.error("++++ IOException thrown while trying to uncompress input stream for key: " + key);
-						log.error(e.getMessage(), e);
-						throw new NestedIOException("++++ IOException thrown while trying to uncompress input stream for key: " + key, e);
+					catch ( IOException e ) {
+						log.error( "++++ IOException thrown while trying to uncompress input stream for key: " + key );
+						log.error( e.getMessage(), e );
+						throw new NestedIOException( "++++ IOException thrown while trying to uncompress input stream for key: " + key, e );
 					}
 				}
 
 				// we can only take out serialized objects
-				if ((flag & F_SERIALIZED) == 0) {
+				if ( (flag & F_SERIALIZED) == 0 ) {
 					if ( primitiveAsString || asString ) {
 						// pulling out string value
-						log.info("++++ retrieving object and stuffing into a string.");
+						log.info( "++++ retrieving object and stuffing into a string." );
 						o = new String( buf, defaultEncoding );
 					}
 					else {
@@ -1276,11 +1281,11 @@ public class MemCachedClient {
 						new ContextObjectInputStream( new ByteArrayInputStream( buf ), classLoader );
 					try {
 						o = ois.readObject();
-						log.info("++++ deserializing " + o.getClass());
+						log.info( "++++ deserializing " + o.getClass() );
 					}
-					catch (ClassNotFoundException e) {
-						log.error("++++ ClassNotFoundException thrown while trying to deserialize for key: " + key, e);
-						throw new NestedIOException("+++ failed while trying to deserialize for key: " + key, e);
+					catch ( ClassNotFoundException e ) {
+						log.error( "++++ ClassNotFoundException thrown while trying to deserialize for key: " + key, e );
+						throw new NestedIOException( "+++ failed while trying to deserialize for key: " + key, e );
 					}
 				}
 
@@ -1288,7 +1293,7 @@ public class MemCachedClient {
 				hm.put( key, o );
 			}
 			else if ( END.equals( line ) ) {
-				log.debug("++++ finished reading from cache server");
+				log.debug( "++++ finished reading from cache server" );
 				break;
 			}
 		}
@@ -1521,7 +1526,8 @@ public class MemCachedClient {
 		}
 
 		// array of stats Maps
-		Map statsMaps = new HashMap();
+		Map<String,Map> statsMaps =
+			new HashMap<String,Map>();
 
 		for ( int i = 0; i < servers.length; i++ ) {
 
@@ -1537,7 +1543,8 @@ public class MemCachedClient {
 				sock.flush();
 
 				// map to hold key value pairs
-				Map stats = new HashMap();
+				Map<String,String> stats =
+					new HashMap<String,String>();
 
 				// loop over results
 				while ( true ) {
