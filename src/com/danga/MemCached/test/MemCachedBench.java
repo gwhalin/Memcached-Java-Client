@@ -41,23 +41,24 @@ public class MemCachedBench {
 		int runs = Integer.parseInt(args[0]);
 		int start = Integer.parseInt(args[1]);
 
-		String[] serverlist = { "cache0.int.meetup.com:1624" };
+		String[] serverlist = { "192.168.1.20:1624" };
 
 		// initialize the pool for memcache servers
-		SockIOPool pool = SockIOPool.getInstance();
+		SockIOPool pool = SockIOPool.getInstance( "test" );
 		pool.setServers(serverlist);
 
-		pool.setInitConn(100);
-		pool.setMinConn(100);
-		pool.setMaxConn(500);
-		pool.setMaintSleep(30);
+		pool.setInitConn( 100 );
+		pool.setMinConn( 100 );
+		pool.setMaxConn( 500 );
+		pool.setMaintSleep( 30 );
 
-		pool.setNagle(false);
+		pool.setNagle( false );
 		pool.initialize();
 
 		// get client instance
-		MemCachedClient mc = new MemCachedClient();
-		mc.setCompressEnable(false);
+		//MemCachedClient mc = MemCachedClient.getInstance( "test" );
+		MemCachedClient mc = MemCachedClient.getInstance( "test", null, true, 10, 50000 );
+		mc.setCompressEnable( false );
 
 		String keyBase = "testKey";
 		String object = "This is a test of an object blah blah es, serialization does not seem to slow things down so much.  The gzip compression is horrible horrible performance, so we only use it for very large objects.  I have not done any heavy benchmarking recently";
@@ -69,7 +70,7 @@ public class MemCachedBench {
 		long end = System.currentTimeMillis();
 		long time = end - begin;
 
-		System.out.println(runs + " gets: " + time + "ms");
+		System.out.println(runs + " sets: " + time + "ms");
 
 		begin = System.currentTimeMillis();
 		for (int i = start; i < start+runs; i++) {
@@ -77,8 +78,18 @@ public class MemCachedBench {
 		}
 		end = System.currentTimeMillis();
 		time = end - begin;
-
 		System.out.println(runs + " gets: " + time + "ms");
-		SockIOPool.getInstance().shutDown();
+
+		begin = System.currentTimeMillis();
+		for (int i = start; i < start+runs; i++) {
+			mc.delete( keyBase + i );
+		}
+		end = System.currentTimeMillis();
+		time = end - begin;
+		System.out.println(runs + " deletes: " + time + "ms");
+
+		// start shutdown
+		mc.shutDown();
+		SockIOPool.getInstance( "test" ).shutDown();
 	}
 }

@@ -39,7 +39,6 @@ import java.util.*;
 public class UnitTests {
 
     public static MemCachedClient mc  = null;
-    public static MemCachedClient mc2 = null;
 
     public static void test1() {
         mc.set( "foo", Boolean.TRUE );
@@ -161,7 +160,7 @@ public class UnitTests {
 	 */
 	public static void main(String[] args) {
 
-		String[] serverlist = { "192.168.1.1:1624"  };
+		String[] serverlist = { "192.168.1.20:1624"  };
 
 		// initialize the pool for memcache servers
 		SockIOPool pool = SockIOPool.getInstance( "test" );
@@ -175,8 +174,7 @@ public class UnitTests {
 		pool.setSocketTO( 3000 );
 		pool.initialize();
 
-        mc = new MemCachedClient();
-		mc.setPoolName( "test" );
+        mc = MemCachedClient.getInstance( "test", null, true, 5, 5000 );
         mc.setCompressEnable( false );
 
         test1();
