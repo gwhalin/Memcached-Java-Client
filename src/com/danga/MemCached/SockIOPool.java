@@ -862,7 +862,6 @@ public class SockIOPool {
 			Map<SockIO,Long> sockets = pool.get( host );
 			if ( sockets != null )
 				sockets.remove( socket );
-			}
 		}
 	}
 
