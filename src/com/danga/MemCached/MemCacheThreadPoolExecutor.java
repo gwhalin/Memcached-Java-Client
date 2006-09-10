@@ -11,8 +11,13 @@ package com.danga.MemCached;
 
 import java.util.concurrent.*;
 import java.util.*;
+import org.apache.log4j.Logger;
 
 public class MemCacheThreadPoolExecutor extends ThreadPoolExecutor {
+
+	// logger
+	private static Logger log =
+		Logger.getLogger( MemCacheThreadPoolExecutor.class.getName() );
 
 	private String poolName;
 	private String host;
@@ -61,34 +66,40 @@ public class MemCacheThreadPoolExecutor extends ThreadPoolExecutor {
 	}
 
 	protected void beforeExecute( Thread t, Runnable r ) {
-		super.beforeExecute( t, r );
 
 		// make sure we have a valid connected socket
 		// if not, then get a new connection
-		if ( socketOnDemand
-				|| socket == null
-				|| !socket.isConnected() )
-			socket = SockIOPool.getInstance( poolName ).getConnection( host );
+		if ( socketOnDemand || this.socket == null || !this.socket.isConnected() ) {
+			((CacheTask)r).setSocket( SockIOPool.getInstance( poolName ).getConnection( host ) );
+		}
+		else {
+			((CacheTask)r).setSocket( this.socket );
+		}
 
-		((CacheTask)r).setSocket( socket );
-
+		super.beforeExecute( t, r );
 	}
 
 	protected void afterExecute( Runnable r, Throwable t ) {
 		super.afterExecute( r, t );
 
-		socket = ((CacheTask)r).getSocket();
 		if ( socketOnDemand ) {
 			// return to pool
-			if ( socket != null )
-				socket.close();
+			if ( ((CacheTask)r).getSocket() != null )
+				((CacheTask)r).getSocket().close();
 		}
 		else {
 			// freshen the socket so we have it around
-			if ( socket != null )
-				socket.touch();
+			if ( this.socket != null )
+				this.socket.touch();
 			else
 				this.socket = null;
 		}
+	}
+
+	protected void terminated() {
+		if ( this.socket != null && this.socket.isConnected() )
+			this.socket.close();
+
+		super.terminated();
 	}
 }

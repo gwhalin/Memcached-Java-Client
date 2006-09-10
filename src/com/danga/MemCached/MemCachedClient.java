@@ -33,7 +33,6 @@ package com.danga.MemCached;
 import java.util.*;
 import java.util.zip.*;
 import java.io.*;
-import java.util.concurrent.*;
 
 import org.apache.log4j.Logger;
 
@@ -192,18 +191,11 @@ public class MemCachedClient {
 	private static final int F_COMPRESSED = 2;
 	private static final int F_SERIALIZED = 8;
 	
-	// hold instance of this client
-	private static Map<String,MemCachedClient> instances =
-		new HashMap<String,MemCachedClient>();
-	
 	// flags
-	private boolean nonBlockingWrites;
 	private boolean primitiveAsString;
 	private boolean compressEnable;
 	private long compressThreshold;
 	private String defaultEncoding;
-	private int drainThreads = 1;
-	private int maxQueueSize = 1000;
 
 	// which pool to use
 	private String poolName;
@@ -211,14 +203,10 @@ public class MemCachedClient {
 	// optional passed in classloader
 	private ClassLoader classLoader;
 
-	// optional: structure to hold thread pools for nonblocking operation
-	private Map<String,MemCacheThreadPoolExecutor> threadPools =
-		new HashMap<String,MemCacheThreadPoolExecutor>();
-
 	/**
 	 * Creates a new instance of MemCachedClient.
 	 */
-	protected MemCachedClient() {
+	public MemCachedClient() {
 		init();
 	}
 
@@ -228,122 +216,32 @@ public class MemCachedClient {
 	 * 
 	 * @param classLoader ClassLoader object.
 	 */
-	protected MemCachedClient( ClassLoader classLoader ) {
+	public MemCachedClient( ClassLoader classLoader ) {
 		this.classLoader = classLoader;
 		init();
 	}
 
 	/** 
-	 * Default factory defaults to the default pool and classloader.
-	 * Also defaults to blocking write operations.
-	 * 
-	 * @return 
+	 * Initializes client object to defaults.
+	 *
+	 * This enables compression and sets compression threshhold to 15 KB.
 	 */
-	public static synchronized MemCachedClient getInstance() {
-		return getInstance( "default", null, false, 0, 0 );
-	}
-
-	public static synchronized MemCachedClient getInstance( String poolName ) {
-		return getInstance( poolName, null, false, 0, 0 );
-	}
-
-	/** 
-	 * Factory to get a client instance. 
-	 * 
-	 * @param poolName 
-	 * @param classLoader 
-	 * @param nonBlocking 
-	 * @return 
-	 */
-	public static synchronized MemCachedClient getInstance( String poolName, ClassLoader classLoader, boolean nonBlocking, int drainThreads, int maxQueueSize ) {
-
-		// ensure only one of each config exists
-		String key = ( ( poolName == null ) ? "" : poolName ) + ":"
-			+ ( ( classLoader == null ) ? "" : classLoader.getClass().getName() )
-			+ ":" + nonBlocking;
-
-		if ( instances.containsKey( key ) )
-			return instances.get( key );
-
-		MemCachedClient instance = ( classLoader != null )
-			? new MemCachedClient( classLoader )
-			: new MemCachedClient();
-
-		if ( poolName != null && !"".equals( poolName ) )
-			instance.setPoolName( poolName );
-
-		instance.setNonBlockingWrites( nonBlocking );
-		instance.setDrainThreads( drainThreads );
-		instance.setMaxQueueSize( maxQueueSize );
-
-		// populate our thread pools if wanted
-		if ( nonBlocking && drainThreads > 0 )
-			instance.populateThreadPool();
-
-		// save in map
-		instances.put( key, instance );
-
-		return instance;
-	}
-
 	private void init() {
-		this.nonBlockingWrites   = false;
 		this.primitiveAsString   = false;
 		this.compressEnable      = true;
 		this.compressThreshold   = COMPRESS_THRESH;
 		this.defaultEncoding     = "UTF-8";
+		this.poolName            = "default";
 	}
 
-	private void populateThreadPool() {
-
-		SockIOPool pool = SockIOPool.getInstance( poolName );
-		if ( pool.isInitialized() ) {
-			String[] servers = pool.getServers();
-
-			for ( String server : servers ) {
-				BlockingQueue<Runnable> queue = ( maxQueueSize > 0 )
-					? new LinkedBlockingQueue<Runnable>( maxQueueSize )
-					: new LinkedBlockingQueue<Runnable>();
-
-				MemCacheThreadPoolExecutor jobQueue =
-					new MemCacheThreadPoolExecutor(
-							drainThreads,
-							drainThreads,
-							Long.MAX_VALUE,
-							TimeUnit.NANOSECONDS,
-							queue,
-							poolName,
-							server );
-
-				jobQueue.prestartAllCoreThreads();
-
-				// store in map keyed off server name
-				threadPools.put( server, jobQueue );
-			}
-		}
-		else {
-			// no pool setup, so can't build thread pool
-			log.error( "!!!!! WARNING:  No valid connection pool available so not running in non-blocking mode !!!!!" );
-
-			// fall back to blocking operation
-			this.nonBlockingWrites   = false;
-		}
-	}
-
-	private void setPoolName( String poolName ) {
+	/** 
+	 * Sets the pool that this instance of the client will use.
+	 * The pool must already be initialized or none of this will work.
+	 * 
+	 * @param poolName name of the pool to use
+	 */
+	public void setPoolName( String poolName ) {
 		this.poolName = poolName;
-	}
-
-	private void setNonBlockingWrites( boolean nonBlockingWrites ) {
-		this.nonBlockingWrites = nonBlockingWrites;
-	}
-
-	private void setDrainThreads( int drainThreads ) {
-		this.drainThreads = drainThreads;
-	}
-
-	private void setMaxQueueSize( int maxQueueSize ) {
-		this.maxQueueSize = maxQueueSize;
 	}
 
 	/** 
@@ -448,49 +346,6 @@ public class MemCachedClient {
 			return false;
 		}
 
-		// build command
-		StringBuilder command = new StringBuilder( "delete " ).append( key );
-		if ( expiry != null )
-			command.append( " " + expiry.getTime() / 1000 );
-
-		command.append( "\r\n" );
-
-		// if we are using non-blocking writes, submit here
-		if ( this.nonBlockingWrites ) {
-
-			String host = SockIOPool.getInstance( poolName ).getHost( key, hashCode );
-
-			if ( threadPools.containsKey( host ) ) {
-				MemCacheThreadPoolExecutor poolExecuter =
-					threadPools.get( host );
-
-				if ( poolExecuter != null ) {
-					boolean retry = true;
-
-					CacheTask task = new CacheTask( command.toString(), null );
-					while ( retry ) {
-						try {
-							poolExecuter.execute( task );
-							retry = false;
-						}
-						catch ( RejectedExecutionException re ) {
-							log.error( "queue is full so sleeping and trying again" );
-							try { Thread.sleep( 100 ); } catch ( Exception ex ) { }
-						}
-					}
-
-					// here, the job is accepted for processing
-					return true;
-				}
-				else {
-					log.error( "!!!!! threadpool is null !!!!!" );
-				}
-			}
-			else {
-				log.error( "!!!! missing a threadpool for this server !!!!!" );
-			}
-		}
-		
 		// get SockIO obj from hash or from key
 		SockIOPool.SockIO sock = SockIOPool.getInstance( poolName ).getSock( key, hashCode );
 
@@ -498,7 +353,13 @@ public class MemCachedClient {
 		if ( sock == null )
 			return false;
 
-		// else submit as usual
+		// build command
+		StringBuffer command = new StringBuffer( "delete " ).append( key );
+		if ( expiry != null )
+			command.append( " " + expiry.getTime() / 1000 );
+
+		command.append( "\r\n" );
+		
 		try {
 			sock.write( command.toString().getBytes() );
 			sock.flush();
@@ -718,8 +579,14 @@ public class MemCachedClient {
 			return false;
 		}
 
+		// get SockIO obj
+		SockIOPool.SockIO sock = SockIOPool.getInstance( poolName ).getSock( key, hashCode );
+		
+		if ( sock == null )
+			return false;
+		
 		if ( expiry == null )
-			expiry = new Date( 0 );
+			expiry = new Date(0);
 
 		// store flags
 		int flags = 0;
@@ -738,6 +605,8 @@ public class MemCachedClient {
 				}
 				catch ( UnsupportedEncodingException ue ) {
 					log.error( "invalid encoding type used: " + defaultEncoding );
+					sock.close();
+					sock = null;
 					return false;
 				}
 			}
@@ -748,6 +617,9 @@ public class MemCachedClient {
 				}
 				catch ( Exception e ) {
 					log.error( "Failed to native handle obj", e );
+
+					sock.close();
+					sock = null;
 					return false;
 				}
 			}
@@ -766,6 +638,10 @@ public class MemCachedClient {
 				// we bail
 				log.error( "failed to serialize obj", e );
 				log.error( value.toString() );
+
+				// return socket to pool and bail
+				sock.close();
+				sock = null;
 				return false;
 			}
 		}
@@ -794,55 +670,10 @@ public class MemCachedClient {
 			}
 		}
 
-		// build command
-		String cmd = cmdname + " " + key + " " + flags + " "
-			+ expiry.getTime() / 1000 + " " + val.length + "\r\n";
-
-		// see if we need to submit to thread pool
-		if ( this.nonBlockingWrites ) {
-			
-			// get hostname
-			String host = SockIOPool.getInstance( poolName ).getHost( key, hashCode );
-
-			if ( threadPools.containsKey( host ) ) {
-				MemCacheThreadPoolExecutor poolExecuter =
-					threadPools.get( host );
-
-				if ( poolExecuter != null ) {
-					boolean retry = true;
-
-					CacheTask task = new CacheTask( cmd, val );
-					while ( retry ) {
-						try {
-							poolExecuter.execute( task );
-							retry = false;
-						}
-						catch ( RejectedExecutionException re ) {
-							log.error( "queue is full so sleeping and trying again" );
-							try { Thread.sleep( 100 ); } catch ( Exception ex ) { }
-						}
-					}
-
-					// here, the job is accepted for processing
-					return true;
-				}
-				else {
-					log.error( "!!!!! threadpool is null !!!!!" );
-				}
-			}
-			else {
-				log.error( "!!!! missing a threadpool for this server !!!!!" );
-			}
-		}
-
-		// get SockIO obj
-		SockIOPool.SockIO sock = SockIOPool.getInstance( poolName ).getSock( key, hashCode );
-		
-		if ( sock == null )
-			return false;
-		
 		// now write the data to the cache server
 		try {
+			String cmd = cmdname + " " + key + " " + flags + " "
+				+ expiry.getTime() / 1000 + " " + val.length + "\r\n";
 			sock.write( cmd.getBytes() );
 			sock.write( val );
 			sock.write( "\r\n".getBytes() );
@@ -868,7 +699,7 @@ public class MemCachedClient {
 		}
 		catch ( IOException e ) {
 			// exception thrown
-			log.error( "++++ exception thrown while writing bytes to server on delete" );
+			log.error( "++++ exception thrown while writing bytes to server on set" );
 			log.error( e.getMessage(), e );
 
 			try {
@@ -951,7 +782,7 @@ public class MemCachedClient {
 		}
 		catch ( Exception ex ) {
 			// not found or error getting out
-			log.error( "counter not found at key: " + key );
+			log.error( String.format( "Failed to parse Long value for key: %s", key ) );
 		}
 		
 		return counter;
@@ -1060,8 +891,13 @@ public class MemCachedClient {
 
 				// return sock to pool and return result
 				sock.close();
-				return Long.parseLong( line );
-			}
+				try {
+					return Long.parseLong( line );
+				}
+				catch ( Exception ex ) {
+					log.error( String.format( "Failed to parse Long value for key: %s", key ) );
+				}
+ 			}
 			else if ( NOTFOUND.equals( line ) ) {
 				log.info( "++++ key not found to incr/decr for key: " + key );
 			}
@@ -1237,7 +1073,6 @@ public class MemCachedClient {
 			return null;
 
 		Object[] res = new Object[ keys.length ];
-
 		for ( int i = 0; i < keys.length; i++ ) {
 			res[i] = data.get( keys[i] );
 		}
@@ -1330,7 +1165,7 @@ public class MemCachedClient {
 		for ( Iterator<String> i = sockKeys.keySet().iterator(); i.hasNext(); ) {
 			// get SockIO obj from hostname
 			String host = i.next();
-			SockIOPool.SockIO sock = SockIOPool.getInstance( poolName ).getConnection(host);
+			SockIOPool.SockIO sock = SockIOPool.getInstance( poolName ).getConnection( host );
 
 			try {
 				String cmd = "get" + sockKeys.get( host ) + "\r\n";
@@ -1536,7 +1371,7 @@ public class MemCachedClient {
 			}
 			catch ( IOException e ) {
 				// exception thrown
-				log.error( "++++ exception thrown while writing bytes to server on delete" );
+				log.error( "++++ exception thrown while writing bytes to server on flushAll" );
 				log.error( e.getMessage(), e );
 
 				try {
@@ -1712,8 +1547,7 @@ public class MemCachedClient {
 				sock.flush();
 
 				// map to hold key value pairs
-				Map<String,String> stats =
-					new HashMap<String,String>();
+				Map stats = new HashMap();
 
 				// loop over results
 				while ( true ) {
@@ -1741,7 +1575,7 @@ public class MemCachedClient {
 			}
 			catch ( IOException e ) {
 				// exception thrown
-				log.error( "++++ exception thrown while writing bytes to server on delete" );
+				log.error( "++++ exception thrown while writing bytes to server on stats" );
 				log.error( e.getMessage(), e );
 
 				try {
@@ -1759,16 +1593,5 @@ public class MemCachedClient {
 		}
 
 		return statsMaps;
-	}
-
-	/** 
-	 * 
-	 */
-	public void shutDown() {
-
-		if ( threadPools != null && !threadPools.isEmpty() ) {
-			for ( String host : threadPools.keySet() )
-				threadPools.get( host ).shutdownNow();
-		}
 	}
 }

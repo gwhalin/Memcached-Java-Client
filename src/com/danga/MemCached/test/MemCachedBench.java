@@ -33,10 +33,13 @@ package com.danga.MemCached.test;
 
 import com.danga.MemCached.*;
 import java.util.*;
+import org.apache.log4j.*;
 
 public class MemCachedBench {
 
 	public static void main(String[] args) {
+
+		BasicConfigurator.configure();
 
 		int runs = Integer.parseInt(args[0]);
 		int start = Integer.parseInt(args[1]);
@@ -56,8 +59,7 @@ public class MemCachedBench {
 		pool.initialize();
 
 		// get client instance
-		//MemCachedClient mc = MemCachedClient.getInstance( "test" );
-		MemCachedClient mc = MemCachedClient.getInstance( "test", null, true, 10, 50000 );
+		MemCachedClient mc = new MemCachedClient();
 		mc.setCompressEnable( false );
 
 		String keyBase = "testKey";
@@ -69,8 +71,7 @@ public class MemCachedBench {
 		}
 		long end = System.currentTimeMillis();
 		long time = end - begin;
-
-		System.out.println(runs + " sets: " + time + "ms");
+		System.out.println(runs + " gets: " + time + "ms");
 
 		begin = System.currentTimeMillis();
 		for (int i = start; i < start+runs; i++) {
@@ -78,7 +79,7 @@ public class MemCachedBench {
 		}
 		end = System.currentTimeMillis();
 		time = end - begin;
-		System.out.println(runs + " gets: " + time + "ms");
+		System.out.println(runs + " deletes: " + time + "ms");
 
 		begin = System.currentTimeMillis();
 		for (int i = start; i < start+runs; i++) {
@@ -86,10 +87,8 @@ public class MemCachedBench {
 		}
 		end = System.currentTimeMillis();
 		time = end - begin;
-		System.out.println(runs + " deletes: " + time + "ms");
+		System.out.println(runs + " gets: " + time + "ms");
 
-		// start shutdown
-		mc.shutDown();
-		SockIOPool.getInstance( "test" ).shutDown();
+		SockIOPool.getInstance().shutDown();
 	}
 }

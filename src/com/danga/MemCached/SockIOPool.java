@@ -585,6 +585,28 @@ public class SockIOPool {
 		return socket;
 	}
 
+ 	/** 
+	 * @param key 
+	 * @return 
+	 */
+	public String getHost( String key ) {
+		return getHost( key, null );
+	}
+
+	/** 
+	 * Gets the host that a particular key / hashcode resides on. 
+	 * 
+	 * @param key 
+	 * @param hashcode 
+	 * @return 
+	 */
+	public String getHost( String key, Integer hashcode ) {
+		SockIO socket = getSock( key, hashcode );
+		String host = socket.getHost();
+		socket.close();
+		return host;
+	}
+
 	/** 
 	 * Returns appropriate SockIO object given
 	 * string cache key.
@@ -706,30 +728,6 @@ public class SockIOPool {
 	}
 
 	/** 
-	 * 
-	 * 
-	 * @param key 
-	 * @return 
-	 */
-	public String getHost( String key ) {
-		return getHost( key, null );
-	}
-
-	/** 
-	 * Gets the host that a particular key / hashcode resides on. 
-	 * 
-	 * @param key 
-	 * @param hashcode 
-	 * @return 
-	 */
-	public String getHost( String key, Integer hashcode ) {
-		SockIO socket = getSock( key, hashcode );
-		String host = socket.getHost();
-		socket.close();
-		return host;
-	}
-
-	/** 
 	 * Returns a SockIO object from the pool for the passed in host.
 	 *
 	 * Meant to be called from a more intelligent method<br/>
@@ -754,8 +752,7 @@ public class SockIOPool {
 		if ( availPool != null && !availPool.isEmpty() ) {
 
 			// take first connected socket
-			Map<SockIO,Long> aSockets =
-				availPool.get( host );
+			Map<SockIO,Long> aSockets = availPool.get( host );
 
 			if ( aSockets != null && !aSockets.isEmpty() ) {
 
@@ -846,6 +843,7 @@ public class SockIOPool {
 
 		Map<SockIO,Long> sockets =
 			new Hashtable<SockIO,Long>();
+
 		sockets.put( socket, new Long( System.currentTimeMillis() ) );
 		pool.put( host, sockets );
 	}
@@ -864,6 +862,7 @@ public class SockIOPool {
 			Map<SockIO,Long> sockets = pool.get( host );
 			if ( sockets != null )
 				sockets.remove( socket );
+			}
 		}
 	}
 
@@ -898,29 +897,6 @@ public class SockIOPool {
 	}
 
 	/** 
-	 * Freshens a busy socket if it is in the busy pool.
-	 * 
-	 * @param socket SockIO object to freshen
-	 */
-	public void touchInUseSockIO( SockIO socket ) {
-
-		String host = socket.getHost();
-		log.debug( "++++ freshening busy socket: " + socket.toString() + " for host: " + host );
-
-		if ( busyPool.containsKey( host ) ) {
-			Map<SockIO,Long> sockets = busyPool.get( host );
-
-			if ( sockets != null )
-				sockets.put( socket, new Long( System.currentTimeMillis() ) );
-			else
-				log.error( "++++ failed to freshen socket: " + socket.toString() + " for host: " + host + " as not found in busy pool" );
-		}
-		else {
-			log.error( "++++ failed to freshen socket: " + socket.toString() + " for host: " + host + " as not found in busy pool" );
-		}
-	}
-
-	/** 
 	 * Checks a SockIO object in with the pool.
 	 *
 	 * This will remove SocketIO from busy pool, and optionally<br/>
@@ -942,6 +918,29 @@ public class SockIOPool {
 		if ( addToAvail && socket.isConnected() ) {
 			log.debug( "++++ returning socket (" + socket.toString() + " to avail pool for host: " + host );
 			addSocketToPool( availPool, host, socket );
+		}
+	}
+
+ 	/** 
+	 * Freshens a busy socket if it is in the busy pool.
+	 * 
+	 * @param socket SockIO object to freshen
+	 */
+	public void touchInUseSockIO( SockIO socket ) {
+
+		String host = socket.getHost();
+		log.debug( "++++ freshening busy socket: " + socket.toString() + " for host: " + host );
+
+		if ( busyPool.containsKey( host ) ) {
+			Map<SockIO,Long> sockets = busyPool.get( host );
+
+			if ( sockets != null )
+				sockets.put( socket, new Long( System.currentTimeMillis() ) );
+			else
+				log.error( "++++ failed to freshen socket: " + socket.toString() + " for host: " + host + " as not found in busy pool" );
+		}
+		else {
+			log.error( "++++ failed to freshen socket: " + socket.toString() + " for host: " + host + " as not found in busy pool" );
 		}
 	}
 
@@ -1399,14 +1398,14 @@ public class SockIOPool {
 			log.debug("++++ marking socket (" + this.toString() + ") as closed and available to return to avail pool");
 			pool.checkIn( this );
 		}
-
+		
 		/** 
 		 * Freshens this socket in the busy pool. 
 		 */
 		void touch() {
 			pool.touchInUseSockIO( this );
 		}
-		
+
 		/** 
 		 * checks if the connection is open 
 		 * 

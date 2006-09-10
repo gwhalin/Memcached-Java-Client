@@ -30,6 +30,10 @@ public class CacheTask implements Runnable {
 		this.val  = val;
 	}
 
+	public String getCmd() {
+		return this.cmd;
+	}
+
 	public void setSocket( SockIOPool.SockIO socket ) {
 		this.socket = socket;
 	}
