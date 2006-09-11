@@ -1,3 +1,8 @@
+10 Sep 2006 (whalin)
+	-- some changes to lessen lock contention
+	-- fixed a long lasting bug w/ rehashing for server failover
+	-- add a failback flag to allow failover but no failback
+
 08 Feb 2006 (whalin)
 	-- switched to using java 5 syntax (generics,stringbuilder)
 
