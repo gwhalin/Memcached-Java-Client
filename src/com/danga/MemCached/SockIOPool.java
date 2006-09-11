@@ -90,7 +90,6 @@ import org.apache.log4j.Logger;
  *		pool.setMaxBusyTime( maxBusyTime );
  *		pool.setMaintSleep( maintThreadSleep );
  *		pool.setSocketTO( socketTimeOut );
- *		pool.setSocketConnectTO( socketConnectTO );	
  *		pool.setNagle( nagleAlg );	
  *		pool.setHashingAlg( SockIOPool.NEW_COMPAT_HASH );	
  *		pool.initialize();	
@@ -147,6 +146,7 @@ public class SockIOPool {
 	private int socketTO              = 1000 * 10;			// default timeout of socket reads
 	private int socketConnectTO       = 1000 * 3;	        // default timeout of socket connections
 	private boolean failover          = true;				// default to failover in event of cache server dead
+	private boolean failback          = true;				// only used if failover is also set ... controls putting a dead server back into rotation
 	private boolean nagle             = true;				// enable/disable Nagle's algorithm
 	private int hashingAlg 		      = NATIVE_HASH;		// default to using the native hash as it is the fastest
 
@@ -190,7 +190,7 @@ public class SockIOPool {
 	 * 
 	 * @return instance of SockIOPool
 	 */
-	public static synchronized SockIOPool getInstance() {
+	public static SockIOPool getInstance() {
 		return getInstance( "default" );
 	}
 
@@ -326,22 +326,6 @@ public class SockIOPool {
 	public int getSocketTO()  { return this.socketTO; }
 
 	/** 
-	 * Sets the socket timeout for connects.
-	 * 
-	 * Defaults to use blocking connect.
-	 * 
-	 * @param socketConnectTO timeout in ms
-	 */
-	public void setSocketConnectTO( int socketConnectTO ) { this.socketConnectTO = socketConnectTO; }
-	
-	/** 
-	 * Returns the socket timeout for connects.
-	 * 
-	 * @return timeout in ms
-	 */
-	public int getSocketConnectTO()  { return this.socketConnectTO; }
-
-	/** 
 	 * Sets the failover flag for the pool.
 	 *
 	 * If this flag is set to true, and a socket fails to connect,<br/>
@@ -359,6 +343,24 @@ public class SockIOPool {
 	 * @return true/false
 	 */
 	public boolean getFailover() { return this.failover; }
+
+	/** 
+	 * Sets the failback flag for the pool.
+	 *
+	 * If this is true and we have marked a host as dead,
+	 * will try to bring it back.  If it is false, we will never
+	 * try to resurrect a dead host.
+	 *
+	 * @param failback true/false
+	 */
+	public void setFailback( boolean failback ) { this.failback = failback; }
+	
+	/** 
+	 * Returns current state of failover flag.
+	 * 
+	 * @return true/false
+	 */
+	public boolean getFailback() { return this.failback; }
 
 	/** 
 	 * Sets the Nagle alg flag for the pool.
@@ -438,74 +440,77 @@ public class SockIOPool {
 	/** 
 	 * Initializes the pool. 
 	 */
-	public synchronized void initialize() {
+	public void initialize() {
 
-		// check to see if already initialized
-		if ( initialized
-				&& ( buckets != null )
-				&& ( availPool != null )
-				&& ( busyPool != null ) ) {
-			log.error( "++++ trying to initialize an already initialized pool" );
-			return;
-		}
+		synchronized( this ) {
 
-		// initialize empty maps
-		buckets     = new ArrayList<String>();
-		availPool   = new Hashtable<String,Map<SockIO,Long>>( servers.length * initConn );
-		busyPool    = new Hashtable<String,Map<SockIO,Long>>( servers.length * initConn );
-		hostDeadDur = new Hashtable<String,Long>();
-		hostDead    = new Hashtable<String,Date>();
-		createShift = new Hashtable<String,Integer>();
-		maxCreate   = (poolMultiplier > minConn) ? minConn : minConn / poolMultiplier;		// only create up to maxCreate connections at once
+			// check to see if already initialized
+			if ( initialized
+					&& ( buckets != null )
+					&& ( availPool != null )
+					&& ( busyPool != null ) ) {
+				log.error( "++++ trying to initialize an already initialized pool" );
+				return;
+			}
 
-		log.debug( "++++ initializing pool with following settings:" );
-		log.debug( "++++ initial size: " + initConn );
-		log.debug( "++++ min spare   : " + minConn );
-		log.debug( "++++ max spare   : " + maxConn );
+			// initialize empty maps
+			buckets     = new ArrayList<String>();
+			availPool   = new Hashtable<String,Map<SockIO,Long>>( servers.length * initConn );
+			busyPool    = new Hashtable<String,Map<SockIO,Long>>( servers.length * initConn );
+			hostDeadDur = new Hashtable<String,Long>();
+			hostDead    = new Hashtable<String,Date>();
+			createShift = new Hashtable<String,Integer>();
+			maxCreate   = (poolMultiplier > minConn) ? minConn : minConn / poolMultiplier;		// only create up to maxCreate connections at once
 
-		// if servers is not set, or it empty, then
-		// throw a runtime exception
-		if ( servers == null || servers.length <= 0 ) {
-			log.error( "++++ trying to initialize with no servers" );
-			throw new IllegalStateException( "++++ trying to initialize with no servers" );
-		}
+			log.debug( "++++ initializing pool with following settings:" );
+			log.debug( "++++ initial size: " + initConn );
+			log.debug( "++++ min spare   : " + minConn );
+			log.debug( "++++ max spare   : " + maxConn );
 
-		for ( int i = 0; i < servers.length; i++ ) {
+			// if servers is not set, or it empty, then
+			// throw a runtime exception
+			if ( servers == null || servers.length <= 0 ) {
+				log.error( "++++ trying to initialize with no servers" );
+				throw new IllegalStateException( "++++ trying to initialize with no servers" );
+			}
 
-			// add to bucket
-			// with weights if we have them 
-			if ( weights != null && weights.length > i ) {
-				for ( int k = 0; k < weights[i].intValue(); k++ ) {
+			for ( int i = 0; i < servers.length; i++ ) {
+
+				// add to bucket
+				// with weights if we have them 
+				if ( weights != null && weights.length > i ) {
+					for ( int k = 0; k < weights[i].intValue(); k++ ) {
+						buckets.add( servers[i] );
+						log.debug( "++++ added " + servers[i] + " to server bucket" );
+					}
+				}
+				else {
 					buckets.add( servers[i] );
 					log.debug( "++++ added " + servers[i] + " to server bucket" );
 				}
-			}
-			else {
-				buckets.add( servers[i] );
-				log.debug( "++++ added " + servers[i] + " to server bucket" );
-			}
 
-			// create initial connections
-			log.debug( "+++ creating initial connections (" + initConn + ") for host: " + servers[i] );
+				// create initial connections
+				log.debug( "+++ creating initial connections (" + initConn + ") for host: " + servers[i] );
 
-			for ( int j = 0; j < initConn; j++ ) {
-				SockIO socket = createSocket( servers[i] );
-				if ( socket == null ) {
-					log.error( "++++ failed to create connection to: " + servers[i] + " -- only " + j + " created." );
-					break;
+				for ( int j = 0; j < initConn; j++ ) {
+					SockIO socket = createSocket( servers[i] );
+					if ( socket == null ) {
+						log.error( "++++ failed to create connection to: " + servers[i] + " -- only " + j + " created." );
+						break;
+					}
+
+					addSocketToPool( availPool, servers[i], socket );
+					log.debug( "++++ created and added socket: " + socket.toString() + " for host " + servers[i] );
 				}
-
-				addSocketToPool( availPool, servers[i], socket );
-				log.debug( "++++ created and added socket: " + socket.toString() + " for host " + servers[i] );
 			}
+
+			// mark pool as initialized
+			this.initialized = true;
+
+			// start maint thread
+			if (this.maintSleep > 0)
+				this.startMaintThread();
 		}
-
-		// mark pool as initialized
-		this.initialized = true;
-
-		// start maint thread
-		if (this.maintSleep > 0)
-			this.startMaintThread();
 	}
 
 	/** 
@@ -533,8 +538,8 @@ public class SockIOPool {
 
 		// if host is dead, then we don't need to try again
 		// until the dead status has expired
-		// we do not try to put back in if failover is off
-		if ( failover && hostDead.containsKey( host ) && hostDeadDur.containsKey( host ) ) {
+		// we do not try to put back in if failback is off
+		if ( failback && hostDead.containsKey( host ) && hostDeadDur.containsKey( host ) ) {
 
 			Date store  = hostDead.get( host );
 			long expire = hostDeadDur.get( host ).longValue();
@@ -681,6 +686,8 @@ public class SockIOPool {
 
 		// keep trying different servers until we find one
 		int bucketSize = buckets.size();
+		Integer[] triedBucket = new Integer[ bucketSize ];
+
 		while ( tries++ < bucketSize ) {
 
 			// get bucket using hashcode 
@@ -700,27 +707,40 @@ public class SockIOPool {
 			if ( !failover )
 				return null;
 
+			// log that we tried
+			triedBucket[ bucket ] = new Integer( 1 );
+
 			// if we failed to get a socket from this server
 			// then we try again by adding an incrementer to the
 			// current key and then rehashing 
-			switch ( hashingAlg ) {
-				case NATIVE_HASH:
-					hv += ("" + tries + key).hashCode();
-					break;
+			int rehashTries = 0;
+			while ( triedBucket[ hv % bucketSize ] != null ) {
 
-				case OLD_COMPAT_HASH:
-					hv += origCompatHashingAlg( "" + tries + key );
-					break;
+				int keyTry = tries + rehashTries;
+				String newKey = String.format( "%s%s", keyTry, key );
 
-				case NEW_COMPAT_HASH:
-					hv += newCompatHashingAlg( "" + tries + key );
-					break;
+				log.debug( "rehashing with: " + keyTry );
+				switch ( hashingAlg ) {
+					case NATIVE_HASH:
+						hv = newKey.hashCode();
+						break;
 
-				default:
-					// use the native hash as a default
-					hv += ("" + tries + key).hashCode();
-					hashingAlg = NATIVE_HASH;
-					break;
+					case OLD_COMPAT_HASH:
+						hv = origCompatHashingAlg( newKey );
+						break;
+
+					case NEW_COMPAT_HASH:
+						hv = newCompatHashingAlg( newKey );
+						break;
+
+					default:
+						// use the native hash as a default
+						hv = newKey.hashCode();
+						hashingAlg = NATIVE_HASH;
+						break;
+				}
+
+				rehashTries++;
 			}
 		}
 
@@ -737,7 +757,7 @@ public class SockIOPool {
 	 * @param host host from which to retrieve object
 	 * @return SockIO object or null if fail to retrieve one
 	 */
-	public synchronized SockIO getConnection( String host ) {
+	public SockIO getConnection( String host ) {
 
 		if ( !this.initialized ) {
 			log.error( "attempting to get SockIO from uninitialized pool!" );
@@ -747,73 +767,76 @@ public class SockIOPool {
 		if ( host == null )
 			return null;
 
-		// if we have items in the pool
-		// then we can return it
-		if ( availPool != null && !availPool.isEmpty() ) {
+		synchronized( this ) {
 
-			// take first connected socket
-			Map<SockIO,Long> aSockets = availPool.get( host );
+			// if we have items in the pool
+			// then we can return it
+			if ( availPool != null && !availPool.isEmpty() ) {
 
-			if ( aSockets != null && !aSockets.isEmpty() ) {
+				// take first connected socket
+				Map<SockIO,Long> aSockets = availPool.get( host );
 
-				for ( Iterator<SockIO> i = aSockets.keySet().iterator(); i.hasNext(); ) {
-					SockIO socket = i.next();
+				if ( aSockets != null && !aSockets.isEmpty() ) {
 
-					if ( socket.isConnected() ) {
-						log.debug( "++++ moving socket for host (" + host + ") to busy pool ... socket: " + socket );
+					for ( Iterator<SockIO> i = aSockets.keySet().iterator(); i.hasNext(); ) {
+						SockIO socket = i.next();
 
-						// remove from avail pool
-						i.remove();
+						if ( socket.isConnected() ) {
+							log.debug( "++++ moving socket for host (" + host + ") to busy pool ... socket: " + socket );
 
-						// add to busy pool
-						addSocketToPool( busyPool, host, socket );
+							// remove from avail pool
+							i.remove();
 
-						// return socket
-						return socket;
-					}
-					else {
-						// not connected, so we need to remove it
-						log.error( "++++ socket in avail pool is not connected: " + socket.toString() + " for host: " + host );
-						socket = null;
+							// add to busy pool
+							addSocketToPool( busyPool, host, socket );
 
-						// remove from avail pool
-						i.remove();
+							// return socket
+							return socket;
+						}
+						else {
+							// not connected, so we need to remove it
+							log.error( "++++ socket in avail pool is not connected: " + socket.toString() + " for host: " + host );
+							socket = null;
+
+							// remove from avail pool
+							i.remove();
+						}
 					}
 				}
 			}
-		}
-		
-		// if here, then we found no sockets in the pool
-		// try to create on a sliding scale up to maxCreate
-		Integer cShift = createShift.get( host );
-		int shift = (cShift != null) ? cShift.intValue() : 0;
+			
+			// if here, then we found no sockets in the pool
+			// try to create on a sliding scale up to maxCreate
+			Integer cShift = createShift.get( host );
+			int shift = (cShift != null) ? cShift.intValue() : 0;
 
-		int create = 1 << shift;
-		if ( create >= maxCreate ) {
-			create = maxCreate;
-		}
-		else {
-			shift++;
-		}
-
-		// store the shift value for this host
-		createShift.put( host, new Integer( shift ) );
-
-		log.debug( "++++ creating " + create + " new SockIO objects" );
-
-		for ( int i = create; i > 0; i-- ) {
-			SockIO socket = createSocket( host );
-			if ( socket == null )
-				break;
-
-			if ( i == 1 ) {
-				// last iteration, add to busy pool and return sockio
-				addSocketToPool( busyPool, host, socket );
-				return socket;
+			int create = 1 << shift;
+			if ( create >= maxCreate ) {
+				create = maxCreate;
 			}
 			else {
-				// add to avail pool
-				addSocketToPool( availPool, host, socket );
+				shift++;
+			}
+
+			// store the shift value for this host
+			createShift.put( host, new Integer( shift ) );
+
+			log.debug( "++++ creating " + create + " new SockIO objects" );
+
+			for ( int i = create; i > 0; i-- ) {
+				SockIO socket = createSocket( host );
+				if ( socket == null )
+					break;
+
+				if ( i == 1 ) {
+					// last iteration, add to busy pool and return sockio
+					addSocketToPool( busyPool, host, socket );
+					return socket;
+				}
+				else {
+					// add to avail pool
+					addSocketToPool( availPool, host, socket );
+				}
 			}
 		}
 
@@ -830,7 +853,7 @@ public class SockIOPool {
 	 * @param host host this socket is connected to
 	 * @param socket socket to add
 	 */
-	protected synchronized void addSocketToPool( Map<String,Map<SockIO,Long>> pool, String host, SockIO socket ) {
+	protected void addSocketToPool( Map<String,Map<SockIO,Long>> pool, String host, SockIO socket ) {
 
 		if ( pool.containsKey( host ) ) {
 			Map<SockIO,Long> sockets = pool.get( host );
@@ -857,7 +880,7 @@ public class SockIOPool {
 	 * @param host host pool
 	 * @param socket socket to remove
 	 */
-	protected synchronized void removeSocketFromPool( Map<String,Map<SockIO,Long>> pool, String host, SockIO socket ) {
+	protected void removeSocketFromPool( Map<String,Map<SockIO,Long>> pool, String host, SockIO socket ) {
 		if ( pool.containsKey( host ) ) {
 			Map<SockIO,Long> sockets = pool.get( host );
 			if ( sockets != null )
@@ -873,7 +896,7 @@ public class SockIOPool {
 	 * @param pool pool to clear
 	 * @param host host to clear
 	 */
-	protected synchronized void clearHostFromPool( Map<String,Map<SockIO,Long>> pool, String host ) {
+	protected void clearHostFromPool( Map<String,Map<SockIO,Long>> pool, String host ) {
 
 		if ( pool.containsKey( host ) ) {
 			Map<SockIO,Long> sockets = pool.get( host );
@@ -904,19 +927,22 @@ public class SockIOPool {
 	 * @param socket socket to return
 	 * @param addToAvail add to avail pool if true
 	 */
-	public synchronized void checkIn( SockIO socket, boolean addToAvail ) {
+	public void checkIn( SockIO socket, boolean addToAvail ) {
 
 		String host = socket.getHost();
 		log.debug( "++++ calling check-in on socket: " + socket.toString() + " for host: " + host );
 
-		// remove from the busy pool
-		log.debug( "++++ removing socket (" + socket.toString() + ") from busy pool for host: " + host );
-		removeSocketFromPool( busyPool, host, socket );
+		synchronized( this ) {
 
-		// add to avail pool
-		if ( addToAvail && socket.isConnected() ) {
-			log.debug( "++++ returning socket (" + socket.toString() + " to avail pool for host: " + host );
-			addSocketToPool( availPool, host, socket );
+			// remove from the busy pool
+			log.debug( "++++ removing socket (" + socket.toString() + ") from busy pool for host: " + host );
+			removeSocketFromPool( busyPool, host, socket );
+
+			// add to avail pool
+			if ( addToAvail && socket.isConnected() ) {
+				log.debug( "++++ returning socket (" + socket.toString() + " to avail pool for host: " + host );
+				addSocketToPool( availPool, host, socket );
+			}
 		}
 	}
 
@@ -931,12 +957,15 @@ public class SockIOPool {
 		log.debug( "++++ freshening busy socket: " + socket.toString() + " for host: " + host );
 
 		if ( busyPool.containsKey( host ) ) {
-			Map<SockIO,Long> sockets = busyPool.get( host );
 
-			if ( sockets != null )
-				sockets.put( socket, new Long( System.currentTimeMillis() ) );
-			else
-				log.error( "++++ failed to freshen socket: " + socket.toString() + " for host: " + host + " as not found in busy pool" );
+			synchronized( busyPool ) {
+				Map<SockIO,Long> sockets = busyPool.get( host );
+
+				if ( sockets != null )
+					sockets.put( socket, new Long( System.currentTimeMillis() ) );
+				else
+					log.error( "++++ failed to freshen socket: " + socket.toString() + " for host: " + host + " as not found in busy pool" );
+			}
 		}
 		else {
 			log.error( "++++ failed to freshen socket: " + socket.toString() + " for host: " + host + " as not found in busy pool" );
@@ -952,7 +981,7 @@ public class SockIOPool {
 	 * 
 	 * @param socket socket to return
 	 */
-	public synchronized void checkIn( SockIO socket ) {
+	public void checkIn( SockIO socket ) {
 		checkIn( socket, true );
 	}
 
@@ -965,24 +994,26 @@ public class SockIOPool {
 	 */
 	protected void closePool( Map<String,Map<SockIO,Long>> pool ) {
 
-		 for ( Iterator<String> i = pool.keySet().iterator(); i.hasNext(); ) {
-			 String host = i.next();
-			 Map<SockIO,Long> sockets = pool.get( host );
+		synchronized( pool ) {
+			 for ( Iterator<String> i = pool.keySet().iterator(); i.hasNext(); ) {
+				 String host = i.next();
+				 Map<SockIO,Long> sockets = pool.get( host );
 
-			 for ( Iterator<SockIO> j = sockets.keySet().iterator(); j.hasNext(); ) {
-				 SockIO socket = j.next();
+				 for ( Iterator<SockIO> j = sockets.keySet().iterator(); j.hasNext(); ) {
+					 SockIO socket = j.next();
 
-				 try {
-					 socket.trueClose();
+					 try {
+						 socket.trueClose();
+					 }
+					 catch ( IOException ioe ) {
+						 log.error( "++++ failed to trueClose socket: " + socket.toString() + " for host: " + host );
+					 }
+
+					 j.remove();
+					 socket = null;
 				 }
-				 catch ( IOException ioe ) {
-					 log.error( "++++ failed to trueClose socket: " + socket.toString() + " for host: " + host );
-				 }
-
-				 j.remove();
-				 socket = null;
 			 }
-		 }
+		}
 	}
 
 	/** 
@@ -994,6 +1025,8 @@ public class SockIOPool {
 	 */
 	public synchronized void shutDown() {
 		log.debug( "++++ SockIOPool shutting down..." );
+
+
 		if ( maintThread != null && maintThread.isRunning() )
 			stopMaintThread();
 
@@ -1016,7 +1049,7 @@ public class SockIOPool {
 	 * as well as move any closed, but not checked in sockets<br/>
 	 * back to the available pool.
 	 */
-	protected synchronized void startMaintThread() {
+	protected void startMaintThread() {
 
 		if ( maintThread != null ) {
 
@@ -1037,7 +1070,7 @@ public class SockIOPool {
 	/** 
 	 * Stops the maintenance thread.
 	 */
-	protected synchronized void stopMaintThread() {
+	protected void stopMaintThread() {
 		if ( maintThread != null && maintThread.isRunning() )
 			maintThread.stopThread();
 	}
@@ -1047,53 +1080,94 @@ public class SockIOPool {
 	 *
 	 * This is typically called by the maintenance thread to manage pool size. 
 	 */
-	protected synchronized void selfMaint() {
+	protected void selfMaint() {
 		log.debug( "++++ Starting self maintenance...." );
 
-		// go through avail sockets and create/destroy sockets
-		// as needed to maintain pool settings
-		for ( Iterator<String> i = availPool.keySet().iterator(); i.hasNext(); ) {
-			String host              = i.next();
-			Map<SockIO,Long> sockets = availPool.get(host);
-			log.debug( "++++ Size of avail pool for host (" + host + ") = " + sockets.size() );
+		synchronized( this ) {
 
-			// if pool is too small (n < minSpare)
-			if ( sockets.size() < minConn ) {
-				// need to create new sockets
-				int need = minConn - sockets.size();
-				log.debug( "++++ Need to create " + need + " new sockets for pool for host: " + host );
+			// go through avail sockets and create/destroy sockets
+			// as needed to maintain pool settings
+			for ( Iterator<String> i = availPool.keySet().iterator(); i.hasNext(); ) {
+				String host              = i.next();
+				Map<SockIO,Long> sockets = availPool.get(host);
+				log.debug( "++++ Size of avail pool for host (" + host + ") = " + sockets.size() );
 
-				for ( int j = 0; j < need; j++ ) {
-					SockIO socket = createSocket( host );
+				// if pool is too small (n < minSpare)
+				if ( sockets.size() < minConn ) {
+					// need to create new sockets
+					int need = minConn - sockets.size();
+					log.debug( "++++ Need to create " + need + " new sockets for pool for host: " + host );
 
-					if ( socket == null )
-						break;
+					for ( int j = 0; j < need; j++ ) {
+						SockIO socket = createSocket( host );
 
-					addSocketToPool( availPool, host, socket );
+						if ( socket == null )
+							break;
+
+						addSocketToPool( availPool, host, socket );
+					}
 				}
+				else if ( sockets.size() > maxConn ) {
+					// need to close down some sockets
+					int diff        = sockets.size() - maxConn;
+					int needToClose = (diff <= poolMultiplier)
+						? diff
+						: (diff) / poolMultiplier;
+
+					log.debug( "++++ need to remove " + needToClose + " spare sockets for pool for host: " + host );
+					for ( Iterator<SockIO> j = sockets.keySet().iterator(); j.hasNext(); ) {
+
+						if ( needToClose <= 0 )
+							break;
+
+						// remove stale entries
+						SockIO socket = j.next();
+						long expire   = sockets.get( socket ).longValue();
+
+						// if past idle time
+						// then close socket
+						// and remove from pool
+						if ( (expire + maxIdle) < System.currentTimeMillis() ) {
+							log.debug( "+++ removing stale entry from pool as it is past its idle timeout and pool is over max spare" );
+							try {
+								socket.trueClose();
+							}
+							catch ( IOException ioe ) {
+								log.error( "failed to close socket" );
+								log.error( ioe.getMessage(), ioe );
+							}
+
+							j.remove();
+							socket = null;
+							needToClose--;
+						}
+					}
+				}
+
+				// reset the shift value for creating new SockIO objects
+				createShift.put( host, new Integer( 0 ) );
 			}
-			else if ( sockets.size() > maxConn ) {
-				// need to close down some sockets
-				int diff        = sockets.size() - maxConn;
-				int needToClose = (diff <= poolMultiplier)
-					? diff
-					: (diff) / poolMultiplier;
 
-				log.debug( "++++ need to remove " + needToClose + " spare sockets for pool for host: " + host );
+			// go through busy sockets and destroy sockets
+			// as needed to maintain pool settings
+			for ( Iterator<String> i = busyPool.keySet().iterator(); i.hasNext(); ) {
+
+				String host              = i.next();
+				Map<SockIO,Long> sockets = busyPool.get( host );
+
+				log.debug( "++++ Size of busy pool for host (" + host + ")  = " + sockets.size() );
+
+				// loop through all connections and check to see if we have any hung connections
 				for ( Iterator<SockIO> j = sockets.keySet().iterator(); j.hasNext(); ) {
-
-					if ( needToClose <= 0 )
-						break;
-
 					// remove stale entries
 					SockIO socket = j.next();
-					long expire   = sockets.get( socket ).longValue();
+					long hungTime = sockets.get( socket ).longValue();
 
-					// if past idle time
+					// if past max busy time
 					// then close socket
 					// and remove from pool
-					if ( (expire + maxIdle) < System.currentTimeMillis() ) {
-						log.debug( "+++ removing stale entry from pool as it is past its idle timeout and pool is over max spare" );
+					if ( (hungTime + maxBusyTime) < System.currentTimeMillis() ) {
+						log.error( "+++ removing potentially hung connection from busy pool ... socket in pool for " + (System.currentTimeMillis() - hungTime) + "ms" );
 						try {
 							socket.trueClose();
 						}
@@ -1104,45 +1178,7 @@ public class SockIOPool {
 
 						j.remove();
 						socket = null;
-						needToClose--;
 					}
-				}
-			}
-
-			// reset the shift value for creating new SockIO objects
-			createShift.put( host, new Integer( 0 ) );
-		}
-
-		// go through busy sockets and destroy sockets
-		// as needed to maintain pool settings
-		for ( Iterator<String> i = busyPool.keySet().iterator(); i.hasNext(); ) {
-
-			String host              = i.next();
-			Map<SockIO,Long> sockets = busyPool.get( host );
-
-			log.debug( "++++ Size of busy pool for host (" + host + ")  = " + sockets.size() );
-
-			// loop through all connections and check to see if we have any hung connections
-			for ( Iterator<SockIO> j = sockets.keySet().iterator(); j.hasNext(); ) {
-				// remove stale entries
-				SockIO socket = j.next();
-				long hungTime = sockets.get( socket ).longValue();
-
-				// if past max busy time
-				// then close socket
-				// and remove from pool
-				if ( (hungTime + maxBusyTime) < System.currentTimeMillis() ) {
-					log.error( "+++ removing potentially hung connection from busy pool ... socket in pool for " + (System.currentTimeMillis() - hungTime) + "ms" );
-					try {
-						socket.trueClose();
-					}
-					catch ( IOException ioe ) {
-						log.error( "failed to close socket" );
-						log.error( ioe.getMessage(), ioe );
-					}
-
-					j.remove();
-					socket = null;
 				}
 			}
 		}
