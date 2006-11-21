@@ -80,6 +80,7 @@ import org.apache.log4j.Logger;
  *		int	socketConnectTO     = 1000 * 3;			// 3 seconds to block on initial connections.  If 0, then will use blocking connect (default)
  *		boolean failover        = false;			// turn off auto-failover in event of server down	
  *		boolean nagleAlg        = false;			// turn off Nagle's algorithm on all sockets in pool	
+ *		boolean aliveCheck      = false;			// disable health check of socket on checkout
  *
  *		SockIOPool pool = SockIOPool.getInstance();
  *		pool.setServers( serverlist );
@@ -92,7 +93,8 @@ import org.apache.log4j.Logger;
  *		pool.setMaintSleep( maintThreadSleep );
  *		pool.setSocketTO( socketTimeOut );
  *		pool.setNagle( nagleAlg );	
- *		pool.setHashingAlg( SockIOPool.NEW_COMPAT_HASH );	
+ *		pool.setHashingAlg( SockIOPool.NEW_COMPAT_HASH );
+ *		pool.setAliveCheck( true );
  *		pool.initialize();	
  *	}
  *  </pre> 
@@ -146,6 +148,7 @@ public class SockIOPool {
 	private long maintSleep           = 1000 * 5;			// maintenance thread sleep time
 	private int socketTO              = 1000 * 10;			// default timeout of socket reads
 	private int socketConnectTO       = 1000 * 3;	        // default timeout of socket connections
+	private boolean aliveCheck        = false;				// default to not check each connection for being alive
 	private boolean failover          = true;				// default to failover in event of cache server dead
 	private boolean failback          = true;				// only used if failover is also set ... controls putting a dead server back into rotation
 	private boolean nagle             = true;				// enable/disable Nagle's algorithm
@@ -365,6 +368,27 @@ public class SockIOPool {
 	 * @return true/false
 	 */
 	public boolean getFailback() { return this.failback; }
+
+	/**
+	 * Sets the aliveCheck flag for the pool.
+	 *
+	 * When true, this will attempt to talk to the server on
+	 * every connection checkout to make sure the connection is
+	 * still valid.  This adds extra network chatter and thus is
+	 * defaulted off.  May be useful if you want to ensure you do
+	 * not have any problems talking to the server on a dead connection.
+	 *
+	 * @param aliveCheck true/false
+	 */
+	public void setAliveCheck( boolean aliveCheck ) { this.aliveCheck = aliveCheck; }
+
+
+	/**
+	 * Returns the current status of the aliveCheck flag.
+	 *
+	 * @return true / false
+	 */
+	public boolean getAliveCheck() { return this.aliveCheck; }
 
 	/** 
 	 * Sets the Nagle alg flag for the pool.
@@ -667,8 +691,31 @@ public class SockIOPool {
 			return null;
 
 		// if only one server, return it
-		if ( buckets.size() == 1 )
-			return getConnection( (String) buckets.get( 0 ) );
+		if ( buckets.size() == 1 ) {
+			SockIO sock = getConnection( (String) buckets.get( 0 ) );
+			if ( sock != null && sock.isConnected() ) {
+
+				if ( aliveCheck ) { 
+					if ( sock.isAlive() ) {
+						return sock;
+					}
+					else {
+						sock.close();
+						try { sock.trueClose(); } catch ( IOException ioe ) { log.error( "failed to close dead socket" ); }
+						sock = null;
+					}
+				}
+				else {
+					return sock;
+				}
+			}
+			else {
+				sock = null;
+			}
+
+			if ( !failover )
+				return null;
+		}
 		
 		int tries = 0;
 
@@ -719,8 +766,24 @@ public class SockIOPool {
 
 			log.debug( "cache choose " + buckets.get( bucket ) + " for " + key );
 
-			if ( sock != null )
-				return sock;
+			if ( sock != null && sock.isConnected() ) {
+				if ( aliveCheck ) { 
+					if ( sock.isAlive() ) {
+						return sock;
+					}
+					else {
+						sock.close();
+						try { sock.trueClose(); } catch ( IOException ioe ) { log.error( "failed to close dead socket" ); }
+						sock = null;
+					}
+				}
+				else {
+					return sock;
+				}
+			}
+			else {
+				sock = null;
+			}
 
 			// if we do not want to failover, then bail here
 			if ( !failover )
@@ -993,27 +1056,24 @@ public class SockIOPool {
 	 * @param pool pool to close
 	 */
 	protected void closePool( Map<String,Map<SockIO,Long>> pool ) {
+		 for ( Iterator<String> i = pool.keySet().iterator(); i.hasNext(); ) {
+			 String host = i.next();
+			 Map<SockIO,Long> sockets = pool.get( host );
 
-		synchronized( this ) {
-			 for ( Iterator<String> i = pool.keySet().iterator(); i.hasNext(); ) {
-				 String host = i.next();
-				 Map<SockIO,Long> sockets = pool.get( host );
+			 for ( Iterator<SockIO> j = sockets.keySet().iterator(); j.hasNext(); ) {
+				 SockIO socket = j.next();
 
-				 for ( Iterator<SockIO> j = sockets.keySet().iterator(); j.hasNext(); ) {
-					 SockIO socket = j.next();
-
-					 try {
-						 socket.trueClose();
-					 }
-					 catch ( IOException ioe ) {
-						 log.error( "++++ failed to trueClose socket: " + socket.toString() + " for host: " + host );
-					 }
-
-					 j.remove();
-					 socket = null;
+				 try {
+					 socket.trueClose();
 				 }
+				 catch ( IOException ioe ) {
+					 log.error( "++++ failed to trueClose socket: " + socket.toString() + " for host: " + host );
+				 }
+
+				 j.remove();
+				 socket = null;
 			 }
-		}
+		 }
 	}
 
 	/** 
@@ -1441,7 +1501,30 @@ public class SockIOPool {
 		 * @return true if connected
 		 */
 		boolean isConnected() {
-			return (sock != null && sock.isConnected());
+			return ( sock != null && sock.isConnected() );
+		}
+
+		/*
+		 * checks to see that the connection is still working
+		 *
+		 * @return true if still alive
+		 */
+		boolean isAlive() {
+
+			if ( !isConnected() )
+				return false;
+
+			// try to talk to the server w/ a dumb query to ask its version
+			try {
+				this.write( "version\r\n".getBytes() );
+				this.flush();
+				String response = this.readLine();
+			}
+			catch ( IOException ex ) {
+				return false;
+			}
+
+			return true;
 		}
 
 		/** 

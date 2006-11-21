@@ -35,8 +35,14 @@ package com.danga.MemCached.test;
 
 import com.danga.MemCached.*;
 import java.util.*;
+import org.apache.log4j.Logger;
+import org.apache.log4j.BasicConfigurator;
 
 public class UnitTests {
+	
+	// logger
+	private static Logger log =
+		Logger.getLogger( UnitTests.class.getName() );
 
     public static MemCachedClient mc  = null;
 
@@ -158,6 +164,8 @@ public class UnitTests {
 	 * @param args the command line arguments
 	 */
 	public static void main(String[] args) {
+
+		BasicConfigurator.configure();
 
 		String[] serverlist = { "192.168.1.1:1624"  };
 
