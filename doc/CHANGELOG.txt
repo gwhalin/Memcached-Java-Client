@@ -1,3 +1,8 @@
+21 Nov 2006 (whalin)
+	-- released as 1.5
+	-- some more fixes for the failover code
+	-- add support for optional healthcheck on checkout (disabled by default)
+
 10 Sep 2006 (whalin)
 	-- some changes to lessen lock contention
 	-- fixed a long lasting bug w/ rehashing for server failover
