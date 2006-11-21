@@ -333,6 +333,20 @@ public class SockIOPool {
 	public int getSocketTO()  { return this.socketTO; }
 
 	/** 
+	 * Sets the socket timeout for connect.
+	 * 
+	 * @param socketConnectTO timeout in ms
+	 */
+	public void setSocketConnectTO( int socketConnectTO ) { this.socketConnectTO = socketConnectTO; }
+	
+	/** 
+	 * Returns the socket timeout for connect.
+	 * 
+	 * @return timeout in ms
+	 */
+	public int getSocketConnectTO()  { return this.socketConnectTO; }
+
+	/** 
 	 * Sets the failover flag for the pool.
 	 *
 	 * If this flag is set to true, and a socket fails to connect,<br/>
