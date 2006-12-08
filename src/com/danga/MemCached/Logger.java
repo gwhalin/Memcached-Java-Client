@@ -1,6 +1,6 @@
 /**
  * MemCached Java Client Logger
- * Copyright (c) 2005
+ * Copyright (c) 2007
  *
  * This module is Copyright (c) 2005 Greg Whalin
  * All rights reserved.
@@ -22,7 +22,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307  USA
  *
  * @author Greg Whalin <greg@meetup.com> 
- * @version 1.3.2
+ * @version 1.5
  */
 package com.danga.MemCached;
 
@@ -36,7 +36,7 @@ import java.util.*;
  * log levels, but only wraps system.out.println.
  * 
  * @author Greg Whalin <greg@meetup.com>
- * @version 1.3.2
+ * @version 1.5
  */
 public class Logger {
 

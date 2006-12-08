@@ -1,8 +1,8 @@
 /**
  * MemCached Java client
- * Copyright (c) 2005
+ * Copyright (c) 2007
  *
- * This module is Copyright (c) 2005 Greg Whalin, Richard Russo
+ * This module is Copyright (c) 2007 Greg Whalin, Richard Russo
  * All rights reserved.
  *
  * This library is free software; you can redistribute it and/or
@@ -26,7 +26,7 @@
  * @author Kevin Burton <burton@peerfear.org>
  * @author Robert Watts <robert@wattsit.co.uk>
  * @author Vin Chawla <vin@tivo.com>
- * @version 1.3.2
+ * @version 1.5
  */
 package com.danga.MemCached;
 
@@ -133,15 +133,15 @@ import org.apache.log4j.Logger;
  * <h3>To retrieve an multiple objects from the cache</h3>
  * <pre>
  *	MemCachedClient mc = new MemCachedClient();
- *	String[] keys   = { "key", "key1", "key2" };
- *	Object value = mc.getMulti(keys);
+ *	String[] keys      = { "key", "key1", "key2" };
+ *	Map<Object> values = mc.getMulti(keys);
  * </pre> 
  * <h3>To retrieve an multiple objects from the cache with custom hashing</h3>
  * <pre>
  *	MemCachedClient mc = new MemCachedClient();
- *	String[] keys    = { "key", "key1", "key2" };
- *	Integer[] hashes = { new Integer(45), new Integer(32), new Integer(44) };
- *	Object value = mc.getMulti(keys, hashes);
+ *	String[] keys      = { "key", "key1", "key2" };
+ *	Integer[] hashes   = { new Integer(45), new Integer(32), new Integer(44) };
+ *	Map<Object> values = mc.getMulti(keys, hashes);
  * </pre> 
  * <h3>To flush all items in server(s)</h3>
  * <pre>
@@ -159,7 +159,7 @@ import org.apache.log4j.Logger;
  * @author Kevin Burton <burton@peerfear.org>
  * @author Robert Watts <robert@wattsit.co.uk>
  * @author Vin Chawla <vin@tivo.com>
- * @version 1.3.2
+ * @version 1.5
  */
 public class MemCachedClient {
 

@@ -1,6 +1,6 @@
 /**
  * MemCached Java client
- * Copyright (c) 2005
+ * Copyright (c) 2007
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -19,7 +19,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307  USA
  *
  * @author Kevin A. Burton <burton@peerfear.org> 
- * @version 1.3.2
+ * @version 1.5
  */
 package com.danga.MemCached;
 
