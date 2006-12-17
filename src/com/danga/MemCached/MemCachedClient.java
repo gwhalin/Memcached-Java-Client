@@ -33,6 +33,7 @@ package com.danga.MemCached;
 import java.util.*;
 import java.util.zip.*;
 import java.io.*;
+import java.net.URLEncoder;
 
 import org.apache.log4j.Logger;
 
@@ -346,6 +347,14 @@ public class MemCachedClient {
 			return false;
 		}
 
+		try {
+			key = sanitizeKey( key );
+		}
+		catch ( UnsupportedEncodingException e ) {
+			log.error( "failed to sanitize your key!", e );
+			return false;
+		}
+
 		// get SockIO obj from hash or from key
 		SockIOPool.SockIO sock = SockIOPool.getInstance( poolName ).getSock( key, hashCode );
 
@@ -574,6 +583,14 @@ public class MemCachedClient {
 			return false;
 		}
 
+		try {
+			key = sanitizeKey( key );
+		}
+		catch ( UnsupportedEncodingException e ) {
+			log.error( "failed to sanitize your key!", e );
+			return false;
+		}
+
 		if ( value == null ) {
 			log.error( "trying to store a null value to cache" );
 			return false;
@@ -604,7 +621,7 @@ public class MemCachedClient {
 					val = value.toString().getBytes( defaultEncoding );
 				}
 				catch ( UnsupportedEncodingException ue ) {
-					log.error( "invalid encoding type used: " + defaultEncoding );
+					log.error( "invalid encoding type used: " + defaultEncoding, ue );
 					sock.close();
 					sock = null;
 					return false;
@@ -776,6 +793,14 @@ public class MemCachedClient {
 			return -1;
 		}
 
+		try {
+			key = sanitizeKey( key );
+		}
+		catch ( UnsupportedEncodingException e ) {
+			log.error( "failed to sanitize your key!", e );
+			return -1;
+		}
+
 		long counter = -1;
 		try {
 			counter = Long.parseLong( (String)get( key, hashCode, true ) );
@@ -870,6 +895,19 @@ public class MemCachedClient {
 	 * @return new value or -1 if not exist
 	 */
 	private long incrdecr( String cmdname, String key, long inc, Integer hashCode ) {
+
+		if ( key == null ) {
+			log.error( "null key for incrdecr()" );
+			return -1;
+		}
+
+		try {
+			key = sanitizeKey( key );
+		}
+		catch ( UnsupportedEncodingException e ) {
+			log.error( "failed to sanitize your key!", e );
+			return -1;
+		}
 
 		// get SockIO obj for given cache key
 		SockIOPool.SockIO sock = SockIOPool.getInstance( poolName ).getSock(key, hashCode);
@@ -978,6 +1016,14 @@ public class MemCachedClient {
 		if ( key == null ) {
 			log.error( "key is null for get()" );
 			return null;
+		}
+
+		try {
+			key = sanitizeKey( key );
+		}
+		catch ( UnsupportedEncodingException e ) {
+			log.error( "failed to sanitize your key!", e );
+			return false;
 		}
 
 		// get SockIO obj using cache key
@@ -1140,8 +1186,23 @@ public class MemCachedClient {
 			if ( hashCodes != null && hashCodes.length > i )
 				hash = hashCodes[ i ];
 
+			String key = keys[i];
+
+			if ( key == null ) {
+				log.error( "null key, so skipping" );
+				continue;
+			}
+
+			try {
+				key = sanitizeKey( key );
+			}
+			catch ( UnsupportedEncodingException e ) {
+				log.error( "failed to sanitize your key!", e );
+				continue;
+			}
+
 			// get SockIO obj from cache key
-			SockIOPool.SockIO sock = SockIOPool.getInstance( poolName ).getSock( keys[i], hash );
+			SockIOPool.SockIO sock = SockIOPool.getInstance( poolName ).getSock( key, hash );
 
 			if ( sock == null )
 				continue;
@@ -1150,7 +1211,7 @@ public class MemCachedClient {
 			if ( !sockKeys.containsKey( sock.getHost() ) )
 				sockKeys.put( sock.getHost(), new StringBuilder() );
 
-			sockKeys.get( sock.getHost() ).append( " " + keys[i] );
+			sockKeys.get( sock.getHost() ).append( " " + key );
 
 			// return to pool
 			sock.close();
@@ -1301,6 +1362,10 @@ public class MemCachedClient {
 				break;
 			}
 		}
+	}
+
+	private String sanitizeKey( String key ) throws UnsupportedEncodingException {
+		return URLEncoder.encode( key, "UTF-8" );
 	}
 
 	/** 

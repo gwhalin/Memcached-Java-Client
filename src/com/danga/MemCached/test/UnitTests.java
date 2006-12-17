@@ -153,6 +153,12 @@ public class UnitTests {
         assert !mc.set( "foo", null );
 	}
     
+	public static void test17() {
+        mc.set( "foo bar", Boolean.TRUE );
+        Boolean b = (Boolean)mc.get( "foo bar" );
+		assert b.booleanValue();
+	}
+    
 	/**
 	 * This runs through some simple tests of the MemCacheClient.
 	 *
@@ -199,5 +205,7 @@ public class UnitTests {
 		test13();
 		test14();
 		test15();
+		test16();
+		test17();
 	}
 }
