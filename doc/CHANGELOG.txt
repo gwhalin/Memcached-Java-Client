@@ -1,5 +1,8 @@
-21 Nov 2006 (whalin)
+16 Dec 2006 (whalin)
 	-- released as 1.5
+	-- urlencode keys
+
+21 Nov 2006 (whalin)
 	-- some more fixes for the failover code
 	-- add support for optional healthcheck on checkout (disabled by default)
 

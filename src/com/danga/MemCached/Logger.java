@@ -46,22 +46,23 @@ public class Logger {
 	public static final int LEVEL_ERROR   = 3;
 	public static final int LEVEL_FATAL   = 4;
 
-	private static Map loggers = new Hashtable();
+	private static Map<String,Logger> loggers =
+		new HashMap<String,Logger>();
 
 	private String name;
 	private int level;
 	private boolean initialized = false;
 
-	public void setLevel(int level) { this.level = level; }
+	public void setLevel( int level ) { this.level = level; }
 	public int getLevel() { return this.level; }
 
-	protected Logger(String name, int level) {
+	protected Logger( String name, int level ) {
 		this.name  = name;
 		this.level = level;
 		this.initialized = true;
 	}
 
-	protected Logger(String name) {
+	protected Logger( String name ) {
 		this.name  = name;
 		this.level = LEVEL_INFO;
 		this.initialized = true;
@@ -74,10 +75,10 @@ public class Logger {
 	 * @param level 
 	 * @return 
 	 */
-	public static Logger getLogger(String name, int level) {
-		Logger log = getLogger(name);
-		if (log.getLevel() != level)
-			log.setLevel(level);
+	public static synchronized Logger getLogger( String name, int level ) {
+		Logger log = getLogger( name );
+		if ( log.getLevel() != level )
+			log.setLevel( level );
 
 		return log;
 	}
@@ -89,14 +90,14 @@ public class Logger {
 	 * @param name 
 	 * @return 
 	 */
-	public static Logger getLogger(String name) {
+	public static synchronized Logger getLogger( String name ) {
 
 		Logger log = null;
-		if (loggers.containsKey(name)) {
-			log = (Logger) loggers.get(name);
-
-		} else {
-			log = new Logger(name);
+		if ( loggers.containsKey( name ) ) {
+			log = loggers.get( name );
+		}
+		else {
+			log = new Logger( name );
 			loggers.put( name, log );
 		}
 
@@ -109,10 +110,10 @@ public class Logger {
 	 * @param mesg 
 	 * @param ex 
 	 */
-	private void log(String mesg, Exception ex) {
-		System.out.println(name + " " + new Date() + " - " + mesg);
-		if (ex != null)
-			ex.printStackTrace(System.out);
+	private void log( String mesg, Exception ex ) {
+		System.out.println( name + " " + new Date() + " - " + mesg );
+		if ( ex != null )
+			ex.printStackTrace( System.out );
 	}
 
 	/** 
@@ -121,15 +122,15 @@ public class Logger {
 	 * @param mesg 
 	 * @param ex 
 	 */
-	public void debug(String mesg, Exception ex) {
-		if (this.level > LEVEL_DEBUG)
+	public void debug( String mesg, Exception ex ) {
+		if ( this.level > LEVEL_DEBUG )
 			return;
 
-		log(mesg, ex);
+		log( mesg, ex );
 	}
 
-	public void debug(String mesg) {
-		debug(mesg, null);
+	public void debug( String mesg ) {
+		debug( mesg, null );
 	}
 
 	/** 
@@ -138,15 +139,15 @@ public class Logger {
 	 * @param mesg 
 	 * @param ex 
 	 */
-	public void info(String mesg, Exception ex) {
-		if (this.level > LEVEL_INFO)
+	public void info( String mesg, Exception ex ) {
+		if ( this.level > LEVEL_INFO )
 			return;
 
-		log(mesg, ex);
+		log( mesg, ex );
 	}
 
-	public void info(String mesg) {
-		info(mesg, null);
+	public void info( String mesg ) {
+		info( mesg, null );
 	}
 
 	/** 
@@ -155,15 +156,15 @@ public class Logger {
 	 * @param mesg 
 	 * @param ex 
 	 */
-	public void warn(String mesg, Exception ex) {
-		if (this.level > LEVEL_WARN)
+	public void warn( String mesg, Exception ex ) {
+		if ( this.level > LEVEL_WARN )
 			return;
 
-		log(mesg, ex);
+		log( mesg, ex );
 	}
 
-	public void warn(String mesg) {
-		warn(mesg, null);
+	public void warn( String mesg ) {
+		warn( mesg, null );
 	}
 
 	/** 
@@ -172,15 +173,15 @@ public class Logger {
 	 * @param mesg 
 	 * @param ex 
 	 */
-	public void error(String mesg, Exception ex) {
-		if (this.level > LEVEL_ERROR)
+	public void error( String mesg, Exception ex ) {
+		if ( this.level > LEVEL_ERROR )
 			return;
 
-		log(mesg, ex);
+		log( mesg, ex );
 	}
 
-	public void error(String mesg) {
-		error(mesg, null);
+	public void error( String mesg ) {
+		error( mesg, null );
 	}
 
 	/** 
@@ -189,14 +190,14 @@ public class Logger {
 	 * @param mesg 
 	 * @param ex 
 	 */
-	public void fatal(String mesg, Exception ex) {
-		if (this.level > LEVEL_FATAL)
+	public void fatal( String mesg, Exception ex ) {
+		if ( this.level > LEVEL_FATAL )
 			return;
 
-		log(mesg, ex);
+		log( mesg, ex );
 	}
 
-	public void fatal(String mesg) {
-		fatal(mesg, null);
+	public void fatal( String mesg ) {
+		fatal( mesg, null );
 	}
 }
