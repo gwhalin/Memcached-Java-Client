@@ -132,6 +132,8 @@ public class SockIOPool {
 	public static final int OLD_COMPAT_HASH = 1;				// original compatibility hashing algorithm (works with other clients)
 	public static final int NEW_COMPAT_HASH = 2;				// new CRC32 based compatibility hashing algorithm (works with other clients)
 
+	public static final long MAX_RETRY_DELAY = 10 * 60 * 1000;  // max of 10 minute delay for fall off
+
 	// Pool data
 	private MaintThread maintThread;
 	private boolean initialized        = false;
@@ -625,7 +627,12 @@ public class SockIOPool {
 			if ( socket == null ) {
 				Date now = new Date();
 				hostDead.put( host, now );
+
 				long expire = ( hostDeadDur.containsKey( host ) ) ? (((Long)hostDeadDur.get( host )).longValue() * 2) : 1000;
+
+				if ( expire > MAX_RETRY_DELAY )
+					expire = MAX_RETRY_DELAY;
+
 				hostDeadDur.put( host, new Long( expire ) );
 				log.debug( "++++ ignoring dead host: " + host + " for " + expire + " ms" );
 
