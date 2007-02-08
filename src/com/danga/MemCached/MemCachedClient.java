@@ -135,14 +135,14 @@ import org.apache.log4j.Logger;
  * <pre>
  *	MemCachedClient mc = new MemCachedClient();
  *	String[] keys      = { "key", "key1", "key2" };
- *	Map<Object> values = mc.getMulti(keys);
+ *	Map&lt;Object&gt; values = mc.getMulti(keys);
  * </pre> 
  * <h3>To retrieve an multiple objects from the cache with custom hashing</h3>
  * <pre>
  *	MemCachedClient mc = new MemCachedClient();
  *	String[] keys      = { "key", "key1", "key2" };
  *	Integer[] hashes   = { new Integer(45), new Integer(32), new Integer(44) };
- *	Map<Object> values = mc.getMulti(keys, hashes);
+ *	Map&lt;Object&gt; values = mc.getMulti(keys, hashes);
  * </pre> 
  * <h3>To flush all items in server(s)</h3>
  * <pre>
@@ -228,11 +228,11 @@ public class MemCachedClient {
 	 * This enables compression and sets compression threshhold to 15 KB.
 	 */
 	private void init() {
-		this.primitiveAsString   = false;
-		this.compressEnable      = true;
-		this.compressThreshold   = COMPRESS_THRESH;
-		this.defaultEncoding     = "UTF-8";
-		this.poolName            = "default";
+		this.primitiveAsString  = false;
+		this.compressEnable     = true;
+		this.compressThreshold  = COMPRESS_THRESH;
+		this.defaultEncoding    = "UTF-8";
+		this.poolName           = "default";
 	}
 
 	/** 
