@@ -81,6 +81,18 @@ public class MemCachedBench {
 		time = end - begin;
 		System.out.println(runs + " gets: " + time + "ms");
 
+		String[] keys = new String[ runs ];
+		int j = 0;
+		for (int i = start; i < start+runs; i++) {
+			keys[ j ] = keyBase + i;
+			j++;
+		}
+		begin = System.currentTimeMillis();
+		Map vals = mc.getMulti( keys );
+		end = System.currentTimeMillis();
+		time = end - begin;
+		System.out.println(runs + " getMulti: " + time + "ms");
+
 		begin = System.currentTimeMillis();
 		for (int i = start; i < start+runs; i++) {
 			mc.delete( keyBase + i );
