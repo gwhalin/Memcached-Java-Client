@@ -1,3 +1,8 @@
+28 Feb 2007 (gwhalin)
+	-- released as 1.5.1
+	-- fix rehashing bug when all servers are dead
+	-- fix javadoc generation problem
+
 16 Dec 2006 (whalin)
 	-- released as 1.5
 	-- urlencode keys

@@ -3,4 +3,4 @@ additional information (greg@meetup.com).
 
 The newest release has only been tested on:
 
-Sun's JRE 1.4.2 on Linux/i86
+Sun's JRE 5 and up on Linux/x86/amd64
