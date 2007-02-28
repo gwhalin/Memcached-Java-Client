@@ -731,48 +731,15 @@ public class SockIOPool {
 		}
 		
 		// from here on, we are working w/ multiple servers
-		int tries = 0;
-
-		// generate hashcode
-		int hv;
-		if ( hashCode != null ) {
-			hv = hashCode.intValue();
-		}
-		else {
-
-			// NATIVE_HASH = 0
-			// OLD_COMPAT_HASH = 1
-			// NEW_COMPAT_HASH = 2
-			switch ( hashingAlg ) {
-				case NATIVE_HASH:
-					hv = key.hashCode();
-					break;
-
-				case OLD_COMPAT_HASH:
-					hv = origCompatHashingAlg( key );
-					break;
-
-				case NEW_COMPAT_HASH:
-					hv = newCompatHashingAlg( key );
-					break;
-
-				default:
-					// use the native hash as a default
-					hv = key.hashCode();
-					hashingAlg = NATIVE_HASH;
-					break;
-			}
-		}
-
 		// keep trying different servers until we find one
 		int bucketSize = buckets.size();
 		boolean[] triedBucket = new boolean[ bucketSize ];
 		Arrays.fill( triedBucket, false );
 
 		// get initial bucket
-		int bucket = hv % bucketSize;
-		if ( bucket < 0 ) bucket *= -1;
+		int bucket = getBucket( key, hashCode );
 
+		int tries = 0;
 		while ( tries++ < bucketSize ) {
 
 			// try to get socket from bucket
@@ -820,6 +787,7 @@ public class SockIOPool {
 				// if we failed to get a socket from this server
 				// then we try again by adding an incrementer to the
 				// current key and then rehashing 
+				log.debug( "we need to rehash as we want to failover and we still have servers to try" );
 				int rehashTries = 0;
 				while ( triedBucket[ bucket ] ) {
 
@@ -827,36 +795,56 @@ public class SockIOPool {
 					String newKey = String.format( "%s%s", keyTry, key );
 
 					log.debug( "rehashing with: " + keyTry );
-					switch ( hashingAlg ) {
-						case NATIVE_HASH:
-							hv = newKey.hashCode();
-							break;
-
-						case OLD_COMPAT_HASH:
-							hv = origCompatHashingAlg( newKey );
-							break;
-
-						case NEW_COMPAT_HASH:
-							hv = newCompatHashingAlg( newKey );
-							break;
-
-						default:
-							// use the native hash as a default
-							hv = newKey.hashCode();
-							hashingAlg = NATIVE_HASH;
-							break;
-					}
+					bucket = getBucket( newKey, null );
 
 					rehashTries++;
-
-					// new bucket
-					bucket = hv % bucketSize;
-					if ( bucket < 0 ) bucket *= -1;
 				}
 			}
 		}
 
 		return null;
+	}
+
+	/** 
+	 * Returns a bucket to check for a given key. 
+	 * 
+	 * @param key String key cache is stored under
+	 * @return int bucket
+	 */
+	public int getBucket( String key, Integer hashCode ) {
+
+		int hc;
+
+		if ( hashCode != null ) {
+			hc = hashCode.intValue();
+		}
+		else {
+			switch ( hashingAlg ) {
+				case NATIVE_HASH:
+					hc = key.hashCode();
+					break;
+
+				case OLD_COMPAT_HASH:
+					hc = origCompatHashingAlg( key );
+					break;
+
+				case NEW_COMPAT_HASH:
+					hc = newCompatHashingAlg( key );
+					break;
+
+				default:
+					// use the native hash as a default
+					hc = key.hashCode();
+					hashingAlg = NATIVE_HASH;
+					break;
+			}
+		}
+
+		// new bucket
+		int bucket = hc % buckets.size();
+		if ( bucket < 0 ) bucket *= -1;
+
+		return bucket;
 	}
 
 	/** 
