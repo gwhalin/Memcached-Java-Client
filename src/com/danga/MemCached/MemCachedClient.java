@@ -793,14 +793,6 @@ public class MemCachedClient {
 			return -1;
 		}
 
-		try {
-			key = sanitizeKey( key );
-		}
-		catch ( UnsupportedEncodingException e ) {
-			log.error( "failed to sanitize your key!", e );
-			return -1;
-		}
-
 		long counter = -1;
 		try {
 			counter = Long.parseLong( (String)get( key, hashCode, true ) );
