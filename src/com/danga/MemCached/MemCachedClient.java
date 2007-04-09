@@ -805,6 +805,86 @@ public class MemCachedClient {
 		return counter;
 	}
 
+	/** 
+	 * Thread safe way to initialize and increment a counter. 
+	 * 
+	 * @param key key where the data is stored
+	 * @return value of incrementer
+	 */
+	public long addOrIncr( String key ) {
+		return addOrIncr( key, 0, null );
+	}
+
+	/** 
+	 * Thread safe way to initialize and increment a counter. 
+	 * 
+	 * @param key key where the data is stored
+	 * @param inc value to set or increment by
+	 * @return value of incrementer
+	 */
+	public long addOrIncr( String key, long inc ) {
+		return addOrIncr( key, inc, null );
+	}
+
+	/** 
+	 * Thread safe way to initialize and increment a counter. 
+	 * 
+	 * @param key key where the data is stored
+	 * @param inc value to set or increment by
+	 * @param hashCode if not null, then the int hashcode to use
+	 * @return value of incrementer
+	 */
+	public long addOrIncr( String key, long inc, Integer hashCode ) {
+		boolean ret = set( "add", key, new Long( inc ), null, hashCode, true );
+
+		if ( ret ) {
+			return inc;
+		}
+		else {
+			return incrdecr( "incr", key, inc, hashCode );
+		}
+	}
+
+	/** 
+	 * Thread safe way to initialize and decrement a counter. 
+	 * 
+	 * @param key key where the data is stored
+	 * @return value of incrementer
+	 */
+	public long addOrDecr( String key ) {
+		return addOrDecr( key, 0, null );
+	}
+
+	/** 
+	 * Thread safe way to initialize and decrement a counter. 
+	 * 
+	 * @param key key where the data is stored
+	 * @param inc value to set or increment by
+	 * @return value of incrementer
+	 */
+	public long addOrDecr( String key, long inc ) {
+		return addOrDecr( key, inc, null );
+	}
+
+	/** 
+	 * Thread safe way to initialize and decrement a counter. 
+	 * 
+	 * @param key key where the data is stored
+	 * @param inc value to set or increment by
+	 * @param hashCode if not null, then the int hashcode to use
+	 * @return value of incrementer
+	 */
+	public long addOrDecr( String key, long inc, Integer hashCode ) {
+		boolean ret = set( "add", key, new Long( inc ), null, hashCode, true );
+
+		if ( ret ) {
+			return inc;
+		}
+		else {
+			return incrdecr( "decr", key, inc, hashCode );
+		}
+	}
+
 	/**
 	 * Increment the value at the specified key by 1, and then return it.
 	 *

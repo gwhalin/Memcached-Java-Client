@@ -895,7 +895,13 @@ public class SockIOPool {
 						}
 						else {
 							// not connected, so we need to remove it
-							log.error( "++++ socket in avail pool is not connected: " + socket.toString() + " for host: " + host );
+							try {
+								socket.trueClose();
+							}
+							catch ( Exception ex ) {
+								log.debug( "++++ error trying to true close the socket" );
+							}
+
 							socket = null;
 
 							// remove from avail pool
@@ -966,7 +972,7 @@ public class SockIOPool {
 		}
 
 		Map<SockIO,Long> sockets =
-			new HashMap<SockIO,Long>();
+			new IdentityHashMap<SockIO,Long>();
 
 		sockets.put( socket, new Long( System.currentTimeMillis() ) );
 		pool.put( host, sockets );
