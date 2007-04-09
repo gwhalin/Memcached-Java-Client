@@ -1,3 +1,8 @@
+08 Apr 2007 (gwhalin)
+	-- added addOrIncr/addOrDecr methods
+	-- internal map changed to avoid possible key collision in internal data
+	   structures
+
 28 Feb 2007 (gwhalin)
 	-- released as 1.5.1
 	-- fix rehashing bug when all servers are dead

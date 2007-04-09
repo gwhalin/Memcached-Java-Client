@@ -1,5 +1,5 @@
 To Do:
 
-- support collections in NativeHandler
+- support collections and arrays in NativeHandler
 - clean up Logging code (auto-detect)
 - clean up and add more unit tests
