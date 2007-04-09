@@ -1,6 +1,22 @@
 /**
- *  * Test case to test memcached Java client failover when server list includes a server that is down
- *   */
+ * MemCached Java client
+ * Copyright (c) 2007 Greg Whalin
+ * All rights reserved.
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the BSD license
+ *
+ * This library is distributed in the hope that it will be
+ * useful, but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+ * PURPOSE.
+ *
+ * You should have received a copy of the BSD License along with this
+ * library.
+ *
+ * @author greg whalin <greg@meetup.com> 
+ * @version 1.5.2
+ */
 package com.danga.MemCached.test;
 
 import com.danga.MemCached.*;
