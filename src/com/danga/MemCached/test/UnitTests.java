@@ -146,6 +146,19 @@ public class UnitTests {
 		assert b.booleanValue();
 	}
     
+	public static void test18() {
+		long i = 0;
+		mc.addOrIncr( "foo" ); // foo now == 0
+		mc.incr( "foo" ); // foo now == 1
+		mc.incr( "foo", (long)5 ); // foo now == 6
+
+		mc.addOrIncr( "foo" ); // foo now 7
+
+		long j = mc.decr( "foo", (long)3 ); // foo now == 4
+		assert j == 4;
+		assert j == mc.getCounter( "foo" );
+	}
+
 	/**
 	 * This runs through some simple tests of the MemCacheClient.
 	 *
