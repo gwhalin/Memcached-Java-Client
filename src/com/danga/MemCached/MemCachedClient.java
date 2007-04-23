@@ -792,7 +792,7 @@ public class MemCachedClient {
 		}
 		catch ( Exception ex ) {
 			// not found or error getting out
-			log.error( String.format( "Failed to parse Long value for key: %s", key ) );
+			log.info( String.format( "Failed to parse Long value for key: %s", key ) );
 		}
 		
 		return counter;
