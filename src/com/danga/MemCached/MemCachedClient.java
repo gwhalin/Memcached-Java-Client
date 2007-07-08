@@ -186,6 +186,7 @@ public class MemCachedClient {
 	private static final int F_SERIALIZED = 8;
 	
 	// flags
+	private boolean sanitizeKeys;
 	private boolean primitiveAsString;
 	private boolean compressEnable;
 	private long compressThreshold;
@@ -196,6 +197,9 @@ public class MemCachedClient {
 
 	// optional passed in classloader
 	private ClassLoader classLoader;
+
+	// optional error handler
+	private ErrorHandler errorHandler;
 
 	/**
 	 * Creates a new instance of MemCachedClient.
@@ -216,16 +220,50 @@ public class MemCachedClient {
 	}
 
 	/** 
+	 * Creates a new instance of MemCacheClient but
+	 * acceptes a passed in ClassLoader and a passed
+	 * in ErrorHandler.
+	 * 
+	 * @param classLoader ClassLoader object.
+	 * @param errorHandler ErrorHandler object.
+	 */
+	public MemCachedClient( ClassLoader classLoader, ErrorHandler errorHandler ) {
+		this.classLoader  = classLoader;
+		this.errorHandler = errorHandler;
+		init();
+	}
+
+	/** 
 	 * Initializes client object to defaults.
 	 *
 	 * This enables compression and sets compression threshhold to 15 KB.
 	 */
 	private void init() {
+		this.sanitizeKeys       = true;
 		this.primitiveAsString  = false;
 		this.compressEnable     = true;
 		this.compressThreshold  = COMPRESS_THRESH;
 		this.defaultEncoding    = "UTF-8";
 		this.poolName           = "default";
+	}
+
+	/** 
+	 * Sets an optional ClassLoader to be used for
+	 * serialization.
+	 * 
+	 * @param classLoader 
+	 */
+	public void setClassLoader( ClassLoader classLoader ) {
+		this.classLoader = classLoader;
+	}
+
+	/** 
+	 * Sets an optional ErrorHandler.
+	 * 
+	 * @param errorHandler 
+	 */
+	public void setErrorHandler( ErrorHandler errorHandler ) {
+		this.errorHandler = errorHandler;
 	}
 
 	/** 
@@ -236,6 +274,15 @@ public class MemCachedClient {
 	 */
 	public void setPoolName( String poolName ) {
 		this.poolName = poolName;
+	}
+
+	/** 
+	 * Enables/disables sanitizing keys by URLEncoding.
+	 * 
+	 * @param sanitizeKeys if true, then URLEncode all keys
+	 */
+	public void setSanitizeKeys( boolean sanitizeKeys ) {
+		this.sanitizeKeys = sanitizeKeys;
 	}
 
 	/** 
@@ -344,6 +391,11 @@ public class MemCachedClient {
 			key = sanitizeKey( key );
 		}
 		catch ( UnsupportedEncodingException e ) {
+
+			// if we have an errorHandler, use its hook
+			if ( errorHandler != null )
+				errorHandler.handleErrorOnDelete( this, e, key );
+
 			log.error( "failed to sanitize your key!", e );
 			return false;
 		}
@@ -385,6 +437,11 @@ public class MemCachedClient {
 			}
 		}
 		catch ( IOException e ) {
+
+			// if we have an errorHandler, use its hook
+			if ( errorHandler != null )
+				errorHandler.handleErrorOnDelete( this, e, key );
+
 			// exception thrown
 			log.error( "++++ exception thrown while writing bytes to server on delete" );
 			log.error( e.getMessage(), e );
@@ -580,6 +637,11 @@ public class MemCachedClient {
 			key = sanitizeKey( key );
 		}
 		catch ( UnsupportedEncodingException e ) {
+
+			// if we have an errorHandler, use its hook
+			if ( errorHandler != null )
+				errorHandler.handleErrorOnSet( this, e, key );
+
 			log.error( "failed to sanitize your key!", e );
 			return false;
 		}
@@ -614,6 +676,11 @@ public class MemCachedClient {
 					val = value.toString().getBytes( defaultEncoding );
 				}
 				catch ( UnsupportedEncodingException ue ) {
+
+					// if we have an errorHandler, use its hook
+					if ( errorHandler != null )
+						errorHandler.handleErrorOnSet( this, ue, key );
+
 					log.error( "invalid encoding type used: " + defaultEncoding, ue );
 					sock.close();
 					sock = null;
@@ -626,6 +693,11 @@ public class MemCachedClient {
 					val = NativeHandler.encode( value );
 				}
 				catch ( Exception e ) {
+
+					// if we have an errorHandler, use its hook
+					if ( errorHandler != null )
+						errorHandler.handleErrorOnSet( this, e, key );
+
 					log.error( "Failed to native handle obj", e );
 
 					sock.close();
@@ -644,6 +716,11 @@ public class MemCachedClient {
 				flags |= F_SERIALIZED;
 			}
 			catch ( IOException e ) {
+
+				// if we have an errorHandler, use its hook
+				if ( errorHandler != null )
+					errorHandler.handleErrorOnSet( this, e, key );
+
 				// if we fail to serialize, then
 				// we bail
 				log.error( "failed to serialize obj", e );
@@ -674,7 +751,12 @@ public class MemCachedClient {
 
 				log.info( "++++ compression succeeded, size after: " + val.length );
 			}
-			catch (IOException e) {
+			catch ( IOException e ) {
+
+				// if we have an errorHandler, use its hook
+				if ( errorHandler != null )
+					errorHandler.handleErrorOnSet( this, e, key );
+
 				log.error( "IOException while compressing stream: " + e.getMessage() );
 				log.error( "storing data uncompressed" );
 			}
@@ -708,6 +790,11 @@ public class MemCachedClient {
 			}
 		}
 		catch ( IOException e ) {
+
+			// if we have an errorHandler, use its hook
+			if ( errorHandler != null )
+				errorHandler.handleErrorOnSet( this, e, key );
+
 			// exception thrown
 			log.error( "++++ exception thrown while writing bytes to server on set" );
 			log.error( e.getMessage(), e );
@@ -791,6 +878,11 @@ public class MemCachedClient {
 			counter = Long.parseLong( (String)get( key, hashCode, true ) );
 		}
 		catch ( Exception ex ) {
+
+			// if we have an errorHandler, use its hook
+			if ( errorHandler != null )
+				errorHandler.handleErrorOnGet( this, ex, key );
+
 			// not found or error getting out
 			log.info( String.format( "Failed to parse Long value for key: %s", key ) );
 		}
@@ -970,6 +1062,11 @@ public class MemCachedClient {
 			key = sanitizeKey( key );
 		}
 		catch ( UnsupportedEncodingException e ) {
+
+			// if we have an errorHandler, use its hook
+			if ( errorHandler != null )
+				errorHandler.handleErrorOnGet( this, e, key );
+
 			log.error( "failed to sanitize your key!", e );
 			return -1;
 		}
@@ -998,6 +1095,11 @@ public class MemCachedClient {
 					return Long.parseLong( line );
 				}
 				catch ( Exception ex ) {
+
+					// if we have an errorHandler, use its hook
+					if ( errorHandler != null )
+						errorHandler.handleErrorOnGet( this, ex, key );
+
 					log.error( String.format( "Failed to parse Long value for key: %s", key ) );
 				}
  			}
@@ -1009,6 +1111,11 @@ public class MemCachedClient {
 			}
 		}
 		catch ( IOException e ) {
+
+			// if we have an errorHandler, use its hook
+			if ( errorHandler != null )
+				errorHandler.handleErrorOnGet( this, e, key );
+
 			// exception thrown
 			log.error( "++++ exception thrown while writing bytes to server on incr/decr" );
 			log.error( e.getMessage(), e );
@@ -1087,6 +1194,11 @@ public class MemCachedClient {
 			key = sanitizeKey( key );
 		}
 		catch ( UnsupportedEncodingException e ) {
+
+			// if we have an errorHandler, use its hook
+			if ( errorHandler != null )
+				errorHandler.handleErrorOnGet( this, e, key );
+
 			log.error( "failed to sanitize your key!", e );
 			return false;
 		}
@@ -1119,6 +1231,11 @@ public class MemCachedClient {
 			return hm.get( key );
 	    }
 		catch ( IOException e ) {
+
+			// if we have an errorHandler, use its hook
+			if ( errorHandler != null )
+				errorHandler.handleErrorOnGet( this, e, key );
+
 			// exception thrown
 			log.error( "++++ exception thrown while trying to get object from cache for key: " + key );
 			log.error( e.getMessage(), e );
@@ -1262,6 +1379,11 @@ public class MemCachedClient {
 				key = sanitizeKey( key );
 			}
 			catch ( UnsupportedEncodingException e ) {
+
+				// if we have an errorHandler, use its hook
+				if ( errorHandler != null )
+					errorHandler.handleErrorOnGet( this, e, key );
+
 				log.error( "failed to sanitize your key!", e );
 				continue;
 			}
@@ -1301,6 +1423,11 @@ public class MemCachedClient {
 				loadItems( sock, ret, asString );
 			}
 			catch ( IOException e ) {
+
+				// if we have an errorHandler, use its hook
+				if ( errorHandler != null )
+					errorHandler.handleErrorOnGet( this, e, keys );
+
 				// exception thrown
 				log.error( "++++ exception thrown while getting from cache on getMulti" );
 				log.error( e.getMessage(), e );
@@ -1381,6 +1508,11 @@ public class MemCachedClient {
 						gzi.close();
 					}
 					catch ( IOException e ) {
+
+						// if we have an errorHandler, use its hook
+						if ( errorHandler != null )
+							errorHandler.handleErrorOnGet( this, e, key );
+
 						log.error( "++++ IOException thrown while trying to uncompress input stream for key: " + key );
 						log.error( e.getMessage(), e );
 						throw new NestedIOException( "++++ IOException thrown while trying to uncompress input stream for key: " + key, e );
@@ -1400,6 +1532,11 @@ public class MemCachedClient {
 							o = NativeHandler.decode( buf );    
 						}
 						catch ( Exception e ) {
+
+							// if we have an errorHandler, use its hook
+							if ( errorHandler != null )
+								errorHandler.handleErrorOnGet( this, e, key );
+
 							log.error( "++++ Exception thrown while trying to deserialize for key: " + key, e );
 							throw new NestedIOException( e );
 						}
@@ -1414,6 +1551,11 @@ public class MemCachedClient {
 						log.info( "++++ deserializing " + o.getClass() );
 					}
 					catch ( ClassNotFoundException e ) {
+
+						// if we have an errorHandler, use its hook
+						if ( errorHandler != null )
+							errorHandler.handleErrorOnGet( this, e, key );
+
 						log.error( "++++ ClassNotFoundException thrown while trying to deserialize for key: " + key, e );
 						throw new NestedIOException( "+++ failed while trying to deserialize for key: " + key, e );
 					}
@@ -1430,7 +1572,7 @@ public class MemCachedClient {
 	}
 
 	private String sanitizeKey( String key ) throws UnsupportedEncodingException {
-		return URLEncoder.encode( key, "UTF-8" );
+		return ( sanitizeKeys ) ? URLEncoder.encode( key, "UTF-8" ) : key;
 	}
 
 	/** 
@@ -1500,6 +1642,11 @@ public class MemCachedClient {
 					: false;
 			}
 			catch ( IOException e ) {
+
+				// if we have an errorHandler, use its hook
+				if ( errorHandler != null )
+					errorHandler.handleErrorOnFlush( this, e );
+
 				// exception thrown
 				log.error( "++++ exception thrown while writing bytes to server on flushAll" );
 				log.error( e.getMessage(), e );
@@ -1704,6 +1851,11 @@ public class MemCachedClient {
 				}
 			}
 			catch ( IOException e ) {
+
+				// if we have an errorHandler, use its hook
+				if ( errorHandler != null )
+					errorHandler.handleErrorOnStats( this, e );
+
 				// exception thrown
 				log.error( "++++ exception thrown while writing bytes to server on stats" );
 				log.error( e.getMessage(), e );

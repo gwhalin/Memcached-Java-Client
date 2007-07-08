@@ -1,3 +1,7 @@
+08 Jul 2007 (gwhalin)
+	-- add support for ErrorHandler hook (submitted by Dan Zivkovic @ Apple)
+	-- ability to disable URLEncoding keys
+
 08 Apr 2007 (gwhalin)
 	-- added addOrIncr/addOrDecr methods
 	-- internal map changed to avoid possible key collision in internal data

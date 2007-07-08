@@ -1099,8 +1099,17 @@ public class SockIOPool {
 		synchronized( this ) {
 			log.debug( "++++ SockIOPool shutting down..." );
 
-			if ( maintThread != null && maintThread.isRunning() )
+			if ( maintThread != null && maintThread.isRunning() ) {
+				// stop the main thread
 				stopMaintThread();
+
+				// wait for the thread to finish
+				while ( maintThread.isRunning() ) {
+					log.debug( "++++ waiting for main thread to finish run +++" );
+					try { Thread.sleep( 500 ); } catch ( Exception ex ) { }
+
+				}
+			}
 
 			log.debug( "++++ closing all internal pools." );
 			closePool( availPool );
@@ -1266,6 +1275,10 @@ public class SockIOPool {
 	 * @version 1.5
 	 */
 	protected static class MaintThread extends Thread {
+
+		// logger
+		private static Logger log =
+			Logger.getLogger( MaintThread.class.getName() );
 
 		private SockIOPool pool;
 		private long interval      = 1000 * 3; // every 3 seconds

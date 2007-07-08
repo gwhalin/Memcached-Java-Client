@@ -178,8 +178,8 @@ public class UnitTests {
 		// initialize the pool for memcache servers
 		SockIOPool pool = SockIOPool.getInstance( "test" );
 		pool.setServers( serverlist );
-		pool.setInitConn( 10 ); 
-		pool.setMinConn( 5 );
+		pool.setInitConn( 1 ); 
+		pool.setMinConn( 3 );
 		pool.setMaxConn( 250 );
 		pool.setMaintSleep( 30 );
 		pool.setNagle( false );
