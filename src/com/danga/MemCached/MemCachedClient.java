@@ -408,7 +408,7 @@ public class MemCachedClient {
 			return false;
 
 		// build command
-		StringBuffer command = new StringBuffer( "delete " ).append( key );
+		StringBuilder command = new StringBuilder( "delete " ).append( key );
 		if ( expiry != null )
 			command.append( " " + expiry.getTime() / 1000 );
 
@@ -1074,7 +1074,7 @@ public class MemCachedClient {
 		// get SockIO obj for given cache key
 		SockIOPool.SockIO sock = SockIOPool.getInstance( poolName ).getSock(key, hashCode);
 
-		if (sock == null)
+		if ( sock == null )
 			return -1;
 		
 		try {
