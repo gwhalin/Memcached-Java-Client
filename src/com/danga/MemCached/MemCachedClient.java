@@ -19,7 +19,7 @@
  * @author Kevin Burton <burton@peerfear.org>
  * @author Robert Watts <robert@wattsit.co.uk>
  * @author Vin Chawla <vin@tivo.com>
- * @version 1.5.2
+ * @version 1.6.1
  */
 package com.danga.MemCached;
 
@@ -1200,7 +1200,7 @@ public class MemCachedClient {
 				errorHandler.handleErrorOnGet( this, e, key );
 
 			log.error( "failed to sanitize your key!", e );
-			return false;
+			return null;
 		}
 
 		// get SockIO obj using cache key
