@@ -1428,10 +1428,10 @@ public class MemCachedClient {
 	/** 
 	 * Adding a comment.
 	 * 
-	 * @param cmdMap 
-	 * @param ret 
-	 * @param asString 
-	 * @param keys 
+	 * @param cmdMap map of host to command
+	 * @param ret map to return results
+	 * @param asString do we want to treat all prims as strings
+	 * @param keys keys we are looking for in string array
 	 */
 	private void loadItemsNIO( Map<String,StringBuilder> cmdMap, Map<String,Object> ret, boolean asString, String[] keys ) {
 
