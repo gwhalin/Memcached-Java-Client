@@ -1429,8 +1429,6 @@ public class MemCachedClient {
 	 * Adding a comment.
 	 * 
 	 * @param cmdMap 
-	 * @param cmdMap 
-	 * @param ret 
 	 * @param ret 
 	 * @param asString 
 	 * @param keys 
