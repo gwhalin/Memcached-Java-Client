@@ -1426,7 +1426,8 @@ public class MemCachedClient {
 	}
 
 	/** 
-	 * Adding a comment.
+	 * This is a private method to use NIO for get multi.
+	 * It multiplexes across multiple streams.
 	 * 
 	 * @param cmdMap map of host to command
 	 * @param ret map to return results
