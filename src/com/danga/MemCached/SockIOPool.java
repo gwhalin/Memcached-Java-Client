@@ -24,6 +24,8 @@ import java.util.*;
 import java.util.zip.*;
 import java.net.*;
 import java.io.*;
+import java.nio.*;
+import java.nio.channels.*;
 import java.util.concurrent.locks.ReentrantLock;
 import org.apache.log4j.Logger;
 
@@ -1350,7 +1352,8 @@ public class SockIOPool {
 
 		// data
 		private String host;
-		private Socket sock;
+		private SocketChannel sock;
+
 		private DataInputStream in;
 		private BufferedOutputStream out;
 
@@ -1371,17 +1374,21 @@ public class SockIOPool {
 
 			this.pool = pool;
 
+			// get a socket channel
 			sock = getSocket( host, port, connectTimeout );
+			
+			// default set this to blocking
+			sock.configureBlocking( true );
 
-			if (timeout >= 0)
-				sock.setSoTimeout( timeout );
+			if ( timeout >= 0 )
+				sock.socket().setSoTimeout( timeout );
 
 			// testing only
-			sock.setTcpNoDelay( noDelay );
+			sock.socket().setTcpNoDelay( noDelay );
 
 			// wrap streams
-			in  = new DataInputStream( sock.getInputStream() );
-			out = new BufferedOutputStream( sock.getOutputStream() );
+			in  = new DataInputStream( sock.socket().getInputStream() );
+			out = new BufferedOutputStream( sock.socket().getOutputStream() );
 
 			this.host = host + ":" + port;
 		}
@@ -1406,15 +1413,19 @@ public class SockIOPool {
 			// get socket: default is to use non-blocking connect
 			sock = getSocket( ip[ 0 ], Integer.parseInt( ip[ 1 ] ), connectTimeout );
 
+			// default set this to blocking
+			sock.configureBlocking( true );
+
 			if ( timeout >= 0 )
-				sock.setSoTimeout( timeout );
+				this.sock.socket().setSoTimeout( timeout );
 
 			// testing only
-			sock.setTcpNoDelay( noDelay );
+			sock.socket().setTcpNoDelay( noDelay );
 
 			// wrap streams
-			in   = new DataInputStream( sock.getInputStream() );
-			out  = new BufferedOutputStream( sock.getOutputStream() );
+			in   = new DataInputStream( sock.socket().getInputStream() );
+			out  = new BufferedOutputStream( sock.socket().getOutputStream() );
+
 			this.host = host;
 		}
 
@@ -1430,9 +1441,15 @@ public class SockIOPool {
 		 * @return connected socket
 		 * @throws IOException if errors connecting or if connection times out
 		 */
-		protected static Socket getSocket( String host, int port, int timeout ) throws IOException {
-			Socket sock = new Socket();
-			sock.connect( new InetSocketAddress( host, port ), timeout );
+		protected static SocketChannel getSocket( String host, int port, int timeout ) throws IOException {
+
+			SocketChannel sock = SocketChannel.open();
+
+			InetSocketAddress addy =
+				new InetSocketAddress( host, port );
+			
+			// connect
+			sock.socket().connect( addy, timeout );
 			return sock;
 		}
 
@@ -1487,6 +1504,7 @@ public class SockIOPool {
 
 			if ( sock != null ) {
 				try {
+					sock.socket().close();
 					sock.close();
 				}
 				catch ( IOException ioe ) {
@@ -1508,6 +1526,15 @@ public class SockIOPool {
 
 			if ( err )
 				throw new IOException( errMsg.toString() );
+		}
+
+		/** 
+		 * Lets caller get access to underlying channel. 
+		 * 
+		 * @return the backing SocketChannel
+		 */
+		public SocketChannel getChannel() {
+			return sock;
 		}
 
 		/** 
@@ -1679,7 +1706,7 @@ public class SockIOPool {
 		 * @return int hashcode
 		 */
 		public int hashCode() {
-			return (sock == null) ? 0 : sock.hashCode();
+			return ( sock == null ) ? 0 : sock.hashCode();
 		}
 
 		/** 
@@ -1688,7 +1715,7 @@ public class SockIOPool {
 		 * @return string
 		 */
 		public String toString() {
-			return (sock == null) ? "" : sock.toString();
+			return ( sock == null ) ? "" : sock.toString();
 		}
 	}
 }
