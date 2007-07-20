@@ -1689,6 +1689,7 @@ public class MemCachedClient {
 						sk.cancel();
 					}
 					else {
+						// we got some data
 
 
 
