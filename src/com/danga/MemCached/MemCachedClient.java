@@ -1690,9 +1690,16 @@ public class MemCachedClient {
 					}
 					else {
 						// we got some data
-						// more comments
-						// and more
 
+						log.info( "socket has hit EOS" );
+						try {
+							socket.close();
+							sk.channel().close();
+						}
+						catch ( IOException ioe ) { }
+
+						// cancel the key
+						sk.cancel();
 
 
 
