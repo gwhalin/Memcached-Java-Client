@@ -106,6 +106,7 @@ public class NativeHandler {
     public static final int MARKER_SHORT            = 9;
     public static final int MARKER_DOUBLE           = 10;
     public static final int MARKER_DATE             = 11;
+    public static final int MARKER_STRINGBUILDER    = 12;
 
     public static boolean isHandled( Object value ) {
 
@@ -114,6 +115,7 @@ public class NativeHandler {
              value instanceof String          ||
              value instanceof Character       ||
              value instanceof StringBuffer    ||
+             value instanceof StringBuilder   ||
              value instanceof Short           ||
              value instanceof Long            ||
              value instanceof Double          ||
@@ -152,6 +154,9 @@ public class NativeHandler {
 
         if ( value instanceof StringBuffer )
             return encode( (StringBuffer)value );
+
+        if ( value instanceof StringBuilder )
+            return encode( (StringBuilder)value );
 
         if ( value instanceof Short )
             return encode( (Short)value );
@@ -251,6 +256,15 @@ public class NativeHandler {
 
         byte[] b = encode( value.toString() );
         b[0] = MARKER_STRINGBUFFER;
+        
+        return b;
+        
+    }
+
+    public static byte[] encode( StringBuilder value ) throws Exception {
+
+        byte[] b = encode( value.toString() );
+        b[0] = MARKER_STRINGBUILDER;
         
         return b;
         
@@ -423,6 +437,12 @@ public class NativeHandler {
     public static StringBuffer decodeStringBuffer( byte[] b ) throws Exception {
 
         return new StringBuffer( decodeString( b ) );
+        
+    }
+
+    public static StringBuilder decodeStringBuilder( byte[] b ) throws Exception {
+
+        return new StringBuilder( decodeString( b ) );
         
     }
 

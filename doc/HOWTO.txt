@@ -111,6 +111,38 @@ there are two settings to handle this.
 	pool.setFailback( false );
 
 
+Serialization:
+==============
+
+For java "native types", which include:
+
+Boolean
+Byte
+String
+Character
+StringBuffer
+StringBuilder
+Short
+Long
+Double
+Float
+Date
+Integer
+
+The client will by default *NOT* use java serialization, and instead
+will serialize using the primitive values to save space.  You can
+override this by using the mcc.setPrimitiveAsString( true ), which
+will use the toString representation of the object.
+
+For other java objects, you need to make sure the class implements
+Serializable in order to be able to be stored in the cache.
+
+I would also reccomend that if possible, classes should instead
+implement Externalizable as opposed to Serializable.  This allows the
+author of the class to define how objects of that class should
+serialize.  In practice at Meetup.com, we saw a 60% reduction in the size
+of our serialized objects by doing this.  This means less data to eat up
+cache space and less data to transfer over the network.
 
 Other:
 ======
