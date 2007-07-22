@@ -165,10 +165,6 @@ public class MemCachedClient {
 	private static Logger log =
 		Logger.getLogger( MemCachedClient.class.getName() );
 
-	// default charset
-	private static final Charset charSet =
-		Charset.defaultCharset();
-
 	// return codes
 	private static final String VALUE        = "VALUE";			// start of value line from server
 	private static final String STATS        = "STAT";			// start of stats line from server
@@ -1457,14 +1453,9 @@ public class MemCachedClient {
 		Map<String,SockIOPool.SockIO> sockMap =
 			new HashMap<String,SockIOPool.SockIO>( cmdMap.keySet().size() );
 
-		// Convenience to move our Strings to CharBuffers
-		Map<String,CharBuffer> writeMap =
-			new HashMap<String,CharBuffer>( cmdMap.keySet().size() );
-
-		// map to store server response
-		// keyed off of the cache key
-		Map<String,byte[]> response = 
-			new HashMap<String,byte[]>( keys.length );
+		// map of data we need to write per host
+		Map<String,ByteBuffer> writeMap =
+			new HashMap<String,ByteBuffer>( cmdMap.keySet().size() );
 
 		// iterate through and flip the sockets to nonblocking
 		// get a selector and register the socket
@@ -1484,8 +1475,8 @@ public class MemCachedClient {
 				sockMap.put( host, sock );
 
 				// store the string in a charbuffer and remove this entry
-				CharBuffer cb = CharBuffer.wrap( cmdMap.get( host ).append( "\r\n" ) );
-				writeMap.put( host, cb );
+				ByteBuffer bb = ByteBuffer.wrap( cmdMap.get( host ).append( "\r\n" ).toString().getBytes() );
+				writeMap.put( host, bb );
 				i.remove();
 			}
 			catch ( IOException e ) {
@@ -1516,12 +1507,14 @@ public class MemCachedClient {
 		// will be reused in loop
 		SocketChannel socket = null;
 
-		// grab a buffer to work with
+		// grab a buffer to work with for reading results
 		ByteBuffer buf =
 			ByteBuffer.allocateDirect( 8192 );
 
-		// get an encoder
-		CharsetEncoder encoder = charSet.newEncoder();
+		// map to store server response
+		// keyed off of host
+		Map<String,byte[]> response = 
+			new HashMap<String,byte[]>( keys.length );
 
 		// now lets start looping
 		while ( true ) {
@@ -1585,30 +1578,19 @@ public class MemCachedClient {
 					buf.clear();
 
 					if ( writeMap.containsKey( host ) ) {
-						CharBuffer in = writeMap.get( host );
+						ByteBuffer in = writeMap.get( host );
 						log.error( "remaining bytes to send before encoding: " + in.remaining() );
 
-						// write what we need to write
-						encoder.reset();
-						CoderResult cr = encoder.encode( in, buf, false );
-						encoder.flush( buf );
-
-						log.error( "remaining bytes to send after encoding: " + in.remaining() );
-
-						// check to see if we are done?
-						if ( cr.isUnderflow() ) {
-							encoder.encode( in, buf, true );
-							encoder.flush( buf );
-
-							// and clear out the map
-							writeMap.remove( host );
-						}
 
 						// now send
 						try {
-							while ( buf.hasRemaining() ) {
-								int rc = socket.write( buf );
-								log.error( String.format( "wrote %d bytes to the server for host %s", rc, host ) );
+							int rc = socket.write( buf );
+							log.error( String.format( "wrote %d bytes to the server for host %s", rc, host ) );
+
+							if ( !buf.hasRemaining() ) {
+								// we read it all so we can stop worrying about writing to this host
+								writeMap.remove( host );
+								sk.interestOps( SelectionKey.OP_READ );
 							}
 						}
 						catch ( IOException e ) {
@@ -1690,7 +1672,19 @@ public class MemCachedClient {
 					}
 					else {
 						// we got some data
+						byte[] tmp = new byte[ sz ];
+						buf.get( tmp );
 
+						if ( response.containsKey( host ) ) {
+							byte[] oldData = response.get( host );
+							byte[] newData = new byte[ oldData.length + sz ];
+
+							System.arraycopy( oldData, 0, newData, 0, oldData.length );
+							System.arraycopy( tmp, 0, newData, oldData.length, sz );
+						}
+						else {
+							response.put( host, tmp );
+						}
 					}
 
 					continue;
