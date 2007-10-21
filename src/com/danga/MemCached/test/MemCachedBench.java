@@ -46,9 +46,8 @@ public class MemCachedBench {
 		pool.initialize();
 
 		// get client instance
-		MemCachedClient mc = new MemCachedClient();
+		MemCachedClient mc = new MemCachedClient( "test" );
 		mc.setCompressEnable( false );
-		mc.setPoolName( "test" );
 
 		String keyBase = "testKey";
 		String object = "This is a test of an object blah blah es, serialization does not seem to slow things down so much.  The gzip compression is horrible horrible performance, so we only use it for very large objects.  I have not done any heavy benchmarking recently";

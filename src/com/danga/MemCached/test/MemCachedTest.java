@@ -25,7 +25,8 @@ import java.util.*;
 public class MemCachedTest {
 
 	// store results from threads
-	private static Hashtable threadInfo = new Hashtable();
+	private static Hashtable<Integer,StringBuilder> threadInfo =
+		new Hashtable<Integer,StringBuilder>();
     
 	/**
 	 * This runs through some simple tests of the MemCacheClient.
@@ -43,7 +44,7 @@ public class MemCachedTest {
 
 		// initialize the pool for memcache servers
 		SockIOPool pool = SockIOPool.getInstance();
-		pool.setServers(serverlist);
+		pool.setServers( serverlist );
 
 		pool.setInitConn(5);
 		pool.setMinConn(5);
@@ -76,9 +77,10 @@ public class MemCachedTest {
 		int i = 0;
 		while (i < threads) {
 			if (threadInfo.containsKey(new Integer(i))) {
-				System.out.println((StringBuffer) threadInfo.get(new Integer(i)));
+				System.out.println( threadInfo.get( new Integer( i ) ) );
 				i++;
-			} else {
+			}
+			else {
 				try {
 					Thread.sleep(1000);
 				}
@@ -112,7 +114,7 @@ public class MemCachedTest {
 
 		public void run() {
 
-			StringBuffer result = new StringBuffer();
+			StringBuilder result = new StringBuilder();
 
 			// get client instance
 			MemCachedClient mc = new MemCachedClient();

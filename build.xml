@@ -110,10 +110,11 @@
 		<jar compress="yes" jarfile="java_memcached-${ver}/java_memcached-${ver}.jar" basedir="java_memcached-${ver}/classes"/>
     </target>
 
-	<!-- compilation target for dev work -->
+	<!-- compilation target -->
 	<target name="compile">
 		<mkdir dir="${build.dir}"/>
-		<javac debug="yes" srcdir="${src.dir}" destdir="${build.dir}" deprecation="true">
+		<javac debug="yes" srcdir="${src.dir}" destdir="${build.dir}" deprecation="true" compiler="modern">
+			<compilerarg value="-Xlint:unchecked"/>
 			<classpath refid="project.class.path"/>
 		</javac>
 	</target>

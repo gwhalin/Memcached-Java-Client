@@ -126,6 +126,10 @@ public class Logger {
 		debug( mesg, null );
 	}
 
+	public boolean isDebugEnabled() {
+		return this.level <= LEVEL_DEBUG;
+	}
+	
 	/** 
 	 * logs info mesg 
 	 * 
@@ -143,6 +147,10 @@ public class Logger {
 		info( mesg, null );
 	}
 
+	public boolean isInfoEnabled() {
+		return this.level <= LEVEL_INFO;
+	}
+	
 	/** 
 	 * logs warn mesg 
 	 * 
