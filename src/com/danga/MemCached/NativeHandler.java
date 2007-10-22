@@ -95,21 +95,6 @@ public class NativeHandler {
 	private static Logger log =
 		Logger.getLogger( NativeHandler.class.getName() );
 
-	// only get 16 bits and 15/16 are taken by the main client
-	private static final int MARKER_BYTE             = 1;
-	private static final int MARKER_BOOLEAN          = 2;
-	private static final int MARKER_INTEGER          = 4;
-	private static final int MARKER_LONG             = 8;
-	private static final int MARKER_CHARACTER        = 16;
-	private static final int MARKER_STRING           = 32;
-	private static final int MARKER_STRINGBUFFER     = 64;
-	private static final int MARKER_FLOAT            = 128;
-	private static final int MARKER_SHORT            = 256;
-	private static final int MARKER_DOUBLE           = 512;
-	private static final int MARKER_DATE             = 1024;
-	private static final int MARKER_STRINGBUILDER    = 2048;
-	private static final int MARKER_BYTEARR          = 4096;
-	
 	/** 
 	 * Detemine of object can be natively serialized by this class. 
 	 * 
@@ -146,43 +131,43 @@ public class NativeHandler {
 	public static int getMarkerFlag( Object value ) {
 
 		if ( value instanceof Byte )
-			return MARKER_BYTE;
+			return MemCachedClient.MARKER_BYTE;
 		
 		if ( value instanceof Boolean )
-			return MARKER_BOOLEAN;
+			return MemCachedClient.MARKER_BOOLEAN;
 		
 		if ( value instanceof Integer ) 
-			return MARKER_INTEGER;
+			return MemCachedClient.MARKER_INTEGER;
 		
 		if ( value instanceof Long )
-			return MARKER_LONG;
+			return MemCachedClient.MARKER_LONG;
 
 		if ( value instanceof Character )
-			return MARKER_CHARACTER;
+			return MemCachedClient.MARKER_CHARACTER;
 		
 		if ( value instanceof String )
-			return MARKER_STRING;
+			return MemCachedClient.MARKER_STRING;
 		
 		if ( value instanceof StringBuffer )
-			return MARKER_STRINGBUFFER;
+			return MemCachedClient.MARKER_STRINGBUFFER;
 		
 		if ( value instanceof Float )
-			return MARKER_FLOAT;
+			return MemCachedClient.MARKER_FLOAT;
 		
 		if ( value instanceof Short )
-			return MARKER_SHORT;
+			return MemCachedClient.MARKER_SHORT;
 		
 		if ( value instanceof Double )
-			return MARKER_DOUBLE;
+			return MemCachedClient.MARKER_DOUBLE;
 		
 		if ( value instanceof Date )
-			return MARKER_DATE;
+			return MemCachedClient.MARKER_DATE;
 		
 		if ( value instanceof StringBuilder )
-			return MARKER_STRINGBUILDER;
+			return MemCachedClient.MARKER_STRINGBUILDER;
 		
 		if ( value instanceof byte[] )
-			return MARKER_BYTEARR;
+			return MemCachedClient.MARKER_BYTEARR;
 		
 		return -1;
 	}
@@ -336,43 +321,43 @@ public class NativeHandler {
 			return null;
 
 		
-		if ( ( flag & MARKER_BYTE ) == MARKER_BYTE )
+		if ( ( flag & MemCachedClient.MARKER_BYTE ) == MemCachedClient.MARKER_BYTE )
 			return decodeByte( b );
 		
-		if ( ( flag & MARKER_BOOLEAN ) == MARKER_BOOLEAN )
+		if ( ( flag & MemCachedClient.MARKER_BOOLEAN ) == MemCachedClient.MARKER_BOOLEAN )
 			return decodeBoolean( b );
 		
-		if ( ( flag & MARKER_INTEGER ) == MARKER_INTEGER )
+		if ( ( flag & MemCachedClient.MARKER_INTEGER ) == MemCachedClient.MARKER_INTEGER )
 			return decodeInteger( b );
 		
-		if ( ( flag & MARKER_LONG ) == MARKER_LONG )
+		if ( ( flag & MemCachedClient.MARKER_LONG ) == MemCachedClient.MARKER_LONG )
 			return decodeLong( b );
 		
-		if ( ( flag & MARKER_CHARACTER ) == MARKER_CHARACTER )
+		if ( ( flag & MemCachedClient.MARKER_CHARACTER ) == MemCachedClient.MARKER_CHARACTER )
 			return decodeCharacter( b );
 		
-		if ( ( flag & MARKER_STRING ) == MARKER_STRING )
+		if ( ( flag & MemCachedClient.MARKER_STRING ) == MemCachedClient.MARKER_STRING )
 			return decodeString( b );
 		
-		if ( ( flag & MARKER_STRINGBUFFER ) == MARKER_STRINGBUFFER )
+		if ( ( flag & MemCachedClient.MARKER_STRINGBUFFER ) == MemCachedClient.MARKER_STRINGBUFFER )
 			return decodeStringBuffer( b );
 		
-		if ( ( flag & MARKER_FLOAT ) == MARKER_FLOAT )
+		if ( ( flag & MemCachedClient.MARKER_FLOAT ) == MemCachedClient.MARKER_FLOAT )
 			return decodeFloat( b );
 		
-		if ( ( flag & MARKER_SHORT ) == MARKER_SHORT )
+		if ( ( flag & MemCachedClient.MARKER_SHORT ) == MemCachedClient.MARKER_SHORT )
 			return decodeShort( b );
 		
-		if ( ( flag & MARKER_DOUBLE ) == MARKER_DOUBLE )
+		if ( ( flag & MemCachedClient.MARKER_DOUBLE ) == MemCachedClient.MARKER_DOUBLE )
 			return decodeDouble( b );
 		
-		if ( ( flag & MARKER_DATE ) == MARKER_DATE )
+		if ( ( flag & MemCachedClient.MARKER_DATE ) == MemCachedClient.MARKER_DATE )
 			return decodeDate( b );
 		
-		if ( ( flag & MARKER_STRINGBUILDER ) == MARKER_STRINGBUILDER )
+		if ( ( flag & MemCachedClient.MARKER_STRINGBUILDER ) == MemCachedClient.MARKER_STRINGBUILDER )
 			return decodeStringBuilder( b );
 		
-		if ( ( flag & MARKER_BYTEARR ) == MARKER_BYTEARR )
+		if ( ( flag & MemCachedClient.MARKER_BYTEARR ) == MemCachedClient.MARKER_BYTEARR )
 			return decodeByteArr( b );
 		
 		return null;

@@ -186,21 +186,21 @@ public class MemCachedClient {
 	private static final int COMPRESS_THRESH = 30720;
     
 	// values for cache flags 
-	private static final int MARKER_BYTE             = 1;
-	private static final int MARKER_BOOLEAN          = 2;
-	private static final int MARKER_INTEGER          = 4;
-	private static final int MARKER_LONG             = 8;
-	private static final int MARKER_CHARACTER        = 16;
-	private static final int MARKER_STRING           = 32;
-	private static final int MARKER_STRINGBUFFER     = 64;
-	private static final int MARKER_FLOAT            = 128;
-	private static final int MARKER_SHORT            = 256;
-	private static final int MARKER_DOUBLE           = 512;
-	private static final int MARKER_DATE             = 1024;
-	private static final int MARKER_STRINGBUILDER    = 2048;
-	private static final int MARKER_BYTEARR          = 4096;
-	private static final int F_COMPRESSED            = 8192;
-	private static final int F_SERIALIZED            = 16384;
+	public static final int MARKER_BYTE             = 1;
+	public static final int MARKER_BOOLEAN          = 8192;
+	public static final int MARKER_INTEGER          = 4;
+	public static final int MARKER_LONG             = 16384;
+	public static final int MARKER_CHARACTER        = 16;
+	public static final int MARKER_STRING           = 32;
+	public static final int MARKER_STRINGBUFFER     = 64;
+	public static final int MARKER_FLOAT            = 128;
+	public static final int MARKER_SHORT            = 256;
+	public static final int MARKER_DOUBLE           = 512;
+	public static final int MARKER_DATE             = 1024;
+	public static final int MARKER_STRINGBUILDER    = 2048;
+	public static final int MARKER_BYTEARR          = 4096;
+	public static final int F_COMPRESSED            = 2;
+	public static final int F_SERIALIZED            = 8;
 	
 	// flags
 	private boolean sanitizeKeys;
