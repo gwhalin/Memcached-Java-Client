@@ -267,6 +267,7 @@ public class UnitTests {
 		pool.setServers( serverlist );
 		pool.setMaxConn( 250 );
 		pool.setNagle( false );
+		pool.setMaintSleep( 1000 );
 		pool.initialize();
 
         mc = new MemCachedClient( "test" );

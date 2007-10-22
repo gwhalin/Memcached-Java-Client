@@ -2025,7 +2025,7 @@ public class MemCachedClient {
 				timeRemaining = timeout;
 				
 				while ( numConns > 0 && timeRemaining > 0 ) {
-					int n = selector.select( timeRemaining );
+					int n = selector.select( 3000 );
 					if ( n > 0 ) {
 					    // we've got some activity; handle it
 					    //
@@ -2038,6 +2038,7 @@ public class MemCachedClient {
 					}
 					else {
 					    // timeout likely... better check
+						log.error( "selector timed out waiting for activity" );
 					}
 					
 					timeRemaining = timeout - (System.currentTimeMillis() - startTime);
@@ -2126,7 +2127,7 @@ public class MemCachedClient {
 			InetAddress remote = conn.channel.socket().getInetAddress();
 			
 			ByteBuffer buf = conn.getBuffer();
-			int count = conn.channel.read(buf);
+			int count = conn.channel.read( buf );
 			if ( count > 0 ) {
 				if ( log.isDebugEnabled() )
 					log.debug( "read  " + count + " from " + remote );

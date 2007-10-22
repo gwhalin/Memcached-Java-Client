@@ -167,7 +167,7 @@ public class SockIOPool {
 	// set to hold sockets to close
 	private Map<String,Map<SockIO,Long>> availPool;
 	private Map<String,Map<SockIO,Long>> busyPool;
-	private Set<SockIO> deadPool;;
+	private Map<SockIO,Integer> deadPool;;
 	
 	// empty constructor
 	protected SockIOPool() { }
@@ -498,7 +498,7 @@ public class SockIOPool {
 			// pools
 			availPool   = new HashMap<String,Map<SockIO,Long>>( servers.length * initConn );
 			busyPool    = new HashMap<String,Map<SockIO,Long>>( servers.length * initConn );
-			deadPool    = new HashSet<SockIO>();
+			deadPool    = new IdentityHashMap<SockIO,Integer>();
 
 			hostDeadDur = new HashMap<String,Long>();
 			hostDead    = new HashMap<String,Date>();
@@ -893,7 +893,7 @@ public class SockIOPool {
 						}
 						else {
 							// add to deadpool for later reaping
-							deadPool.add( socket );
+							deadPool.put( socket, new Integer(0) );
 
 							// remove from avail pool
 							i.remove();
@@ -1136,7 +1136,6 @@ public class SockIOPool {
 	protected void selfMaint() {
 		log.debug( "++++ Starting self maintenance...." );
 
-
 		// go through avail sockets and create sockets
 		// as needed to maintain pool settings
 		Map<String,Set<SockIO>> newSockets =
@@ -1208,8 +1207,15 @@ public class SockIOPool {
 						if ( (expire + maxIdle) < System.currentTimeMillis() ) {
 							log.debug( "+++ removing stale entry from pool as it is past its idle timeout and pool is over max spare" );
 
-							// add to deadPool for later reaping
-							deadPool.add( socket );
+							if ( socket.isConnected() ) {
+								// add to busy pool
+								log.debug( "++++ moving socket for host (" + host + ") to busy pool ... socket: " + socket );
+								addSocketToPool( busyPool, host, socket );
+							}
+							else {
+								// add to deadPool for later reaping
+								deadPool.put( socket, new Integer( 0 ) );
+							}
 
 							// remove from the availPool
 							j.remove();
@@ -1240,8 +1246,15 @@ public class SockIOPool {
 					if ( (hungTime + maxBusyTime) < System.currentTimeMillis() ) {
 						log.error( "+++ removing potentially hung connection from busy pool ... socket in pool for " + (System.currentTimeMillis() - hungTime) + "ms" );
 
-						// add to deadPool for later reaping
-						deadPool.add( socket );
+						if ( socket.isConnected() ) {
+							// add to busy pool
+							log.debug( "++++ moving socket for host (" + host + ") to busy pool ... socket: " + socket );
+							addSocketToPool( busyPool, host, socket );
+						}
+						else {
+							// add to deadPool for later reaping
+							deadPool.put( socket, new Integer( 0 ) );
+						}
 
 						// remove from the busy pool
 						j.remove();
@@ -1250,10 +1263,14 @@ public class SockIOPool {
 			}
 		}
 
-		// finally clean out the deadPool -- no need to lock as these are not in any pool
-		for ( Iterator<SockIO> i = deadPool.iterator(); i.hasNext(); ) {
+		// finally clean out the deadPool
+		Set<SockIO> toClose;
+		synchronized( deadPool ) {
+			toClose  = deadPool.keySet();
+			deadPool = new IdentityHashMap<SockIO,Integer>();
+		}
 
-			SockIO socket = i.next();
+		for ( SockIO socket : toClose ) {
 			try {
 				socket.trueClose();
 			}
@@ -1262,8 +1279,6 @@ public class SockIOPool {
 				log.error( ex.getMessage(), ex );
 				socket = null;
 			}
-
-			i.remove();
 		}
 
 		log.debug( "+++ ending self maintenance." );
