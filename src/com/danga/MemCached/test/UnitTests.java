@@ -22,6 +22,7 @@ package com.danga.MemCached.test;
 
 import com.danga.MemCached.*;
 import java.util.*;
+import java.io.Serializable;
 
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
@@ -238,6 +239,13 @@ public class UnitTests {
 		log.error( "+ store/retrieve byte[] type test passed" );
     }
 
+    public static void test23() {
+		TestClass tc = new TestClass( "foo", "bar", new Integer( 32 ) );
+        mc.set( "foo", tc );
+		assert tc.equals( (TestClass)mc.get( "foo" ) );
+		log.error( "+ store/retrieve serialized object test passed" );
+    }
+
 	/**
 	 * This runs through some simple tests of the MemCacheClient.
 	 *
@@ -295,6 +303,7 @@ public class UnitTests {
 			test17();
 			test21();
 			test22();
+			test23();
 			
 			for ( int i = 0; i < 3; i++ )
 				test19();
@@ -318,6 +327,40 @@ public class UnitTests {
 			
 			test20( 900*1024, 32*1024, 0 );
 			test20( 900*1024, 32*1024, 1 );
+		}
+	}
+
+	/** 
+	 * Class for testing serializing of objects. 
+	 * 
+	 * @author $Author: $
+	 * @version $Revision: $ $Date: $
+	 */
+	public static final class TestClass implements Serializable {
+
+		private String field1;
+		private String field2;
+		private Integer field3;
+
+		public TestClass( String field1, String field2, Integer field3 ) {
+			this.field1 = field1;
+			this.field2 = field2;
+			this.field3 = field3;
+		}
+
+		public String getField1() { return this.field1; }
+		public String getField2() { return this.field2; }
+		public Integer getField3() { return this.field3; }
+
+		public boolean equals( Object o ) {
+			if ( this == o ) return true;
+			if ( !( o instanceof TestClass ) ) return false;
+
+			TestClass obj = (TestClass)o;
+
+			return ( ( this.field1 == obj.getField1() || ( this.field1 != null && this.field1.equals( obj.getField1() ) ) )
+					&& ( this.field2 == obj.getField2() || ( this.field2 != null && this.field2.equals( obj.getField2() ) ) )
+					&& ( this.field3 == obj.getField3() || ( this.field3 != null && this.field3.equals( obj.getField3() ) ) ) );
 		}
 	}
 }

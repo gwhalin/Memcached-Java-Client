@@ -1541,7 +1541,7 @@ public class MemCachedClient {
 				}
 
 				// we can only take out serialized objects
-				if ( ( flag & F_SERIALIZED ) == 0 ) {
+				if ( ( flag & F_SERIALIZED ) != F_SERIALIZED ) {
 					if ( primitiveAsString || asString ) {
 						// pulling out string value
 						log.info( "++++ retrieving object and stuffing into a string." );
@@ -2025,10 +2025,9 @@ public class MemCachedClient {
 				timeRemaining = timeout;
 				
 				while ( numConns > 0 && timeRemaining > 0 ) {
-					int n = selector.select( 3000 );
+					int n = selector.select( 5000 );
 					if ( n > 0 ) {
 					    // we've got some activity; handle it
-					    //
 					    Iterator<SelectionKey> it = selector.selectedKeys().iterator();
 					    while ( it.hasNext() ) {
 					        SelectionKey key = it.next();
@@ -2038,6 +2037,7 @@ public class MemCachedClient {
 					}
 					else {
 					    // timeout likely... better check
+						// TODO:  This seems like a problem area that we need to figure out how to handle.
 						log.error( "selector timed out waiting for activity" );
 					}
 					
