@@ -476,7 +476,7 @@ public class MemCachedClient {
 			}
 			else {
 				log.error( "++++ error deleting key: " + key );
-				log.error( line );
+				log.error( "++++ server response: " + line );
 			}
 		}
 		catch ( IOException e ) {
@@ -811,10 +811,8 @@ public class MemCachedClient {
 
 		// now write the data to the cache server
 		try {
-			String cmd = cmdname + " " + key + " " + flags + " "
-				+ expiry.getTime() / 1000 + " " + val.length;
+			String cmd = String.format( "%s %s %d %d %d\r\n", cmdname, key, flags, (expiry.getTime() / 1000), val.length );
 			sock.write( cmd.getBytes() );
-			sock.write( "\r\n".getBytes() );
 			sock.write( val );
 			sock.write( "\r\n".getBytes() );
 			sock.flush();
@@ -834,7 +832,7 @@ public class MemCachedClient {
 			}
 			else {
 				log.error( "++++ error storing data in cache for key: " + key + " -- length: " + val.length );
-				log.error( line );
+				log.error( "++++ server response: " + line );
 			}
 		}
 		catch ( IOException e ) {
@@ -1129,7 +1127,7 @@ public class MemCachedClient {
 			return -1;
 		
 		try {
-			String cmd = cmdname + " " + key + " " + inc + "\r\n";
+			String cmd = String.format( "%s %s %d\r\n", cmdname, key, inc );
 			log.debug( "++++ memcache incr/decr command: " + cmd );
 
 			sock.write( cmd.getBytes() );
@@ -1158,7 +1156,8 @@ public class MemCachedClient {
 				log.info( "++++ key not found to incr/decr for key: " + key );
 			}
 			else {
-				log.error( "error incr/decr key: " + key );
+				log.error( "++++ error incr/decr key: " + key );
+				log.error( "++++ server response: " + line );
 			}
 		}
 		catch ( IOException e ) {
@@ -1264,8 +1263,8 @@ public class MemCachedClient {
 			return null;
 
 	    try {
-			String cmd = "get " + key + "\r\n";
-			log.debug("++++ memcache get command: " + cmd);
+			String cmd = String.format( "get %s\r\n", key );
+			log.debug( "++++ memcache get command: " + cmd );
 
 			sock.write( cmd.getBytes() );
 			sock.flush();
@@ -1782,8 +1781,8 @@ public class MemCachedClient {
 	 * @param slabNumber the item number of the cache dump
 	 * @return Stats map
 	 */
-	public Map statsCacheDump( int slabNumber ) {
-		return statsCacheDump( null, slabNumber );
+	public Map statsCacheDump( int slabNumber, int limit ) {
+		return statsCacheDump( null, slabNumber, limit );
 	}
 	
 	/** 
@@ -1797,8 +1796,8 @@ public class MemCachedClient {
 	 * @param slabNumber the item number of the cache dump
 	 * @return Stats map
 	 */
-	public Map statsCacheDump( String[] servers, int slabNumber ) {
-		return stats( servers, "stats cachedump " + String.valueOf( slabNumber ) + "\r\n", ITEM );
+	public Map statsCacheDump( String[] servers, int slabNumber, int limit ) {
+		return stats( servers, String.format( "stats cachedump %d %d\r\n", slabNumber, limit ), ITEM );
 	}
 		
 	private Map stats( String[] servers, String command, String lineStart ) {
@@ -1867,6 +1866,11 @@ public class MemCachedClient {
 					else if ( END.equals( line ) ) {
 						// finish when we get end from server
 						log.debug( "++++ finished reading from cache server" );
+						break;
+					}
+					else if ( line.startsWith( ERROR ) || line.startsWith( CLIENT_ERROR ) || line.startsWith( SERVER_ERROR ) ) {
+						log.error( "++++ failed to query stats" );
+						log.error( "++++ server response: " + line );
 						break;
 					}
 
