@@ -246,42 +246,8 @@ public class UnitTests {
 		log.error( "+ store/retrieve serialized object test passed" );
     }
 
-	/**
-	 * This runs through some simple tests of the MemCacheClient.
-	 *
-	 * Command line args:
-	 * args[0] = number of threads to spawn
-	 * args[1] = number of runs per thread
-	 * args[2] = size of object to store 
-	 *
-	 * @param args the command line arguments
-	 */
-	public static void main(String[] args) {
-
-		BasicConfigurator.configure();
-		org.apache.log4j.Logger.getRootLogger().setLevel( Level.WARN );
-
-		if ( !UnitTests.class.desiredAssertionStatus() ) {
-			System.err.println( "WARNING: assertions are disabled!" );
-			try { Thread.sleep( 3000 ); } catch ( InterruptedException e ) {}
-		}
-		
-		String[] serverlist = { "192.168.1.1:1624" };
-		if ( args.length > 0 )
-			serverlist = args;
-
-		// initialize the pool for memcache servers
-		SockIOPool pool = SockIOPool.getInstance( "test" );
-		pool.setServers( serverlist );
-		pool.setMaxConn( 250 );
-		pool.setNagle( false );
-		pool.setMaintSleep( 1000 );
-		pool.initialize();
-
-        mc = new MemCachedClient( "test" );
-
+	public static void runAlTests( MemCachedClient mc ) {
 		test14();
-
 		for ( int t = 0; t < 2; t++ ) {
 			mc.setCompressEnable( ( t&1 ) == 1 );
 			
@@ -328,6 +294,59 @@ public class UnitTests {
 			test20( 900*1024, 32*1024, 0 );
 			test20( 900*1024, 32*1024, 1 );
 		}
+
+	}
+
+	/**
+	 * This runs through some simple tests of the MemCacheClient.
+	 *
+	 * Command line args:
+	 * args[0] = number of threads to spawn
+	 * args[1] = number of runs per thread
+	 * args[2] = size of object to store 
+	 *
+	 * @param args the command line arguments
+	 */
+	public static void main(String[] args) {
+
+		BasicConfigurator.configure();
+		org.apache.log4j.Logger.getRootLogger().setLevel( Level.WARN );
+
+		if ( !UnitTests.class.desiredAssertionStatus() ) {
+			System.err.println( "WARNING: assertions are disabled!" );
+			try { Thread.sleep( 3000 ); } catch ( InterruptedException e ) {}
+		}
+		
+		String[] serverlist = {
+			"192.168.1.50:1620",
+			"192.168.1.50:1621",
+			"192.168.1.50:1622",
+			"192.168.1.50:1623",
+			"192.168.1.50:1624",
+			"192.168.1.50:1625",
+			"192.168.1.50:1626",
+			"192.168.1.50:1627",
+			"192.168.1.50:1628",
+			"192.168.1.50:1629"
+		};
+
+		Integer[] weights = { 1, 1, 1, 1, 10, 5, 1, 1, 1, 3 };
+
+		if ( args.length > 0 )
+			serverlist = args;
+
+		// initialize the pool for memcache servers
+		SockIOPool pool = SockIOPool.getInstance( "test" );
+		pool.setServers( serverlist );
+		pool.setWeights( weights );
+		pool.setMaxConn( 250 );
+		pool.setNagle( false );
+		pool.setMaintSleep( 1000 );
+		pool.setHashingAlg( SockIOPool.CONSISTENT_HASH );
+		pool.initialize();
+
+        mc = new MemCachedClient( "test" );
+		runAlTests( mc );
 	}
 
 	/** 
