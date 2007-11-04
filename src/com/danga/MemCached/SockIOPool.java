@@ -20,6 +20,8 @@
  */
 package com.danga.MemCached;
 
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.zip.*;
 import java.net.*;
@@ -121,10 +123,14 @@ public class SockIOPool {
 	private static Map<String,SockIOPool> pools =
 		new HashMap<String,SockIOPool>();
 
+	// avoid recurring construction
+	private static MessageDigest MD5 = null;
+
 	// Constants
-	public static final int NATIVE_HASH = 0;					// native String.hashCode();
+	public static final int NATIVE_HASH     = 0;				// native String.hashCode();
 	public static final int OLD_COMPAT_HASH = 1;				// original compatibility hashing algorithm (works with other clients)
 	public static final int NEW_COMPAT_HASH = 2;				// new CRC32 based compatibility hashing algorithm (works with other clients)
+	public static final int CONSISTENT_HASH = 3;				// MD5 Based -- Stops thrashing when a server added or removed
 
 	public static final long MAX_RETRY_DELAY = 10 * 60 * 1000;  // max of 10 minute delay for fall off
 
@@ -156,7 +162,10 @@ public class SockIOPool {
 	// list of all servers
 	private String[] servers;
 	private Integer[] weights;
+	private Integer totalWeight = 0;
+
 	private List<String> buckets;
+	private TreeMap<Long,String> consistentBuckets;
 
 	// dead server map
 	private Map<String,Date> hostDead;
@@ -220,7 +229,7 @@ public class SockIOPool {
 	 * 
 	 * @param weights Integer array of weights
 	 */
-	public void setWeights(Integer[] weights) { this.weights = weights; }
+	public void setWeights( Integer[] weights ) { this.weights = weights; }
 	
 	/** 
 	 * Returns the current list of weights. 
@@ -234,7 +243,7 @@ public class SockIOPool {
 	 * 
 	 * @param initConn int number of connections
 	 */
-	public void setInitConn(int initConn) { this.initConn = initConn; }
+	public void setInitConn( int initConn ) { this.initConn = initConn; }
 	
 	/** 
 	 * Returns the current setting for the initial number of connections per server in
@@ -249,42 +258,42 @@ public class SockIOPool {
 	 * 
 	 * @param minConn number of connections
 	 */
-	public void setMinConn(int minConn) { this.minConn = minConn; }
+	public void setMinConn( int minConn ) { this.minConn = minConn; }
 	
 	/** 
 	 * Returns the minimum number of spare connections in available pool. 
 	 * 
 	 * @return number of connections
 	 */
-	public int getMinConn()  { return this.minConn; }
+	public int getMinConn() { return this.minConn; }
 
 	/** 
 	 * Sets the maximum number of spare connections allowed in our available pool. 
 	 * 
 	 * @param maxConn number of connections
 	 */
-	public void setMaxConn(int maxConn) { this.maxConn = maxConn; }
+	public void setMaxConn( int maxConn ) { this.maxConn = maxConn; }
 
 	/** 
 	 * Returns the maximum number of spare connections allowed in available pool. 
 	 * 
 	 * @return number of connections
 	 */
-	public int getMaxConn()  { return this.maxConn; }
+	public int getMaxConn() { return this.maxConn; }
 
 	/** 
 	 * Sets the max idle time for threads in the available pool.
 	 * 
 	 * @param maxIdle idle time in ms
 	 */
-	public void setMaxIdle(long maxIdle) { this.maxIdle = maxIdle; }
+	public void setMaxIdle( long maxIdle ) { this.maxIdle = maxIdle; }
 	
 	/** 
 	 * Returns the current max idle setting. 
 	 * 
 	 * @return max idle setting in ms
 	 */
-	public long getMaxIdle()  { return this.maxIdle; }
+	public long getMaxIdle() { return this.maxIdle; }
 
 	/** 
 	 * Sets the max busy time for threads in the busy pool.
@@ -298,7 +307,7 @@ public class SockIOPool {
 	 * 
 	 * @return max busy setting in ms
 	 */
-	public long getMaxBusy()  { return this.maxBusyTime; }
+	public long getMaxBusy() { return this.maxBusyTime; }
 
 	/** 
 	 * Set the sleep time between runs of the pool maintenance thread.
@@ -306,14 +315,14 @@ public class SockIOPool {
 	 * 
 	 * @param maintSleep sleep time in ms
 	 */
-	public void setMaintSleep(long maintSleep) { this.maintSleep = maintSleep; }
+	public void setMaintSleep( long maintSleep ) { this.maintSleep = maintSleep; }
 	
 	/** 
 	 * Returns the current maint thread sleep time.
 	 * 
 	 * @return sleep time in ms
 	 */
-	public long getMaintSleep()  { return this.maintSleep; }
+	public long getMaintSleep() { return this.maintSleep; }
 
 	/** 
 	 * Sets the socket timeout for reads.
@@ -327,7 +336,7 @@ public class SockIOPool {
 	 * 
 	 * @return timeout in ms
 	 */
-	public int getSocketTO()  { return this.socketTO; }
+	public int getSocketTO() { return this.socketTO; }
 
 	/** 
 	 * Sets the socket timeout for connect.
@@ -341,7 +350,7 @@ public class SockIOPool {
 	 * 
 	 * @return timeout in ms
 	 */
-	public int getSocketConnectTO()  { return this.socketConnectTO; }
+	public int getSocketConnectTO() { return this.socketConnectTO; }
 
 	/** 
 	 * Sets the failover flag for the pool.
@@ -446,8 +455,8 @@ public class SockIOPool {
 	 * @param key String to hash
 	 * @return hashCode for this string using our own hashing algorithm
 	 */
-	private static int origCompatHashingAlg( String key ) {
-		int hash    = 0;
+	private static long origCompatHashingAlg( String key ) {
+		long hash   = 0;
 		char[] cArr = key.toCharArray();
 
 		for ( int i = 0; i < cArr.length; ++i ) {
@@ -468,12 +477,95 @@ public class SockIOPool {
 	 * @param key 
 	 * @return 
 	 */
-	private static int newCompatHashingAlg( String key ) {
+	private static long newCompatHashingAlg( String key ) {
 		CRC32 checksum = new CRC32();
 		checksum.update( key.getBytes() );
-		int crc = (int) checksum.getValue();
-
+		long crc = checksum.getValue();
 		return (crc >> 16) & 0x7fff;
+	}
+
+	/** 
+	 * Internal private hashing method.
+	 *
+	 * MD5 based hash algorithm for use in the consistent
+	 * hashing approach.
+	 * 
+	 * @param key 
+	 * @return 
+	 */
+	private static long md5HashingAlg( String key ) {
+		if ( MD5 == null ) {
+			try {
+				MD5 = MessageDigest.getInstance( "MD5" );
+			}
+			catch ( NoSuchAlgorithmException e ) {
+				log.error( "++++ no md5 algorithm found" );
+				throw new IllegalStateException( "++++ no md5 algorythm found");			
+			}
+		}
+
+		MD5.reset();
+		MD5.update( key.getBytes() );
+		byte[] bKey = MD5.digest();
+		long res = ((long)(bKey[3]&0xFF) << 24) | ((long)(bKey[2]&0xFF) << 16) | ((long)(bKey[1]&0xFF) << 8) | (long)(bKey[0]&0xFF);
+		return res;
+	}
+
+	/** 
+	 * Returns a bucket to check for a given key. 
+	 * 
+	 * @param key String key cache is stored under
+	 * @return int bucket
+	 */
+	private long getHash( String key, Integer hashCode ) {
+
+		if ( hashCode != null ) {
+			return hashCode.longValue();
+		}
+		else {
+			switch ( hashingAlg ) {
+				case NATIVE_HASH:
+					return (long)key.hashCode();
+				case OLD_COMPAT_HASH:
+					return origCompatHashingAlg( key );
+				case NEW_COMPAT_HASH:
+					return newCompatHashingAlg( key );
+				case CONSISTENT_HASH:
+					return md5HashingAlg( key );
+				default:
+					// use the native hash as a default
+					hashingAlg = NATIVE_HASH;
+					return (long)key.hashCode();
+			}
+		}
+	}
+
+	private long getBucket( String key, Integer hashCode ) {
+		long hc = getHash( key, hashCode );
+
+		if ( this.hashingAlg == CONSISTENT_HASH ) {
+			return findPointFor( hc );
+		}
+		else {
+			long bucket = hc % buckets.size();
+			if ( bucket < 0 ) bucket *= -1;
+			return bucket;
+		}
+	}
+
+	/**
+	 * Gets the first available key equal or above the given one, if none found,
+	 * returns the first k in the bucket 
+	 * @param k key
+	 * @return
+	 */
+	private Long findPointFor( Long hv ) {
+
+		Long k = this.consistentBuckets.ceilingKey( hv );
+		if ( k == null )
+			k = this.consistentBuckets.firstKey();
+
+		return k;
 	}
 
 	/** 
@@ -485,15 +577,12 @@ public class SockIOPool {
 
 			// check to see if already initialized
 			if ( initialized
-					&& ( buckets != null )
+					&& ( buckets != null || consistentBuckets != null )
 					&& ( availPool != null )
 					&& ( busyPool != null ) ) {
 				log.error( "++++ trying to initialize an already initialized pool" );
 				return;
 			}
-
-			// initialize empty maps
-			buckets     = new ArrayList<String>();
 
 			// pools
 			availPool   = new HashMap<String,Map<SockIO,Long>>( servers.length * initConn );
@@ -517,35 +606,11 @@ public class SockIOPool {
 				throw new IllegalStateException( "++++ trying to initialize with no servers" );
 			}
 
-			for ( int i = 0; i < servers.length; i++ ) {
-
-				// add to bucket
-				// with weights if we have them 
-				if ( weights != null && weights.length > i ) {
-					for ( int k = 0; k < weights[i].intValue(); k++ ) {
-						buckets.add( servers[i] );
-						log.debug( "++++ added " + servers[i] + " to server bucket" );
-					}
-				}
-				else {
-					buckets.add( servers[i] );
-					log.debug( "++++ added " + servers[i] + " to server bucket" );
-				}
-
-				// create initial connections
-				log.debug( "+++ creating initial connections (" + initConn + ") for host: " + servers[i] );
-
-				for ( int j = 0; j < initConn; j++ ) {
-					SockIO socket = createSocket( servers[i] );
-					if ( socket == null ) {
-						log.error( "++++ failed to create connection to: " + servers[i] + " -- only " + j + " created." );
-						break;
-					}
-
-					addSocketToPool( availPool, servers[i], socket );
-					log.debug( "++++ created and added socket: " + socket.toString() + " for host " + servers[i] );
-				}
-			}
+			// initalize our internal hashing structures
+			if ( this.hashingAlg == CONSISTENT_HASH )
+				populateConsistentBuckets();
+			else
+				populateBuckets();
 
 			// mark pool as initialized
 			this.initialized = true;
@@ -553,6 +618,101 @@ public class SockIOPool {
 			// start maint thread
 			if ( this.maintSleep > 0 )
 				this.startMaintThread();
+		}
+	}
+
+	private void populateBuckets() {
+		log.debug( "++++ initializing internal hashing structure for consistent hashing" );
+
+		// store buckets in tree map
+		this.buckets = new ArrayList<String>();
+
+		for ( int i = 0; i < servers.length; i++ ) {
+			if ( this.weights != null && this.weights.length > i ) {
+				for ( int k = 0; k < this.weights[i].intValue(); k++ ) {
+					this.buckets.add( servers[i] );
+					log.debug( "++++ added " + servers[i] + " to server bucket" );
+				}
+			}
+			else {
+				this.buckets.add( servers[i] );
+				log.debug( "++++ added " + servers[i] + " to server bucket" );
+			}
+
+			// create initial connections
+			log.debug( "+++ creating initial connections (" + initConn + ") for host: " + servers[i] );
+
+			for ( int j = 0; j < initConn; j++ ) {
+				SockIO socket = createSocket( servers[i] );
+				if ( socket == null ) {
+					log.error( "++++ failed to create connection to: " + servers[i] + " -- only " + j + " created." );
+					break;
+				}
+
+				addSocketToPool( availPool, servers[i], socket );
+				log.debug( "++++ created and added socket: " + socket.toString() + " for host " + servers[i] );
+			}
+		}
+	}
+
+	private void populateConsistentBuckets() {
+		log.debug( "++++ initializing internal hashing structure for consistent hashing" );
+
+		// store buckets in tree map
+		this.consistentBuckets = new TreeMap<Long,String>();
+
+		if ( MD5 == null ) {
+			try {
+				MD5 = MessageDigest.getInstance( "MD5" );
+			}
+			catch ( NoSuchAlgorithmException e ) {
+				log.error( "++++ no md5 algorithm found" );
+				throw new IllegalStateException( "++++ no md5 algorythm found");			
+			}
+		}
+
+		if ( this.totalWeight <= 0 && this.weights !=  null ) {
+			for ( int i = 0; i < this.weights.length; i++ )
+				this.totalWeight += ( this.weights[i] == null ) ? 1 : this.weights[i];
+		}
+		else if ( this.weights == null ) {
+			this.totalWeight = this.servers.length;
+		}
+		
+		for ( int i = 0; i < servers.length; i++ ) {
+			int thisWeight = 1;
+			if ( this.weights != null && this.weights[i] != null )
+				thisWeight = this.weights[i];
+
+			double factor = Math.floor( ((double)(40 * this.servers.length * thisWeight)) / (double)this.totalWeight );
+			
+			for ( long j = 0; j < factor; j++ ) {
+				byte[] d = MD5.digest( (servers[i] + "-" + j ).getBytes() );
+				for ( int h = 0 ; h < 4; h++ ) {
+					Long k = 
+						  ((long)(d[3+h*4]&0xFF) << 24)
+						| ((long)(d[2+h*4]&0xFF) << 16)
+						| ((long)(d[1+h*4]&0xFF) << 8)
+						| ((long)(d[0+h*4]&0xFF));
+
+					consistentBuckets.put( k, servers[i] );
+					log.debug( "++++ added " + servers[i] + " to server bucket" );
+				}				
+			}
+
+			// create initial connections
+			log.debug( "+++ creating initial connections (" + initConn + ") for host: " + servers[i] );
+
+			for ( int j = 0; j < initConn; j++ ) {
+				SockIO socket = createSocket( servers[i] );
+				if ( socket == null ) {
+					log.error( "++++ failed to create connection to: " + servers[i] + " -- only " + j + " created." );
+					break;
+				}
+
+				addSocketToPool( availPool, servers[i], socket );
+				log.debug( "++++ created and added socket: " + socket.toString() + " for host " + servers[i] );
+			}
 		}
 	}
 
@@ -706,12 +866,18 @@ public class SockIOPool {
 		}
 
 		// if no servers return null
-		if ( buckets.size() == 0 )
+		if ( ( this.hashingAlg == CONSISTENT_HASH && consistentBuckets.size() == 0 )
+				|| ( buckets != null && buckets.size() == 0 ) )
 			return null;
 
 		// if only one server, return it
-		if ( buckets.size() == 1 ) {
-			SockIO sock = getConnection( (String) buckets.get( 0 ) );
+		if ( ( this.hashingAlg == CONSISTENT_HASH && consistentBuckets.size() == 0 )
+				|| ( buckets != null && buckets.size() == 1 ) ) {
+
+			SockIO sock = ( this.hashingAlg == CONSISTENT_HASH )
+				? getConnection( consistentBuckets.firstEntry().getValue() )
+				: getConnection( buckets.get( 0 ) );
+
 			if ( sock != null && sock.isConnected() ) {
 				if ( aliveCheck ) { 
 					if ( !sock.isAlive() ) {
@@ -730,20 +896,21 @@ public class SockIOPool {
 		
 		// from here on, we are working w/ multiple servers
 		// keep trying different servers until we find one
-		int bucketSize = buckets.size();
-		boolean[] triedBucket = new boolean[ bucketSize ];
-		Arrays.fill( triedBucket, false );
+		// making sure we only try each server one time
+		Set<String> tryServers = new HashSet<String>( Arrays.asList( servers ) );
 
 		// get initial bucket
-		int bucket = getBucket( key, hashCode );
+		long bucket = getBucket( key, hashCode );
+		String server = ( this.hashingAlg == CONSISTENT_HASH )
+			? consistentBuckets.get( bucket )
+			: buckets.get( (int)bucket );
 
-		int tries = 0;
-		while ( tries++ < bucketSize ) {
+		while ( !tryServers.isEmpty() ) {
 
 			// try to get socket from bucket
-			SockIO sock = getConnection( (String)buckets.get( bucket ) );
+			SockIO sock = getConnection( server );
 
-			log.debug( "cache choose " + buckets.get( bucket ) + " for " + key );
+			log.debug( "cache choose " + server + " for " + key );
 
 			if ( sock != null && sock.isConnected() ) {
 				if ( aliveCheck ) { 
@@ -769,80 +936,30 @@ public class SockIOPool {
 				return null;
 
 			// log that we tried
-			triedBucket[ bucket ] = true;
+			tryServers.remove( server );
 
-			// if we have not already tried all buckets, then
-			// rehash and try again
-			boolean needRehash = false;
-			for ( boolean b : triedBucket ) {
-				if ( ! b ) {
-					needRehash = true;
-					break;
-				}
-			}
+			if ( tryServers.isEmpty() )
+				break;
 
-			if ( needRehash ) {
-				// if we failed to get a socket from this server
-				// then we try again by adding an incrementer to the
-				// current key and then rehashing 
-				log.debug( "we need to rehash as we want to failover and we still have servers to try" );
-				int rehashTries = 0;
-				while ( triedBucket[ bucket ] ) {
+			// if we failed to get a socket from this server
+			// then we try again by adding an incrementer to the
+			// current key and then rehashing 
+			int rehashTries = 0;
+			while ( !tryServers.contains( server ) ) {
 
-					int keyTry = tries + rehashTries;
-					String newKey = String.format( "%s%s", keyTry, key );
+				String newKey = String.format( "%s%s", rehashTries, key );
+				log.debug( "rehashing with: " + newKey );
 
-					log.debug( "rehashing with: " + keyTry );
-					bucket = getBucket( newKey, null );
+				bucket = getBucket( newKey, null );
+				server = ( this.hashingAlg == CONSISTENT_HASH )
+					? consistentBuckets.get( bucket )
+					: buckets.get( (int)bucket );
 
-					rehashTries++;
-				}
+				rehashTries++;
 			}
 		}
 
 		return null;
-	}
-
-	/** 
-	 * Returns a bucket to check for a given key. 
-	 * 
-	 * @param key String key cache is stored under
-	 * @return int bucket
-	 */
-	public int getBucket( String key, Integer hashCode ) {
-
-		int hc;
-
-		if ( hashCode != null ) {
-			hc = hashCode.intValue();
-		}
-		else {
-			switch ( hashingAlg ) {
-				case NATIVE_HASH:
-					hc = key.hashCode();
-					break;
-
-				case OLD_COMPAT_HASH:
-					hc = origCompatHashingAlg( key );
-					break;
-
-				case NEW_COMPAT_HASH:
-					hc = newCompatHashingAlg( key );
-					break;
-
-				default:
-					// use the native hash as a default
-					hc = key.hashCode();
-					hashingAlg = NATIVE_HASH;
-					break;
-			}
-		}
-
-		// new bucket
-		int bucket = hc % buckets.size();
-		if ( bucket < 0 ) bucket *= -1;
-
-		return bucket;
 	}
 
 	/** 
@@ -1085,12 +1202,13 @@ public class SockIOPool {
 			log.debug( "++++ closing all internal pools." );
 			closePool( availPool );
 			closePool( busyPool );
-			availPool   = null;
-			busyPool    = null;
-			buckets     = null;
-			hostDeadDur = null;
-			hostDead    = null;
-			initialized = false;
+			availPool         = null;
+			busyPool          = null;
+			buckets           = null;
+			consistentBuckets = null;
+			hostDeadDur       = null;
+			hostDead          = null;
+			initialized       = false;
 			log.debug( "++++ SockIOPool finished shutting down." );
 		}
 	}
