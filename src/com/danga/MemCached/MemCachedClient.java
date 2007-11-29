@@ -1417,19 +1417,19 @@ public class MemCachedClient {
 
 		for ( int i = 0; i < keys.length; ++i ) {
 
-			Integer hash = null;
-			if ( hashCodes != null && hashCodes.length > i )
-				hash = hashCodes[ i ];
-
 			String key = keys[i];
-
 			if ( key == null ) {
 				log.error( "null key, so skipping" );
 				continue;
 			}
 
+			Integer hash = null;
+			if ( hashCodes != null && hashCodes.length > i )
+				hash = hashCodes[ i ];
+
+			String cleanKey = key;
 			try {
-				key = sanitizeKey( key );
+				cleanKey = sanitizeKey( key );
 			}
 			catch ( UnsupportedEncodingException e ) {
 
@@ -1445,7 +1445,7 @@ public class MemCachedClient {
 			if ( pool == null )
 				pool = SockIOPool.getInstance( poolName );
 
-			SockIOPool.SockIO sock = pool.getSock( key, hash );
+			SockIOPool.SockIO sock = pool.getSock( cleanKey, hash );
 
 			if ( sock == null )
 				continue;
@@ -1454,7 +1454,7 @@ public class MemCachedClient {
 			if ( !cmdMap.containsKey( sock.getHost() ) )
 				cmdMap.put( sock.getHost(), new StringBuilder( "get" ) );
 
-			cmdMap.get( sock.getHost() ).append( " " + key );
+			cmdMap.get( sock.getHost() ).append( " " + cleanKey );
 
 			// return to pool
 			sock.close();
@@ -1468,6 +1468,29 @@ public class MemCachedClient {
 
 		// now use new NIO implementation
 		(new NIOLoader()).loadItemsNIO( asString, cmdMap, keys, ret );
+
+		// fix the return array in case we had to rewrite any of the keys
+		for ( String key : keys ) {
+
+			String cleanKey = key;
+			try {
+				cleanKey = sanitizeKey( key );
+			}
+			catch ( UnsupportedEncodingException e ) {
+
+				// if we have an errorHandler, use its hook
+				if ( errorHandler != null )
+					errorHandler.handleErrorOnGet( this, e, key );
+
+				log.error( "failed to sanitize your key!", e );
+				continue;
+			}
+
+			if ( ! key.equals( cleanKey ) && ret.containsKey( cleanKey ) ) {
+				ret.put( key, ret.get( cleanKey ) );
+				ret.remove( cleanKey );
+			}
+		}
 
 		log.debug( "++++ memcache: got back " + ret.size() + " results" );
 		return ret;
