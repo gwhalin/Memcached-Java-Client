@@ -1262,50 +1262,23 @@ public class MemCachedClient {
 	    if ( sock == null )
 			return null;
 
-	    try {
-			String cmd = String.format( "get %s\r\n", key );
-			log.debug( "++++ memcache get command: " + cmd );
+		Map<String,StringBuilder> cmdMap =
+			new HashMap<String,StringBuilder>();
 
-			sock.write( cmd.getBytes() );
-			sock.flush();
+		cmdMap.put( sock.getHost(),
+				new StringBuilder( String.format( "get %s\r\n", key ) ) );
 
-			// build empty map
-			// and fill it from server
-			Map<String,Object> hm =
-				new HashMap<String,Object>();
-			loadItems( sock, hm, asString );
+		sock.close();
 
-			// debug code
-			log.debug( "++++ memcache: got back " + hm.size() + " results" );
+		// build empty map
+		// and fill it from server
+		Map<String,Object> hm =
+			new HashMap<String,Object>();
+		(new NIOLoader()).loadItemsNIO( asString, cmdMap, new String[] { key }, hm );
 
-			// return the value for this key if we found it
-			// else return null 
-			sock.close();
-			return hm.get( key );
-	    }
-		catch ( IOException e ) {
-
-			// if we have an errorHandler, use its hook
-			if ( errorHandler != null )
-				errorHandler.handleErrorOnGet( this, e, key );
-
-			// exception thrown
-			log.error( "++++ exception thrown while trying to get object from cache for key: " + key );
-			log.error( e.getMessage(), e );
-
-			try {
-				sock.trueClose();
-			}
-			catch ( IOException ioe ) {
-				log.error( "++++ failed to close socket : " + sock.toString() );
-			}
-			sock = null;
-	    }
-
-		if ( sock != null )
-			sock.close();
-
-		return null;
+		// return the value for this key if we found it
+		// else return null 
+		return ( hm.containsKey( key ) ) ? hm.get( key ) : null;
 	}
 
 	/** 
@@ -1490,6 +1463,10 @@ public class MemCachedClient {
 				ret.put( key, ret.get( cleanKey ) );
 				ret.remove( cleanKey );
 			}
+
+			// backfill missing keys w/ null value
+			if ( ! ret.containsKey( key ) )
+				ret.put( key, null );
 		}
 
 		log.debug( "++++ memcache: got back " + ret.size() + " results" );
@@ -2026,7 +2003,6 @@ public class MemCachedClient {
 				
 				// get the sockets, flip them to non-blocking, and set up data
 				// structures
-				//
 				conns = new Connection[sockKeys.keySet().size()];
 				numConns = 0;
 				for ( Iterator<String> i = sockKeys.keySet().iterator(); i.hasNext(); ) {
@@ -2097,7 +2073,6 @@ public class MemCachedClient {
 			// Done!  Build the list of results and return them.  If we get
 			// here by a timeout, then some of the connections are probably
 			// not done.  But we'll return what we've got...
-			//
 			for ( Connection c : conns ) {
 				try {
 					if ( c.incoming.size() > 0 && c.isDone() )
