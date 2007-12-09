@@ -246,6 +246,26 @@ public class UnitTests {
 		log.error( "+ store/retrieve serialized object test passed" );
     }
 
+	public static void test24() {
+
+		String[] allKeys = { "key1", "key2", "key3", "key4", "key5", "key6", "key7" };
+		String[] setKeys = { "key1", "key3", "key5", "key7" };
+
+		for ( String key : setKeys ) {
+			mc.set( key, key );
+		}
+
+		Map<String,Object> results = mc.getMulti( allKeys );
+
+		assert allKeys.length == results.size();
+		for ( String key : setKeys ) {
+			String val = (String)results.get( key );
+			assert key.equals( val );
+		}
+
+		log.error( "+ getMulti w/ keys that don't exist test passed" );
+	}
+
 	public static void runAlTests( MemCachedClient mc ) {
 		test14();
 		for ( int t = 0; t < 2; t++ ) {
@@ -270,6 +290,7 @@ public class UnitTests {
 			test21();
 			test22();
 			test23();
+			test24();
 			
 			for ( int i = 0; i < 3; i++ )
 				test19();
@@ -341,7 +362,6 @@ public class UnitTests {
 		pool.setWeights( weights );
 		pool.setMaxConn( 250 );
 		pool.setNagle( false );
-		pool.setMaintSleep( 1000 );
 		pool.setHashingAlg( SockIOPool.CONSISTENT_HASH );
 		pool.initialize();
 

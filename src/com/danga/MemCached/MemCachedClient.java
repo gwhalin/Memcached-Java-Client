@@ -176,11 +176,15 @@ public class MemCachedClient {
 	private static final String NOTSTORED    = "NOT_STORED";	// data not stored
 	private static final String OK           = "OK";			// success
 	private static final String END          = "END";			// end of data from server
+
 	private static final String ERROR        = "ERROR";			// invalid command name from client
 	private static final String CLIENT_ERROR = "CLIENT_ERROR";	// client error in input line - invalid protocol
 	private static final String SERVER_ERROR = "SERVER_ERROR";	// server error
 
-	private static final byte[] THE_END      = "END\r\n".getBytes();
+	private static final byte[] B_END        = "END\r\n".getBytes();
+	private static final byte[] B_NOTFOUND   = "NOT_FOUND\r\n".getBytes();
+	private static final byte[] B_DELETED    = "DELETED\r\r".getBytes();
+	private static final byte[] B_STORED     = "STORED\r\r".getBytes();
 
 	// default compression threshold
 	private static final int COMPRESS_THRESH = 30720;
@@ -384,7 +388,7 @@ public class MemCachedClient {
 	public boolean keyExists( String key ) {
 		return ( this.get( key, null, true ) != null );
 	}
-	
+
 	/**
 	 * Deletes an object from cache given cache key.
 	 *
@@ -1266,7 +1270,7 @@ public class MemCachedClient {
 			new HashMap<String,StringBuilder>();
 
 		cmdMap.put( sock.getHost(),
-				new StringBuilder( String.format( "get %s\r\n", key ) ) );
+				new StringBuilder( String.format( "get %s", key ) ) );
 
 		sock.close();
 
@@ -1274,7 +1278,7 @@ public class MemCachedClient {
 		// and fill it from server
 		Map<String,Object> hm =
 			new HashMap<String,Object>();
-		(new NIOLoader()).loadItemsNIO( asString, cmdMap, new String[] { key }, hm );
+		(new NIOLoader()).doMulti( asString, cmdMap, new String[] { key }, hm );
 
 		// return the value for this key if we found it
 		// else return null 
@@ -1440,7 +1444,7 @@ public class MemCachedClient {
 			new HashMap<String,Object>( keys.length );
 
 		// now use new NIO implementation
-		(new NIOLoader()).loadItemsNIO( asString, cmdMap, keys, ret );
+		(new NIOLoader()).doMulti( asString, cmdMap, keys, ret );
 
 		// fix the return array in case we had to rewrite any of the keys
 		for ( String key : keys ) {
@@ -1484,7 +1488,7 @@ public class MemCachedClient {
 	 * @param asString if true, and if we are using NativehHandler, return string val
 	 * @throws IOException if io exception happens while reading from socket
 	 */
-	private void loadItems( LineInputStream input, Map<String,Object> hm, boolean asString ) throws IOException {
+	private void loadMulti( LineInputStream input, Map<String,Object> hm, boolean asString ) throws IOException {
 
 		while ( true ) {
 			String line = input.readLine();
@@ -1961,16 +1965,22 @@ public class MemCachedClient {
 				
 				// else find out the hard way
 				int maxBuf = incoming.size()-1;
-				int strPos = THE_END.length-1;
+				int strPos = B_END.length-1;
+
+				// Need to check if last bytes are:
+				//   - END\r\n
+				//   - NOT_FOUND\r\n
+				//   - DELETED\r\n
 				
 				int bi = maxBuf;
 				while ( bi >= 0 && strPos >= 0 ) {
 					ByteBuffer buf = incoming.get( bi );
 					int pos = buf.position()-1;
-					while ( pos>=0 && strPos>=0 ) {
-					    if ( buf.get( pos-- ) != THE_END[strPos--] )
+					while ( pos >= 0 && strPos >= 0 ) {
+					    if ( buf.get( pos-- ) != B_END[strPos--] )
 							return false;
 					}
+
 					bi--;
 				}
 				
@@ -1995,7 +2005,7 @@ public class MemCachedClient {
 			}
 		}
 		
-		public void loadItemsNIO( boolean asString, Map<String, StringBuilder> sockKeys, String[] keys, Map<String, Object> ret ) {
+		public void doMulti( boolean asString, Map<String, StringBuilder> sockKeys, String[] keys, Map<String, Object> ret ) {
 		
 			long timeRemaining = 0;
 			try {
@@ -2076,7 +2086,7 @@ public class MemCachedClient {
 			for ( Connection c : conns ) {
 				try {
 					if ( c.incoming.size() > 0 && c.isDone() )
-						loadItems( new ByteBufArrayInputStream( c.incoming ), ret, asString );
+						loadMulti( new ByteBufArrayInputStream( c.incoming ), ret, asString );
 				}
 				catch ( Exception e ) {
 					// shouldn't happen; we have all the data already
