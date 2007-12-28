@@ -1,5 +1,8 @@
 To Do:
 
-- support collections and arrays in NativeHandler
-- clean up Logging code (auto-detect)
-- clean up and add more unit tests
+- NIO support for write operations
+- removeMulti support
+- binary protocol support
+- support for new add methods (cas,append,prepend)
+- clean up Logging code (auto-detect log4j/logging/etc)
+- clean up and add more unit/performance tests

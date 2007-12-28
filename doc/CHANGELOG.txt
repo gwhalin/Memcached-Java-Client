@@ -1,3 +1,13 @@
+28 Dec 2008 (gwhalin,pinkerton)
+	-- released as 2.0
+	-- much reduced lock contention
+	-- NIO getMulti support
+	-- NIO get support
+	-- consistant hashing algorithm support
+	-- much improved support for serialization of primitives
+	-- extensive unit tests added
+	-- many bugs fixed
+
 08 Jul 2007 (gwhalin)
 	-- add support for ErrorHandler hook (submitted by Dan Zivkovic @ Apple)
 	-- ability to disable URLEncoding keys
