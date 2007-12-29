@@ -15,11 +15,7 @@
  * library.
  *
  * @author Greg Whalin <greg@meetup.com> 
- * @author Richard 'toast' Russo <russor@msoe.edu>
- * @author Kevin Burton <burton@peerfear.org>
- * @author Robert Watts <robert@wattsit.co.uk>
- * @author Vin Chawla <vin@tivo.com>
- * @version 1.5.2
+ * @version 2.0
  */
 package com.danga.MemCached;
 

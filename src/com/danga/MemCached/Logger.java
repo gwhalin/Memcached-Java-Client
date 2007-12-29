@@ -15,7 +15,7 @@
  * library.
  *
  * @author Greg Whalin <greg@meetup.com> 
- * @version 1.5.2
+ * @version 2.0
  */
 package com.danga.MemCached;
 

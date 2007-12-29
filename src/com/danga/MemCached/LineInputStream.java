@@ -1,11 +1,21 @@
 /**
- * src/com/danga/MemCached/LineInputStream.java
+ * MemCached Java client
+ * Copyright (c) 2007 Greg Whalin
+ * All rights reserved.
  *
- * @author $Author: $
- * @version $Revision: $ $Date: $
- * copyright (c) 2006 meetup, inc
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the BSD license
  *
- * $Id: $
+ * This library is distributed in the hope that it will be
+ * useful, but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+ * PURPOSE.
+ *
+ * You should have received a copy of the BSD License along with this
+ * library.
+ *
+ * @author greg whalin <greg@meetup.com> 
+ * @version 2.0
  */
 package com.danga.MemCached;
 

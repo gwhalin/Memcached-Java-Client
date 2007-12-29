@@ -14,9 +14,8 @@
  * You should have received a copy of the BSD License along with this
  * library.
  *
- * @author Kevin A. Burton <burton@peerfear.org> 
  * @author Greg Whalin <greg@meetup.com> 
- * @version 1.5.2
+ * @version 2.0
  */
 package com.danga.MemCached;
 

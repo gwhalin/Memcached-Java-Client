@@ -15,14 +15,29 @@
  * library.
  *
  * @author greg whalin <greg@meetup.com> 
- * @author Richard 'toast' Russo <russor@msoe.edu>
- * @version 1.5.2
+ * @version 2.0
  */
 package com.danga.MemCached;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.*;
+
+// java.util
+import java.util.Map;
+import java.util.List;
+import java.util.Set;
+import java.util.Iterator;
+import java.util.ArrayList;
+import java.util.IdentityHashMap;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Date;
+import java.util.Arrays;
+import java.util.TreeMap;
+
+// java 5 support needs a backported TreeMap library
+// one exists at http://backport-jsr166.sourceforge.net/index.php
+
 import java.util.zip.*;
 import java.net.*;
 import java.io.*;

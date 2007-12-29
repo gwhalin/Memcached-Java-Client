@@ -15,7 +15,7 @@
  * library.
  *
  * @author Kevin A. Burton <burton@peerfear.org> 
- * @version 1.5.2
+ * @version 2.0
  */
 package com.danga.MemCached;
 
