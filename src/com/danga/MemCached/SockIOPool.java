@@ -1210,7 +1210,6 @@ public class SockIOPool {
 				while ( maintThread.isRunning() ) {
 					log.debug( "++++ waiting for main thread to finish run +++" );
 					try { Thread.sleep( 500 ); } catch ( Exception ex ) { }
-
 				}
 			}
 
@@ -1223,6 +1222,7 @@ public class SockIOPool {
 			consistentBuckets = null;
 			hostDeadDur       = null;
 			hostDead          = null;
+			maintThread       = null;
 			initialized       = false;
 			log.debug( "++++ SockIOPool finished shutting down." );
 		}
