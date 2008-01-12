@@ -1,6 +1,6 @@
 /**
  * MemCached Java client
- * Copyright (c) 2007 Greg Whalin
+ * Copyright (c) 2008 Greg Whalin
  * All rights reserved.
  *
  * This library is free software; you can redistribute it and/or
@@ -30,17 +30,17 @@ import java.io.*;
 
 public class ContextObjectInputStream extends ObjectInputStream { 
 
-    ClassLoader mLoader;
+	ClassLoader mLoader;
     
-    public ContextObjectInputStream( InputStream in, ClassLoader loader ) throws IOException, SecurityException {
-        super( in );
-        mLoader = loader;
-    }
-    
-    protected Class resolveClass( ObjectStreamClass v ) throws IOException, ClassNotFoundException {
-        if ( mLoader == null )
-            return super.resolveClass( v );
+	public ContextObjectInputStream( InputStream in, ClassLoader loader ) throws IOException, SecurityException {
+		super( in );
+		mLoader = loader;
+	}
+	
+	protected Class resolveClass( ObjectStreamClass v ) throws IOException, ClassNotFoundException {
+		if ( mLoader == null )
+			return super.resolveClass( v );
 		else
-            return mLoader.loadClass( v.getName() );
-    }
+			return Class.forName( v.getName(), true, mLoader );
+	}
 }
