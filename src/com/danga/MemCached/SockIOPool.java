@@ -33,10 +33,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Date;
 import java.util.Arrays;
+import java.util.SortedMap;
 import java.util.TreeMap;
-
-// java 5 support needs a backported TreeMap library
-// one exists at http://backport-jsr166.sourceforge.net/index.php
 
 import java.util.zip.*;
 import java.net.*;
@@ -156,12 +154,12 @@ public class SockIOPool {
 	private Map<String,Integer> createShift;
 
 	// initial, min and max pool sizes
-	private int poolMultiplier        = 4;
-	private int initConn              = 3;
-	private int minConn               = 3;
+	private int poolMultiplier        = 3;
+	private int initConn              = 1;
+	private int minConn               = 1;
 	private int maxConn               = 10;
-	private long maxIdle              = 1000 * 60 * 3;		// max idle time for avail sockets
-	private long maxBusyTime          = 1000 * 60 * 5;		// max idle time for avail sockets
+	private long maxIdle              = 1000 * 60 * 5;		// max idle time for avail sockets
+	private long maxBusyTime          = 1000 * 30;			// max idle time for avail sockets
 	private long maintSleep           = 1000 * 30;			// maintenance thread sleep time
 	private int socketTO              = 1000 * 30;			// default timeout of socket reads
 	private int socketConnectTO       = 1000 * 3;	        // default timeout of socket connections
@@ -575,12 +573,14 @@ public class SockIOPool {
 	 * @return
 	 */
 	private Long findPointFor( Long hv ) {
+		// this works in java 6, but still want to release support for java5
+		//Long k = this.consistentBuckets.ceilingKey( hv );
+		//return ( k == null ) ? this.consistentBuckets.firstKey() : k;
 
-		Long k = this.consistentBuckets.ceilingKey( hv );
-		if ( k == null )
-			k = this.consistentBuckets.firstKey();
+		SortedMap<Long,String> tmap =
+			this.consistentBuckets.tailMap( hv );
 
-		return k;
+		return ( tmap.isEmpty() ) ? this.consistentBuckets.firstKey() : tmap.firstKey();
 	}
 
 	/** 
@@ -890,7 +890,7 @@ public class SockIOPool {
 				|| ( buckets != null && buckets.size() == 1 ) ) {
 
 			SockIO sock = ( this.hashingAlg == CONSISTENT_HASH )
-				? getConnection( consistentBuckets.firstEntry().getValue() )
+				? getConnection( consistentBuckets.get( consistentBuckets.firstKey() ) )
 				: getConnection( buckets.get( 0 ) );
 
 			if ( sock != null && sock.isConnected() ) {

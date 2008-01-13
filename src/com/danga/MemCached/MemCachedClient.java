@@ -499,8 +499,10 @@ public class MemCachedClient {
 			sock = null;
 		}
 
-		if ( sock != null )
+		if ( sock != null ) {
 			sock.close();
+			sock = null;
+		}
 
 		return false;
 	}
@@ -855,8 +857,10 @@ public class MemCachedClient {
 			sock = null;
 		}
 
-		if ( sock != null )
+		if ( sock != null ) {
 			sock.close();
+			sock = null;
+		}
 
 		return false;
 	}
@@ -1180,8 +1184,10 @@ public class MemCachedClient {
 			sock = null;
 		}
 		
-		if ( sock != null )
+		if ( sock != null ) {
 			sock.close();
+			sock = null;
+		}
 
 		return -1;
 	}
@@ -1683,8 +1689,10 @@ public class MemCachedClient {
 				sock = null;
 			}
 
-			if ( sock != null )
+			if ( sock != null ) {
 				sock.close();
+				sock = null;
+			}
 		}
 
 		return success;
@@ -1897,8 +1905,10 @@ public class MemCachedClient {
 				sock = null;
 			}
 
-			if ( sock != null )
+			if ( sock != null ) {
 				sock.close();
+				sock = null;
+			}
 		}
 
 		return statsMaps;
