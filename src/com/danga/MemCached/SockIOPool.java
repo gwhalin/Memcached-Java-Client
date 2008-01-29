@@ -140,6 +140,7 @@ public class SockIOPool {
 	private static MessageDigest MD5 = null;
 
 	// Constants
+	private static final Integer ZERO       = new Integer( 0 );
 	public static final int NATIVE_HASH     = 0;				// native String.hashCode();
 	public static final int OLD_COMPAT_HASH = 1;				// original compatibility hashing algorithm (works with other clients)
 	public static final int NEW_COMPAT_HASH = 2;				// new CRC32 based compatibility hashing algorithm (works with other clients)
@@ -777,14 +778,8 @@ public class SockIOPool {
 
 			if ( !socket.isConnected() ) {
 				log.error( "++++ failed to get SockIO obj for: " + host + " -- new socket is not connected" );
-				try {
-					socket.trueClose();
-				}
-				catch ( Exception ex ) {
-					log.error( "++++ failed to close SockIO obj for server: " + host );
-					log.error( ex.getMessage(), ex );
-					socket = null;
-				}
+				deadPool.put( socket, ZERO );
+				socket = null;
 			}
 		}
 		catch ( Exception ex ) {
@@ -903,7 +898,10 @@ public class SockIOPool {
 				}
 			}
 			else {
-				sock = null;
+				if ( sock != null ) {
+					deadPool.put( sock, ZERO );
+					sock = null;
+				}
 			}
 
 			return sock;
@@ -943,7 +941,10 @@ public class SockIOPool {
 				}
 			}
 			else {
-				sock = null;
+				if ( sock != null ) {
+					deadPool.put( sock, ZERO );
+					sock = null;
+				}
 			}
 
 			// if we do not want to failover, then bail here
@@ -1025,7 +1026,7 @@ public class SockIOPool {
 						}
 						else {
 							// add to deadpool for later reaping
-							deadPool.put( socket, new Integer(0) );
+							deadPool.put( socket, ZERO );
 
 							// remove from avail pool
 							i.remove();
@@ -1142,10 +1143,16 @@ public class SockIOPool {
 			log.debug( "++++ removing socket (" + socket.toString() + ") from busy pool for host: " + host );
 			removeSocketFromPool( busyPool, host, socket );
 
-			// add to avail pool
-			if ( addToAvail && socket.isConnected() ) {
-				log.debug( "++++ returning socket (" + socket.toString() + " to avail pool for host: " + host );
-				addSocketToPool( availPool, host, socket );
+			if ( socket.isConnected() ) {
+				// add to avail pool
+				if ( addToAvail ) {
+					log.debug( "++++ returning socket (" + socket.toString() + " to avail pool for host: " + host );
+					addSocketToPool( availPool, host, socket );
+				}
+			}
+			else {
+				deadPool.put( socket, ZERO );
+				socket = null;
 			}
 		}
 	}
@@ -1347,7 +1354,7 @@ public class SockIOPool {
 							}
 							else {
 								// add to deadPool for later reaping
-								deadPool.put( socket, new Integer( 0 ) );
+								deadPool.put( socket, ZERO );
 							}
 
 							// remove from the availPool
@@ -1386,7 +1393,7 @@ public class SockIOPool {
 						}
 						else {
 							// add to deadPool for later reaping
-							deadPool.put( socket, new Integer( 0 ) );
+							deadPool.put( socket, ZERO );
 						}
 
 						// remove from the busy pool
@@ -1410,8 +1417,9 @@ public class SockIOPool {
 			catch ( Exception ex ) {
 				log.error( "++++ failed to close SockIO obj from deadPool" );
 				log.error( ex.getMessage(), ex );
-				socket = null;
 			}
+
+			socket = null;
 		}
 
 		log.debug( "+++ ending self maintenance." );
