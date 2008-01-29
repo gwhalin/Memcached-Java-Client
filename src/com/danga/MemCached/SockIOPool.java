@@ -1858,5 +1858,25 @@ public class SockIOPool {
 		public String toString() {
 			return ( sock == null ) ? "" : sock.toString();
 		}
+
+		/** 
+		 * Hack to reap any leaking children. 
+		 */
+		protected void finalize() throws Throwable {
+			try {
+				if ( sock != null ) {
+					log.error( "++++ closing potentially leaked socket in finalize" );
+					sock.close();
+					sock = null;
+				}
+			}
+			catch ( Throwable t ) {
+				log.error( t.getMessage(), t );
+
+			}
+			finally {
+				super.finalize();
+			}
+		}
 	}
 }
