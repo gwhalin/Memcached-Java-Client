@@ -1653,7 +1653,6 @@ public class SockIOPool {
 			if ( sock != null ) {
 				try {
 					sock.close();
-					sock.close();
 				}
 				catch ( IOException ioe ) {
 					log.error( "++++ error closing socket: " + toString() + " for host: " + getHost() );
