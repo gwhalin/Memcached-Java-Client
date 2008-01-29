@@ -1133,7 +1133,7 @@ public class SockIOPool {
 	 * @param socket socket to return
 	 * @param addToAvail add to avail pool if true
 	 */
-	public void checkIn( SockIO socket, boolean addToAvail ) {
+	private void checkIn( SockIO socket, boolean addToAvail ) {
 
 		String host = socket.getHost();
 		log.debug( "++++ calling check-in on socket: " + socket.toString() + " for host: " + host );
@@ -1166,7 +1166,7 @@ public class SockIOPool {
 	 * 
 	 * @param socket socket to return
 	 */
-	public void checkIn( SockIO socket ) {
+	private void checkIn( SockIO socket ) {
 		checkIn( socket, true );
 	}
 
