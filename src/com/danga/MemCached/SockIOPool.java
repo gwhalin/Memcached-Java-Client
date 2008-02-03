@@ -137,7 +137,18 @@ public class SockIOPool {
 		new HashMap<String,SockIOPool>();
 
 	// avoid recurring construction
-	private static MessageDigest MD5 = null;
+	private static ThreadLocal<MessageDigest> MD5 = new ThreadLocal<MessageDigest>() {
+		@Override
+		protected MessageDigest initialValue() {
+			try {
+				return MessageDigest.getInstance( "MD5" );
+			}
+			catch ( NoSuchAlgorithmException e ) {
+				log.error( "++++ no md5 algorithm found" );
+				throw new IllegalStateException( "++++ no md5 algorythm found");			
+			}
+		}
+	};
 
 	// Constants
 	private static final Integer ZERO       = new Integer( 0 );
@@ -508,19 +519,10 @@ public class SockIOPool {
 	 * @return 
 	 */
 	private static long md5HashingAlg( String key ) {
-		if ( MD5 == null ) {
-			try {
-				MD5 = MessageDigest.getInstance( "MD5" );
-			}
-			catch ( NoSuchAlgorithmException e ) {
-				log.error( "++++ no md5 algorithm found" );
-				throw new IllegalStateException( "++++ no md5 algorythm found");			
-			}
-		}
-
-		MD5.reset();
-		MD5.update( key.getBytes() );
-		byte[] bKey = MD5.digest();
+		MessageDigest md5 = MD5.get();
+		md5.reset();
+		md5.update( key.getBytes() );
+		byte[] bKey = md5.digest();
 		long res = ((long)(bKey[3]&0xFF) << 24) | ((long)(bKey[2]&0xFF) << 16) | ((long)(bKey[1]&0xFF) << 8) | (long)(bKey[0]&0xFF);
 		return res;
 	}
@@ -534,7 +536,10 @@ public class SockIOPool {
 	private long getHash( String key, Integer hashCode ) {
 
 		if ( hashCode != null ) {
-			return hashCode.longValue();
+			if ( hashingAlg == CONSISTENT_HASH )
+				return hashCode.longValue() & 0xffffffffL;
+			else
+				return hashCode.longValue();
 		}
 		else {
 			switch ( hashingAlg ) {
@@ -677,16 +682,7 @@ public class SockIOPool {
 		// store buckets in tree map
 		this.consistentBuckets = new TreeMap<Long,String>();
 
-		if ( MD5 == null ) {
-			try {
-				MD5 = MessageDigest.getInstance( "MD5" );
-			}
-			catch ( NoSuchAlgorithmException e ) {
-				log.error( "++++ no md5 algorithm found" );
-				throw new IllegalStateException( "++++ no md5 algorythm found");			
-			}
-		}
-
+		MessageDigest md5 = MD5.get();
 		if ( this.totalWeight <= 0 && this.weights !=  null ) {
 			for ( int i = 0; i < this.weights.length; i++ )
 				this.totalWeight += ( this.weights[i] == null ) ? 1 : this.weights[i];
@@ -703,7 +699,7 @@ public class SockIOPool {
 			double factor = Math.floor( ((double)(40 * this.servers.length * thisWeight)) / (double)this.totalWeight );
 			
 			for ( long j = 0; j < factor; j++ ) {
-				byte[] d = MD5.digest( (servers[i] + "-" + j ).getBytes() );
+				byte[] d = md5.digest( ( servers[i] + "-" + j ).getBytes() );
 				for ( int h = 0 ; h < 4; h++ ) {
 					Long k = 
 						  ((long)(d[3+h*4]&0xFF) << 24)
@@ -1143,12 +1139,10 @@ public class SockIOPool {
 			log.debug( "++++ removing socket (" + socket.toString() + ") from busy pool for host: " + host );
 			removeSocketFromPool( busyPool, host, socket );
 
-			if ( socket.isConnected() ) {
+			if ( socket.isConnected() && addToAvail ) {
 				// add to avail pool
-				if ( addToAvail ) {
-					log.debug( "++++ returning socket (" + socket.toString() + " to avail pool for host: " + host );
-					addSocketToPool( availPool, host, socket );
-				}
+				log.debug( "++++ returning socket (" + socket.toString() + " to avail pool for host: " + host );
+				addSocketToPool( availPool, host, socket );
 			}
 			else {
 				deadPool.put( socket, ZERO );
