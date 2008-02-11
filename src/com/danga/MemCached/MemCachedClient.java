@@ -447,8 +447,11 @@ public class MemCachedClient {
 		SockIOPool.SockIO sock = pool.getSock( key, hashCode );
 
 		// return false if unable to get SockIO obj
-		if ( sock == null )
+		if ( sock == null ) {
+			if ( errorHandler != null )
+				errorHandler.handleErrorOnDelete( this, new IOException( "no socket to server available" ), key );
 			return false;
+		}
 
 		// build command
 		StringBuilder command = new StringBuilder( "delete " ).append( key );
@@ -702,8 +705,11 @@ public class MemCachedClient {
 
 		SockIOPool.SockIO sock = pool.getSock( key, hashCode );
 		
-		if ( sock == null )
+		if ( sock == null ) {
+			if ( errorHandler != null )
+				errorHandler.handleErrorOnSet( this, new IOException( "no socket to server available" ), key );
 			return false;
+		}
 		
 		if ( expiry == null )
 			expiry = new Date(0);
@@ -1127,8 +1133,11 @@ public class MemCachedClient {
 
 		SockIOPool.SockIO sock = pool.getSock( key, hashCode );
 
-		if ( sock == null )
+		if ( sock == null ) {
+			if ( errorHandler != null )
+				errorHandler.handleErrorOnSet( this, new IOException( "no socket to server available" ), key );
 			return -1;
+		}
 		
 		try {
 			String cmd = String.format( "%s %s %d\r\n", cmdname, key, inc );
@@ -1265,8 +1274,11 @@ public class MemCachedClient {
 
 		SockIOPool.SockIO sock = pool.getSock( key, hashCode );
 	    
-	    if ( sock == null )
+	    if ( sock == null ) {
+			if ( errorHandler != null )
+				errorHandler.handleErrorOnGet( this, new IOException( "no socket to server available" ), key );
 			return null;
+		}
 
 		Map<String,StringBuilder> cmdMap =
 			new HashMap<String,StringBuilder>();
@@ -1426,8 +1438,11 @@ public class MemCachedClient {
 
 			SockIOPool.SockIO sock = pool.getSock( cleanKey, hash );
 
-			if ( sock == null )
+			if ( sock == null ) {
+				if ( errorHandler != null )
+					errorHandler.handleErrorOnGet( this, new IOException( "no socket to server available" ), key );
 				continue;
+			}
 
 			// store in map and list if not already
 			if ( !cmdMap.containsKey( sock.getHost() ) )
@@ -1652,6 +1667,8 @@ public class MemCachedClient {
 			if ( sock == null ) {
 				log.error( "++++ unable to get connection to : " + servers[i] );
 				success = false;
+				if ( errorHandler != null )
+					errorHandler.handleErrorOnFlush( this, new IOException( "no socket to server available" ) );
 				continue;
 			}
 
@@ -1845,6 +1862,8 @@ public class MemCachedClient {
 			SockIOPool.SockIO sock = pool.getConnection( servers[i] );
 			if ( sock == null ) {
 				log.error( "++++ unable to get connection to : " + servers[i] );
+				if ( errorHandler != null )
+					errorHandler.handleErrorOnStats( this, new IOException( "no socket to server available" ) );
 				continue;
 			}
 
