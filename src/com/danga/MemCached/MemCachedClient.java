@@ -1,6 +1,6 @@
 /**
- * MemCached Java client
- * Copyright (c) 2007 Greg Whalin
+ * MemCached client for Java
+ * Copyright (c) 2008 Greg Whalin
  * All rights reserved.
  *
  * This library is free software; you can redistribute it and/or
@@ -32,7 +32,7 @@ import java.net.URLEncoder;
 import org.apache.log4j.Logger;
 
 /**
- * This is a Java client for the memcached server available from
+ * This is a Memcached client for the Java platform available from
  *  <a href="http:/www.danga.com/memcached/">http://www.danga.com/memcached/</a>.
  * <br/> 
  * Supports setting, adding, replacing, deleting compressed/uncompressed and<br/>

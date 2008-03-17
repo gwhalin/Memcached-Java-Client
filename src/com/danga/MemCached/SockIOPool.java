@@ -1,6 +1,6 @@
 /**
- * MemCached Java client, connection pool for Socket IO
- * Copyright (c) 2007 Greg Whalin
+ * MemCached client for Java, connection pool for Socket IO
+ * Copyright (c) 2008 Greg Whalin
  * All rights reserved.
  *
  * This library is free software; you can redistribute it and/or
@@ -1507,7 +1507,7 @@ public class SockIOPool {
 	}
 
 	/** 
-	 * MemCached Java client, utility class for Socket IO.
+	 * MemCached client for Java, utility class for Socket IO.
 	 *
 	 * This class is a wrapper around a Socket and its streams.
 	 *
