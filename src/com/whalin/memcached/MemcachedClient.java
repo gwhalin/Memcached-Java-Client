@@ -160,7 +160,7 @@ public class MemcachedClient {
 
 	// logger
 	private static Logger log =
-		Logger.getLogger( MemCachedClient.class.getName() );
+		Logger.getLogger( MemcachedClient.class.getName() );
 
 	// return codes
 	private static final String VALUE        = "VALUE";			// start of value line from server
