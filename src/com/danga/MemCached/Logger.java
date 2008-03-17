@@ -103,7 +103,7 @@ public class Logger {
 	 * @param mesg 
 	 * @param ex 
 	 */
-	private void log( String mesg, Exception ex ) {
+	private void log( String mesg, Throwable ex ) {
 		System.out.println( name + " " + new Date() + " - " + mesg );
 		if ( ex != null )
 			ex.printStackTrace( System.out );
@@ -115,7 +115,7 @@ public class Logger {
 	 * @param mesg 
 	 * @param ex 
 	 */
-	public void debug( String mesg, Exception ex ) {
+	public void debug( String mesg, Throwable ex ) {
 		if ( this.level > LEVEL_DEBUG )
 			return;
 
@@ -136,7 +136,7 @@ public class Logger {
 	 * @param mesg 
 	 * @param ex 
 	 */
-	public void info( String mesg, Exception ex ) {
+	public void info( String mesg, Throwable ex ) {
 		if ( this.level > LEVEL_INFO )
 			return;
 
@@ -157,7 +157,7 @@ public class Logger {
 	 * @param mesg 
 	 * @param ex 
 	 */
-	public void warn( String mesg, Exception ex ) {
+	public void warn( String mesg, Throwable ex ) {
 		if ( this.level > LEVEL_WARN )
 			return;
 
@@ -174,7 +174,7 @@ public class Logger {
 	 * @param mesg 
 	 * @param ex 
 	 */
-	public void error( String mesg, Exception ex ) {
+	public void error( String mesg, Throwable ex ) {
 		if ( this.level > LEVEL_ERROR )
 			return;
 
@@ -191,7 +191,7 @@ public class Logger {
 	 * @param mesg 
 	 * @param ex 
 	 */
-	public void fatal( String mesg, Exception ex ) {
+	public void fatal( String mesg, Throwable ex ) {
 		if ( this.level > LEVEL_FATAL )
 			return;
 
