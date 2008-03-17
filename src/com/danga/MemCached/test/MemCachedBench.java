@@ -21,16 +21,25 @@ package com.danga.MemCached.test;
 
 import com.danga.MemCached.*;
 import java.util.*;
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
+import org.apache.log4j.BasicConfigurator;
 
 public class MemCachedBench {
 
+	// logger
+	private static Logger log =
+		Logger.getLogger( MemCachedBench.class.getName() );
+
 	public static void main(String[] args) {
 
+		BasicConfigurator.configure();
+		org.apache.log4j.Logger.getRootLogger().setLevel( Level.OFF );
 
 		int runs = Integer.parseInt(args[0]);
 		int start = Integer.parseInt(args[1]);
 
-		String[] serverlist = { "192.168.1.1:1624" };
+		String[] serverlist = { "192.168.1.50:1624" };
 
 		// initialize the pool for memcache servers
 		SockIOPool pool = SockIOPool.getInstance( "test" );
@@ -39,8 +48,7 @@ public class MemCachedBench {
 		pool.setInitConn( 100 );
 		pool.setMinConn( 100 );
 		pool.setMaxConn( 500 );
-		pool.setMaintSleep( 30 );
-		pool.setAliveCheck( true );
+		pool.setMaintSleep( 20 );
 
 		pool.setNagle( false );
 		pool.initialize();

@@ -441,9 +441,6 @@ public class MemCachedClient {
 		}
 
 		// get SockIO obj from hash or from key
-		if ( pool == null )
-			pool = SockIOPool.getInstance( poolName );
-
 		SockIOPool.SockIO sock = pool.getSock( key, hashCode );
 
 		// return false if unable to get SockIO obj
@@ -700,9 +697,6 @@ public class MemCachedClient {
 		}
 
 		// get SockIO obj
-		if ( pool == null )
-			pool = SockIOPool.getInstance( poolName );
-
 		SockIOPool.SockIO sock = pool.getSock( key, hashCode );
 		
 		if ( sock == null ) {
@@ -1128,9 +1122,6 @@ public class MemCachedClient {
 		}
 
 		// get SockIO obj for given cache key
-		if ( pool == null )
-			pool = SockIOPool.getInstance( poolName );
-
 		SockIOPool.SockIO sock = pool.getSock( key, hashCode );
 
 		if ( sock == null ) {
@@ -1141,7 +1132,8 @@ public class MemCachedClient {
 		
 		try {
 			String cmd = String.format( "%s %s %d\r\n", cmdname, key, inc );
-			log.debug( "++++ memcache incr/decr command: " + cmd );
+			if ( log.isDebugEnabled() )
+				log.debug( "++++ memcache incr/decr command: " + cmd );
 
 			sock.write( cmd.getBytes() );
 			sock.flush();
@@ -1269,9 +1261,6 @@ public class MemCachedClient {
 		}
 
 		// get SockIO obj using cache key
-		if ( pool == null )
-			pool = SockIOPool.getInstance( poolName );
-
 		SockIOPool.SockIO sock = pool.getSock( key, hashCode );
 	    
 	    if ( sock == null ) {
@@ -1280,23 +1269,146 @@ public class MemCachedClient {
 			return null;
 		}
 
-		Map<String,StringBuilder> cmdMap =
-			new HashMap<String,StringBuilder>();
+		try {
+			String cmd = "get " + key + "\r\n";
 
-		cmdMap.put( sock.getHost(),
-				new StringBuilder( String.format( "get %s", key ) ) );
+			if ( log.isDebugEnabled() )
+				log.debug("++++ memcache get command: " + cmd);
+			
+			sock.write( cmd.getBytes() );
+			sock.flush();
 
-		sock.close();
+			// ready object
+			Object o = null;
 
-		// build empty map
-		// and fill it from server
-		Map<String,Object> hm =
-			new HashMap<String,Object>();
-		(new NIOLoader()).doMulti( asString, cmdMap, new String[] { key }, hm );
+			while ( true ) {
+				String line = sock.readLine();
 
-		// return the value for this key if we found it
-		// else return null 
-		return ( hm.containsKey( key ) ) ? hm.get( key ) : null;
+				if ( log.isDebugEnabled() )
+					log.debug( "++++ line: " + line );
+
+				if ( line.startsWith( VALUE ) ) {
+					String[] info = line.split(" ");
+					int flag      = Integer.parseInt( info[2] );
+					int length    = Integer.parseInt( info[3] );
+
+					if ( log.isDebugEnabled() ) {
+						log.debug( "++++ key: " + key );
+						log.debug( "++++ flags: " + flag );
+						log.debug( "++++ length: " + length );
+					}
+					
+					// read obj into buffer
+					byte[] buf = new byte[length];
+					sock.read( buf );
+					sock.clearEOL();
+
+					if ( (flag & F_COMPRESSED) == F_COMPRESSED ) {
+						try {
+							// read the input stream, and write to a byte array output stream since
+							// we have to read into a byte array, but we don't know how large it
+							// will need to be, and we don't want to resize it a bunch
+							GZIPInputStream gzi = new GZIPInputStream( new ByteArrayInputStream( buf ) );
+							ByteArrayOutputStream bos = new ByteArrayOutputStream( buf.length );
+							
+							int count;
+							byte[] tmp = new byte[2048];
+							while ( (count = gzi.read(tmp)) != -1 ) {
+								bos.write( tmp, 0, count );
+							}
+
+							// store uncompressed back to buffer
+							buf = bos.toByteArray();
+							gzi.close();
+						}
+						catch ( IOException e ) {
+
+							// if we have an errorHandler, use its hook
+							if ( errorHandler != null )
+								errorHandler.handleErrorOnGet( this, e, key );
+
+							log.error( "++++ IOException thrown while trying to uncompress input stream for key: " + key );
+							log.error( e.getMessage(), e );
+							throw new NestedIOException( "++++ IOException thrown while trying to uncompress input stream for key: " + key, e );
+						}
+					}
+
+					// we can only take out serialized objects
+					if ( ( flag & F_SERIALIZED ) != F_SERIALIZED ) {
+						if ( primitiveAsString || asString ) {
+							// pulling out string value
+							log.info( "++++ retrieving object and stuffing into a string." );
+							o = new String( buf, defaultEncoding );
+						}
+						else {
+							// decoding object
+							try {
+								o = NativeHandler.decode( buf, flag );    
+							}
+							catch ( Exception e ) {
+
+								// if we have an errorHandler, use its hook
+								if ( errorHandler != null )
+									errorHandler.handleErrorOnGet( this, e, key );
+
+								log.error( "++++ Exception thrown while trying to deserialize for key: " + key, e );
+								throw new NestedIOException( e );
+							}
+						}
+					}
+					else {
+						// deserialize if the data is serialized
+						ContextObjectInputStream ois =
+							new ContextObjectInputStream( new ByteArrayInputStream( buf ), classLoader );
+						try {
+							o = ois.readObject();
+							log.info( "++++ deserializing " + o.getClass() );
+						}
+						catch ( ClassNotFoundException e ) {
+
+							// if we have an errorHandler, use its hook
+							if ( errorHandler != null )
+								errorHandler.handleErrorOnGet( this, e, key );
+
+							log.error( "++++ ClassNotFoundException thrown while trying to deserialize for key: " + key, e );
+							throw new NestedIOException( "+++ failed while trying to deserialize for key: " + key, e );
+						}
+					}
+				}
+				else if ( END.equals( line ) ) {
+					if ( log.isDebugEnabled() )
+						log.debug( "++++ finished reading from cache server" );
+					break;
+				}
+			}
+			
+			sock.close();
+			sock = null;
+			return o;
+	    }
+		catch ( IOException e ) {
+
+			// if we have an errorHandler, use its hook
+			if ( errorHandler != null )
+				errorHandler.handleErrorOnGet( this, e, key );
+
+			// exception thrown
+			log.error( "++++ exception thrown while trying to get object from cache for key: " + key );
+			log.error( e.getMessage(), e );
+
+			try {
+				sock.trueClose();
+			}
+			catch ( IOException ioe ) {
+				log.error( "++++ failed to close socket : " + sock.toString() );
+			}
+			sock = null;
+	    }
+
+		if ( sock != null )
+			sock.close();
+
+		return null;
 	}
 
 	/** 
@@ -1433,9 +1545,6 @@ public class MemCachedClient {
 			}
 
 			// get SockIO obj from cache key
-			if ( pool == null )
-				pool = SockIOPool.getInstance( poolName );
-
 			SockIOPool.SockIO sock = pool.getSock( cleanKey, hash );
 
 			if ( sock == null ) {
@@ -1461,7 +1570,7 @@ public class MemCachedClient {
 			new HashMap<String,Object>( keys.length );
 
 		// now use new NIO implementation
-		(new NIOLoader()).doMulti( asString, cmdMap, keys, ret );
+		(new NIOLoader( this )).doMulti( asString, cmdMap, keys, ret );
 
 		// fix the return array in case we had to rewrite any of the keys
 		for ( String key : keys ) {
@@ -1490,7 +1599,8 @@ public class MemCachedClient {
 				ret.put( key, null );
 		}
 
-		log.debug( "++++ memcache: got back " + ret.size() + " results" );
+		if ( log.isDebugEnabled() )
+			log.debug( "++++ memcache: got back " + ret.size() + " results" );
 		return ret;
 	}
 
@@ -1509,7 +1619,8 @@ public class MemCachedClient {
 
 		while ( true ) {
 			String line = input.readLine();
-			log.debug( "++++ line: " + line );
+			if ( log.isDebugEnabled() )
+				log.debug( "++++ line: " + line );
 
 			if ( line.startsWith( VALUE ) ) {
 				String[] info = line.split(" ");
@@ -1517,9 +1628,11 @@ public class MemCachedClient {
 				int flag      = Integer.parseInt( info[2] );
 				int length    = Integer.parseInt( info[3] );
 
-				log.debug( "++++ key: " + key );
-				log.debug( "++++ flags: " + flag );
-				log.debug( "++++ length: " + length );
+				if ( log.isDebugEnabled() ) {
+					log.debug( "++++ key: " + key );
+					log.debug( "++++ flags: " + flag );
+					log.debug( "++++ length: " + length );
+				}
 				
 				// read obj into buffer
 				byte[] buf = new byte[length];
@@ -1606,7 +1719,8 @@ public class MemCachedClient {
 				hm.put( key, o );
 			}
 			else if ( END.equals( line ) ) {
-				log.debug( "++++ finished reading from cache server" );
+				if ( log.isDebugEnabled() )
+					log.debug( "++++ finished reading from cache server" );
 				break;
 			}
 		}
@@ -1639,9 +1753,6 @@ public class MemCachedClient {
 	public boolean flushAll( String[] servers ) {
 
 		// get SockIOPool instance
-		if ( pool == null )
-			pool = SockIOPool.getInstance( poolName );
-
 		// return false if unable to get SockIO obj
 		if ( pool == null ) {
 			log.error( "++++ unable to get SockIOPool instance" );
@@ -1832,16 +1943,6 @@ public class MemCachedClient {
 			return null;
 		}
 
-		// get SockIOPool instance
-		if ( pool == null )
-			pool = SockIOPool.getInstance( poolName );
-
-		// return false if unable to get SockIO obj
-		if ( pool == null ) {
-			log.error( "++++ unable to get SockIOPool instance" );
-			return null;
-		}
-
 		// get all servers and iterate over them
 		servers = (servers == null)
 			? pool.getServers()
@@ -1878,21 +1979,25 @@ public class MemCachedClient {
 				// loop over results
 				while ( true ) {
 					String line = sock.readLine();
-					log.debug( "++++ line: " + line );
+					if ( log.isDebugEnabled() )
+						log.debug( "++++ line: " + line );
 
 					if ( line.startsWith( lineStart ) ) {
 						String[] info = line.split( " ", 3 );						
 						String key    = info[1];
 						String value  = info[2];
 
-						log.debug( "++++ key  : " + key );
-						log.debug( "++++ value: " + value );
+						if ( log.isDebugEnabled() ) {
+							log.debug( "++++ key  : " + key );
+							log.debug( "++++ value: " + value );
+						}
 
 						stats.put( key, value );
 					}
 					else if ( END.equals( line ) ) {
 						// finish when we get end from server
-						log.debug( "++++ finished reading from cache server" );
+						if ( log.isDebugEnabled() )
+							log.debug( "++++ finished reading from cache server" );
 						break;
 					}
 					else if ( line.startsWith( ERROR ) || line.startsWith( CLIENT_ERROR ) || line.startsWith( SERVER_ERROR ) ) {
@@ -1936,7 +2041,12 @@ public class MemCachedClient {
 	protected final class NIOLoader {
 		protected Selector selector;
 		protected int numConns = 0;
+		protected MemCachedClient mc;
 		protected Connection[] conns;
+
+		public NIOLoader( MemCachedClient mc ) {
+			this.mc = mc;
+		}
 
 		private final class Connection {
 		
@@ -1947,12 +2057,16 @@ public class MemCachedClient {
 			private boolean isDone = false;
 			
 			public Connection( SockIOPool.SockIO sock, StringBuilder request ) throws IOException {
-				log.debug( "setting up connection to "+sock.getHost() );
+				if ( log.isDebugEnabled() )
+					log.debug( "setting up connection to "+sock.getHost() );
 				
 				this.sock = sock;
 				outgoing = ByteBuffer.wrap( request.append( "\r\n" ).toString().getBytes() );
 				
 				channel = sock.getChannel();
+				if ( channel == null )
+					throw new IOException( "dead connection to: " + sock.getHost() );
+
 				channel.configureBlocking( false );
 				channel.register( selector, SelectionKey.OP_WRITE, this );
 			}
@@ -1989,15 +2103,9 @@ public class MemCachedClient {
 					return true;
 				
 				// else find out the hard way
-				int maxBuf = incoming.size()-1;
 				int strPos = B_END.length-1;
 
-				// Need to check if last bytes are:
-				//   - END\r\n
-				//   - NOT_FOUND\r\n
-				//   - DELETED\r\n
-				
-				int bi = maxBuf;
+				int bi = incoming.size() - 1;
 				while ( bi >= 0 && strPos >= 0 ) {
 					ByteBuffer buf = incoming.get( bi );
 					int pos = buf.position()-1;
@@ -2044,10 +2152,14 @@ public class MemCachedClient {
 					// get SockIO obj from hostname
 					String host = i.next();
 
-					if ( pool == null )
-						pool = SockIOPool.getInstance( poolName );
-
 					SockIOPool.SockIO sock = pool.getConnection( host );
+
+					if ( sock == null ) {
+						if ( errorHandler != null )
+							errorHandler.handleErrorOnGet( this.mc, new IOException( "no socket to server available" ), keys );
+						return;
+					}
+
 					conns[numConns++] = new Connection( sock, sockKeys.get( host ) );
 				}
 				
@@ -2056,14 +2168,11 @@ public class MemCachedClient {
 				// 2) we time out
 				long startTime = System.currentTimeMillis();
 
-				if ( pool == null )
-					pool = SockIOPool.getInstance( poolName );
-
 				long timeout = pool.getMaxBusy();
 				timeRemaining = timeout;
 				
 				while ( numConns > 0 && timeRemaining > 0 ) {
-					int n = selector.select( 5000 );
+					int n = selector.select( Math.min( timeout,  5000 ) );
 					if ( n > 0 ) {
 					    // we've got some activity; handle it
 					    Iterator<SelectionKey> it = selector.selectedKeys().iterator();
@@ -2161,16 +2270,17 @@ public class MemCachedClient {
 		
 		public void readResponse( SelectionKey key ) throws IOException {
 			Connection conn = (Connection)key.attachment();
-			InetAddress remote = conn.channel.socket().getInetAddress();
-			
 			ByteBuffer buf = conn.getBuffer();
 			int count = conn.channel.read( buf );
 			if ( count > 0 ) {
 				if ( log.isDebugEnabled() )
-					log.debug( "read  " + count + " from " + remote );
+					log.debug( "read  " + count + " from " + conn.channel.socket().getInetAddress() );
 				
 				if ( conn.isDone() ) {
-					log.debug( "connection done to  " + remote );
+					if ( log.isDebugEnabled() )
+						log.debug( "connection done to  " + conn.channel.socket().getInetAddress() );
+
+					key.cancel();
 					numConns--;
 					return;
 				}
