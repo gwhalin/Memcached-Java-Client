@@ -1901,7 +1901,6 @@ public class SockIOPool {
 			}
 			catch ( Throwable t ) {
 				log.error( t.getMessage(), t );
-
 			}
 			finally {
 				super.finalize();
