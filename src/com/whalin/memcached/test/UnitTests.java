@@ -1,6 +1,6 @@
 /**
  * UnitTests.java
- * Copyright (c) 2007 Greg Whalin
+ * Copyright (c) 2008 Greg Whalin
  * All rights reserved.
  *
  * This library is free software; you can redistribute it and/or
@@ -18,9 +18,9 @@
  * @author greg whalin <greg@meetup.com> 
  * @version 1.2
  */
-package com.danga.MemCached.test;
+package com.whalin.memcached.test;
 
-import com.danga.MemCached.*;
+import com.whalin.memcached.*;
 import java.util.*;
 import java.io.Serializable;
 
@@ -34,7 +34,7 @@ public class UnitTests {
 	private static Logger log =
 		Logger.getLogger( UnitTests.class.getName() );
 
-    public static MemCachedClient mc  = null;
+    public static MemcachedClient mc  = null;
 
     public static void test1() {
         mc.set( "foo", Boolean.TRUE );
@@ -266,7 +266,7 @@ public class UnitTests {
 		log.error( "+ getMulti w/ keys that don't exist test passed" );
 	}
 
-	public static void runAlTests( MemCachedClient mc ) {
+	public static void runAlTests( MemcachedClient mc ) {
 		test14();
 		for ( int t = 0; t < 2; t++ ) {
 			mc.setCompressEnable( ( t&1 ) == 1 );
@@ -319,7 +319,7 @@ public class UnitTests {
 	}
 
 	/**
-	 * This runs through some simple tests of the MemCacheClient.
+	 * This runs through some simple tests of the MemcacheClient.
 	 *
 	 * Command line args:
 	 * args[0] = number of threads to spawn
@@ -365,7 +365,7 @@ public class UnitTests {
 		pool.setHashingAlg( SockIOPool.CONSISTENT_HASH );
 		pool.initialize();
 
-        mc = new MemCachedClient( "test" );
+        mc = new MemcachedClient( "test" );
 		runAlTests( mc );
 	}
 

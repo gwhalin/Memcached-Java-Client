@@ -1,6 +1,5 @@
 /**
- * MemCached Java client
- * Copyright (c) 2007 Greg Whalin
+ * Copyright (c) 2008 Greg Whalin
  * All rights reserved.
  *
  * This library is free software; you can redistribute it and/or
@@ -17,9 +16,9 @@
  * @author greg whalin <greg@meetup.com> 
  * @version 1.5.2
  */
-package com.danga.MemCached.test;
+package com.whalin.memcached.test;
 
-import com.danga.MemCached.*;
+import com.whalin.memcached.*;
 import org.apache.log4j.*;
 
 public class TestMemcached  {  
@@ -40,14 +39,14 @@ public class TestMemcached  {
 		pool.setAliveCheck( true );
 		pool.initialize();
 
-		MemCachedClient memCachedClient = new MemCachedClient();
+		MemcachedClient mcc = new MemcachedClient();
 
 		// turn off most memcached client logging:
-		com.danga.MemCached.Logger.getLogger( MemCachedClient.class.getName() ).setLevel( com.danga.MemCached.Logger.LEVEL_WARN );
+		com.whalin.memcached.Logger.getLogger( MemcachedClient.class.getName() ).setLevel( com.whalin.memcached.Logger.LEVEL_WARN );
 
 		for ( int i = 0; i < 10; i++ ) {
-			boolean success = memCachedClient.set( "" + i, "Hello!" );
-			String result = (String)memCachedClient.get( "" + i );
+			boolean success = mcc.set( "" + i, "Hello!" );
+			String result = (String)mcc.get( "" + i );
 			System.out.println( String.format( "set( %d ): %s", i, success ) );
 			System.out.println( String.format( "get( %d ): %s", i, result ) );
 		}
@@ -56,8 +55,8 @@ public class TestMemcached  {
 		try { Thread.sleep( 10000 ); } catch ( Exception ex ) { }
 
 		for ( int i = 0; i < 10; i++ ) {
-			boolean success = memCachedClient.set( "" + i, "Hello!" );
-			String result = (String)memCachedClient.get( "" + i );
+			boolean success = mcc.set( "" + i, "Hello!" );
+			String result = (String)mcc.get( "" + i );
 			System.out.println( String.format( "set( %d ): %s", i, success ) );
 			System.out.println( String.format( "get( %d ): %s", i, result ) );
 		}

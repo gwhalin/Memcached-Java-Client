@@ -17,7 +17,7 @@
  * @author Greg Whalin <greg@meetup.com> 
  * @version 2.0
  */
-package com.danga.MemCached;
+package com.whalin.memcached;
 
 import java.util.Date;
 import org.apache.log4j.Logger;
@@ -130,43 +130,43 @@ public class NativeHandler {
 	public static int getMarkerFlag( Object value ) {
 
 		if ( value instanceof Byte )
-			return MemCachedClient.MARKER_BYTE;
+			return MemcachedClient.MARKER_BYTE;
 		
 		if ( value instanceof Boolean )
-			return MemCachedClient.MARKER_BOOLEAN;
+			return MemcachedClient.MARKER_BOOLEAN;
 		
 		if ( value instanceof Integer ) 
-			return MemCachedClient.MARKER_INTEGER;
+			return MemcachedClient.MARKER_INTEGER;
 		
 		if ( value instanceof Long )
-			return MemCachedClient.MARKER_LONG;
+			return MemcachedClient.MARKER_LONG;
 
 		if ( value instanceof Character )
-			return MemCachedClient.MARKER_CHARACTER;
+			return MemcachedClient.MARKER_CHARACTER;
 		
 		if ( value instanceof String )
-			return MemCachedClient.MARKER_STRING;
+			return MemcachedClient.MARKER_STRING;
 		
 		if ( value instanceof StringBuffer )
-			return MemCachedClient.MARKER_STRINGBUFFER;
+			return MemcachedClient.MARKER_STRINGBUFFER;
 		
 		if ( value instanceof Float )
-			return MemCachedClient.MARKER_FLOAT;
+			return MemcachedClient.MARKER_FLOAT;
 		
 		if ( value instanceof Short )
-			return MemCachedClient.MARKER_SHORT;
+			return MemcachedClient.MARKER_SHORT;
 		
 		if ( value instanceof Double )
-			return MemCachedClient.MARKER_DOUBLE;
+			return MemcachedClient.MARKER_DOUBLE;
 		
 		if ( value instanceof Date )
-			return MemCachedClient.MARKER_DATE;
+			return MemcachedClient.MARKER_DATE;
 		
 		if ( value instanceof StringBuilder )
-			return MemCachedClient.MARKER_STRINGBUILDER;
+			return MemcachedClient.MARKER_STRINGBUILDER;
 		
 		if ( value instanceof byte[] )
-			return MemCachedClient.MARKER_BYTEARR;
+			return MemcachedClient.MARKER_BYTEARR;
 		
 		return -1;
 	}
@@ -320,43 +320,43 @@ public class NativeHandler {
 			return null;
 
 		
-		if ( ( flag & MemCachedClient.MARKER_BYTE ) == MemCachedClient.MARKER_BYTE )
+		if ( ( flag & MemcachedClient.MARKER_BYTE ) == MemcachedClient.MARKER_BYTE )
 			return decodeByte( b );
 		
-		if ( ( flag & MemCachedClient.MARKER_BOOLEAN ) == MemCachedClient.MARKER_BOOLEAN )
+		if ( ( flag & MemcachedClient.MARKER_BOOLEAN ) == MemcachedClient.MARKER_BOOLEAN )
 			return decodeBoolean( b );
 		
-		if ( ( flag & MemCachedClient.MARKER_INTEGER ) == MemCachedClient.MARKER_INTEGER )
+		if ( ( flag & MemcachedClient.MARKER_INTEGER ) == MemcachedClient.MARKER_INTEGER )
 			return decodeInteger( b );
 		
-		if ( ( flag & MemCachedClient.MARKER_LONG ) == MemCachedClient.MARKER_LONG )
+		if ( ( flag & MemcachedClient.MARKER_LONG ) == MemcachedClient.MARKER_LONG )
 			return decodeLong( b );
 		
-		if ( ( flag & MemCachedClient.MARKER_CHARACTER ) == MemCachedClient.MARKER_CHARACTER )
+		if ( ( flag & MemcachedClient.MARKER_CHARACTER ) == MemcachedClient.MARKER_CHARACTER )
 			return decodeCharacter( b );
 		
-		if ( ( flag & MemCachedClient.MARKER_STRING ) == MemCachedClient.MARKER_STRING )
+		if ( ( flag & MemcachedClient.MARKER_STRING ) == MemcachedClient.MARKER_STRING )
 			return decodeString( b );
 		
-		if ( ( flag & MemCachedClient.MARKER_STRINGBUFFER ) == MemCachedClient.MARKER_STRINGBUFFER )
+		if ( ( flag & MemcachedClient.MARKER_STRINGBUFFER ) == MemcachedClient.MARKER_STRINGBUFFER )
 			return decodeStringBuffer( b );
 		
-		if ( ( flag & MemCachedClient.MARKER_FLOAT ) == MemCachedClient.MARKER_FLOAT )
+		if ( ( flag & MemcachedClient.MARKER_FLOAT ) == MemcachedClient.MARKER_FLOAT )
 			return decodeFloat( b );
 		
-		if ( ( flag & MemCachedClient.MARKER_SHORT ) == MemCachedClient.MARKER_SHORT )
+		if ( ( flag & MemcachedClient.MARKER_SHORT ) == MemcachedClient.MARKER_SHORT )
 			return decodeShort( b );
 		
-		if ( ( flag & MemCachedClient.MARKER_DOUBLE ) == MemCachedClient.MARKER_DOUBLE )
+		if ( ( flag & MemcachedClient.MARKER_DOUBLE ) == MemcachedClient.MARKER_DOUBLE )
 			return decodeDouble( b );
 		
-		if ( ( flag & MemCachedClient.MARKER_DATE ) == MemCachedClient.MARKER_DATE )
+		if ( ( flag & MemcachedClient.MARKER_DATE ) == MemcachedClient.MARKER_DATE )
 			return decodeDate( b );
 		
-		if ( ( flag & MemCachedClient.MARKER_STRINGBUILDER ) == MemCachedClient.MARKER_STRINGBUILDER )
+		if ( ( flag & MemcachedClient.MARKER_STRINGBUILDER ) == MemcachedClient.MARKER_STRINGBUILDER )
 			return decodeStringBuilder( b );
 		
-		if ( ( flag & MemCachedClient.MARKER_BYTEARR ) == MemCachedClient.MARKER_BYTEARR )
+		if ( ( flag & MemcachedClient.MARKER_BYTEARR ) == MemcachedClient.MARKER_BYTEARR )
 			return decodeByteArr( b );
 		
 		return null;

@@ -1,5 +1,5 @@
 /**
- * MemCached client for Java
+ * Memcached client for Java
  * Copyright (c) 2008 Greg Whalin
  * All rights reserved.
  *
@@ -17,7 +17,7 @@
  * @author Greg Whalin <greg@meetup.com> 
  * @version 2.0
  */
-package com.danga.MemCached;
+package com.whalin.memcached;
 
 import java.util.*;
 import java.util.zip.*;
@@ -45,7 +45,7 @@ import org.apache.log4j.Logger;
  * Some examples of use follow.<br/>
  * <h3>To create cache client object and set params:</h3>
  * <pre> 
- *	MemCachedClient mc = new MemCachedClient();
+ *	MemcachedClient mc = new MemcachedClient();
  *
  *	// compression is enabled by default	
  *	mc.setCompressEnable(true);
@@ -59,14 +59,14 @@ import org.apache.log4j.Logger;
  * </pre>	
  * <h3>To store an object:</h3>
  * <pre>
- *	MemCachedClient mc = new MemCachedClient();
+ *	MemcachedClient mc = new MemcachedClient();
  *	String key   = "cacheKey1";	
  *	Object value = SomeClass.getObject();	
  *	mc.set(key, value);
  * </pre> 
  * <h3>To store an object using a custom server hashCode:</h3>
  * <pre>
- *	MemCachedClient mc = new MemCachedClient();
+ *	MemcachedClient mc = new MemcachedClient();
  *	String key   = "cacheKey1";	
  *	Object value = SomeClass.getObject();	
  *	Integer hash = new Integer(45);	
@@ -80,20 +80,20 @@ import org.apache.log4j.Logger;
  * </ul> 
  * <h3>To delete a cache entry:</h3>
  * <pre>
- *	MemCachedClient mc = new MemCachedClient();
+ *	MemcachedClient mc = new MemcachedClient();
  *	String key   = "cacheKey1";	
  *	mc.delete(key);
  * </pre> 
  * <h3>To delete a cache entry using a custom hash code:</h3>
  * <pre>
- *	MemCachedClient mc = new MemCachedClient();
+ *	MemcachedClient mc = new MemcachedClient();
  *	String key   = "cacheKey1";	
  *	Integer hash = new Integer(45);	
  *	mc.delete(key, hashCode);
  * </pre> 
  * <h3>To store a counter and then increment or decrement that counter:</h3>
  * <pre>
- *	MemCachedClient mc = new MemCachedClient();
+ *	MemcachedClient mc = new MemcachedClient();
  *	String key   = "counterKey";	
  *	mc.storeCounter(key, new Integer(100));
  *	System.out.println("counter after adding      1: " mc.incr(key));	
@@ -103,7 +103,7 @@ import org.apache.log4j.Logger;
  * </pre> 
  * <h3>To store a counter and then increment or decrement that counter with custom hash:</h3>
  * <pre>
- *	MemCachedClient mc = new MemCachedClient();
+ *	MemcachedClient mc = new MemcachedClient();
  *	String key   = "counterKey";	
  *	Integer hash = new Integer(45);	
  *	mc.storeCounter(key, new Integer(100), hash);
@@ -114,38 +114,38 @@ import org.apache.log4j.Logger;
  * </pre> 
  * <h3>To retrieve an object from the cache:</h3>
  * <pre>
- *	MemCachedClient mc = new MemCachedClient();
+ *	MemcachedClient mc = new MemcachedClient();
  *	String key   = "key";	
  *	Object value = mc.get(key);	
  * </pre> 
  * <h3>To retrieve an object from the cache with custom hash:</h3>
  * <pre>
- *	MemCachedClient mc = new MemCachedClient();
+ *	MemcachedClient mc = new MemcachedClient();
  *	String key   = "key";	
  *	Integer hash = new Integer(45);	
  *	Object value = mc.get(key, hash);	
  * </pre> 
  * <h3>To retrieve an multiple objects from the cache</h3>
  * <pre>
- *	MemCachedClient mc = new MemCachedClient();
+ *	MemcachedClient mc = new MemcachedClient();
  *	String[] keys      = { "key", "key1", "key2" };
  *	Map&lt;Object&gt; values = mc.getMulti(keys);
  * </pre> 
  * <h3>To retrieve an multiple objects from the cache with custom hashing</h3>
  * <pre>
- *	MemCachedClient mc = new MemCachedClient();
+ *	MemcachedClient mc = new MemcachedClient();
  *	String[] keys      = { "key", "key1", "key2" };
  *	Integer[] hashes   = { new Integer(45), new Integer(32), new Integer(44) };
  *	Map&lt;Object&gt; values = mc.getMulti(keys, hashes);
  * </pre> 
  * <h3>To flush all items in server(s)</h3>
  * <pre>
- *	MemCachedClient mc = new MemCachedClient();
+ *	MemcachedClient mc = new MemcachedClient();
  *	mc.flushAll();
  * </pre> 
  * <h3>To get stats from server(s)</h3>
  * <pre>
- *	MemCachedClient mc = new MemCachedClient();
+ *	MemcachedClient mc = new MemcachedClient();
  *	Map stats = mc.stats();
  * </pre> 
  *
@@ -156,7 +156,7 @@ import org.apache.log4j.Logger;
  * @author Vin Chawla <vin@tivo.com>
  * @version 1.5
  */
-public class MemCachedClient {
+public class MemcachedClient {
 
 	// logger
 	private static Logger log =
@@ -224,7 +224,7 @@ public class MemCachedClient {
 	/**
 	 * Creates a new instance of MemCachedClient.
 	 */
-	public MemCachedClient() {
+	public MemcachedClient() {
 		init();
 	}
 
@@ -234,7 +234,7 @@ public class MemCachedClient {
 	 * 
 	 * @param poolName name of SockIOPool
 	 */
-	public MemCachedClient( String poolName ) {
+	public MemcachedClient( String poolName ) {
 		this.poolName = poolName;
 		init();
 	}
@@ -245,7 +245,7 @@ public class MemCachedClient {
 	 * 
 	 * @param classLoader ClassLoader object.
 	 */
-	public MemCachedClient( ClassLoader classLoader ) {
+	public MemcachedClient( ClassLoader classLoader ) {
 		this.classLoader = classLoader;
 		init();
 	}
@@ -258,7 +258,7 @@ public class MemCachedClient {
 	 * @param classLoader ClassLoader object.
 	 * @param errorHandler ErrorHandler object.
 	 */
-	public MemCachedClient( ClassLoader classLoader, ErrorHandler errorHandler ) {
+	public MemcachedClient( ClassLoader classLoader, ErrorHandler errorHandler ) {
 		this.classLoader  = classLoader;
 		this.errorHandler = errorHandler;
 		init();
@@ -273,7 +273,7 @@ public class MemCachedClient {
 	 * @param errorHandler ErrorHandler object.
 	 * @param poolName SockIOPool name
 	 */
-	public MemCachedClient( ClassLoader classLoader, ErrorHandler errorHandler, String poolName ) {
+	public MemcachedClient( ClassLoader classLoader, ErrorHandler errorHandler, String poolName ) {
 		this.classLoader  = classLoader;
 		this.errorHandler = errorHandler;
 		this.poolName     = poolName;
@@ -2041,10 +2041,10 @@ public class MemCachedClient {
 	protected final class NIOLoader {
 		protected Selector selector;
 		protected int numConns = 0;
-		protected MemCachedClient mc;
+		protected MemcachedClient mc;
 		protected Connection[] conns;
 
-		public NIOLoader( MemCachedClient mc ) {
+		public NIOLoader( MemcachedClient mc ) {
 			this.mc = mc;
 		}
 
@@ -2232,7 +2232,7 @@ public class MemCachedClient {
 		private void handleError( Throwable e, String[] keys ) {
 		    // if we have an errorHandler, use its hook
 		    if ( errorHandler != null )
-		        errorHandler.handleErrorOnGet( MemCachedClient.this, e, keys );
+		        errorHandler.handleErrorOnGet( MemcachedClient.this, e, keys );
 		
 		    // exception thrown
 		    log.error( "++++ exception thrown while getting from cache on getMulti" );

@@ -1,6 +1,6 @@
 /**
- * MemCachedTest.java
- * Copyright (c) 2007 Greg Whalin
+ * MemcachedTest.java
+ * Copyright (c) 2008 Greg Whalin
  * All rights reserved.
  *
  * This library is free software; you can redistribute it and/or
@@ -17,19 +17,19 @@
  * @author Greg Whalin <greg@meetup.com> 
  * @version 1.5.2
  */
-package com.danga.MemCached.test;
+package com.whalin.memcached.test;
 
-import com.danga.MemCached.*;
+import com.whalin.memcached.*;
 import java.util.*;
 
-public class MemCachedTest {
+public class MemcachedTest {
 
 	// store results from threads
 	private static Hashtable<Integer,StringBuilder> threadInfo =
 		new Hashtable<Integer,StringBuilder>();
     
 	/**
-	 * This runs through some simple tests of the MemCacheClient.
+	 * This runs through some simple tests of the MemcacheClient.
 	 *
 	 * Command line args:
 	 * args[0] = number of threads to spawn
@@ -117,7 +117,7 @@ public class MemCachedTest {
 			StringBuilder result = new StringBuilder();
 
 			// get client instance
-			MemCachedClient mc = new MemCachedClient();
+			MemcachedClient mc = new MemcachedClient();
 			mc.setCompressEnable(false);
 			mc.setCompressThreshold(0);
 

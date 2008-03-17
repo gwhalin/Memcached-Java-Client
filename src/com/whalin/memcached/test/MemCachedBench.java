@@ -1,5 +1,5 @@
 /**
- * MemCachedBench.java
+ * MemcachedBench.java
  * Copyright (c) 2007 Greg Whalin
  * All rights reserved.
  *
@@ -17,19 +17,19 @@
  * @author Greg Whalin <greg@meetup.com> 
  * @version 1.5.2
  */
-package com.danga.MemCached.test;
+package com.whalin.memcached.test;
 
-import com.danga.MemCached.*;
+import com.whalin.memcached.*;
 import java.util.*;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.log4j.BasicConfigurator;
 
-public class MemCachedBench {
+public class MemcachedBench {
 
 	// logger
 	private static Logger log =
-		Logger.getLogger( MemCachedBench.class.getName() );
+		Logger.getLogger( MemcachedBench.class.getName() );
 
 	public static void main(String[] args) {
 
@@ -54,7 +54,7 @@ public class MemCachedBench {
 		pool.initialize();
 
 		// get client instance
-		MemCachedClient mc = new MemCachedClient( "test" );
+		MemcachedClient mc = new MemcachedClient( "test" );
 		mc.setCompressEnable( false );
 
 		String keyBase = "testKey";

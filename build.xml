@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
-<project name="java_memcached" default="package" basedir=".">
+<project name="memcached" default="package" basedir=".">
 
 	<property name="project.title"   value="java memcached client" />
-	<property name="code.dir"        value="src/com/danga/MemCached" />
+	<property name="code.dir"        value="src/com/whalin/memcached" />
 	<property name="doc.dir"         value="doc" />
 	<property name="src.dir"         value="src" />
 	<property name="build.dir"       value="classes" />
 	
 	<property environment="env"/>
 	<property file="build.properties"/>
-	<property name="project" value="java_memcached"/>
+	<property name="project" value="memcached"/>
 
 	<path id="project.class.path">
 		<pathelement path = "lib/log4j.jar"/>
@@ -18,62 +18,62 @@
 	<!-- package release -->
 	<!-- ant package -Dver=release_1.3 -Dlog4j=1 -->
 	<target name="package" depends="clean, setup, log4j, logger, pkg-compile, jar, javadoc">
-		<tar tarfile="java_memcached-${ver}.tar.gz" basedir="." includes="java_memcached-${ver}/**" compression="gzip"/>
-		<zip destfile="java_memcached-${ver}.zip" basedir="." includes="java_memcached-${ver}/**"/>
-		<copy file="java_memcached-${ver}/java_memcached-${ver}.jar" todir="."/>
+		<tar tarfile="memcached-${ver}.tar.gz" basedir="." includes="memcached-${ver}/**" compression="gzip"/>
+		<zip destfile="memcached-${ver}.zip" basedir="." includes="memcached-${ver}/**"/>
+		<copy file="memcached-${ver}/memcached-${ver}.jar" todir="."/>
 
-		<checksum file="java_memcached-${ver}.tar.gz"/>
-		<checksum file="java_memcached-${ver}.zip"/>
-		<checksum file="java_memcached-${ver}.jar"/>
-		<delete dir="java_memcached-${ver}" />
+		<checksum file="memcached-${ver}.tar.gz"/>
+		<checksum file="memcached-${ver}.zip"/>
+		<checksum file="memcached-${ver}.jar"/>
+		<delete dir="memcached-${ver}" />
 
-		<tar tarfile="java_memcached-${ver}.tar" basedir="." includes="java_memcached-${ver}.*"/>
+		<tar tarfile="memcached-${ver}.tar" basedir="." includes="memcached-${ver}.*"/>
 	</target>
 
 	<target name="clean">
 		<delete dir="${build.dir}"/>
-		<delete dir="java_memcached-${ver}" />
-		<delete file="java_memcached-${ver}.tar.gz"/>
-		<delete file="java_memcached-${ver}.zip"/>
-		<delete file="java_memcached-${ver}.jar"/>
-		<delete file="java_memcached-${ver}.tar.gz.MD5"/>
-		<delete file="java_memcached-${ver}.zip.MD5"/>
-		<delete file="java_memcached-${ver}.jar.MD5"/>
+		<delete dir="memcached-${ver}" />
+		<delete file="memcached-${ver}.tar.gz"/>
+		<delete file="memcached-${ver}.zip"/>
+		<delete file="memcached-${ver}.jar"/>
+		<delete file="memcached-${ver}.tar.gz.MD5"/>
+		<delete file="memcached-${ver}.zip.MD5"/>
+		<delete file="memcached-${ver}.jar.MD5"/>
 	</target>
 
 	<target name="setup">
-		<mkdir dir="java_memcached-${ver}"/>
-		<mkdir dir="java_memcached-${ver}/javadocs"/>
-		<mkdir dir="java_memcached-${ver}/src/com/danga/MemCached"/>
-		<mkdir dir="java_memcached-${ver}/classes"/>
-		<mkdir dir="java_memcached-${ver}/doc"/>
+		<mkdir dir="memcached-${ver}"/>
+		<mkdir dir="memcached-${ver}/javadocs"/>
+		<mkdir dir="memcached-${ver}/src/com/whalin/memcached"/>
+		<mkdir dir="memcached-${ver}/classes"/>
+		<mkdir dir="memcached-${ver}/doc"/>
 
 		<!-- copy source -->
-		<copy todir="java_memcached-${ver}/src/com/danga/MemCached">
+		<copy todir="memcached-${ver}/src/com/whalin/memcached">
 			<fileset dir="${code.dir}" defaultexcludes="true" excludes="**/*.xml **/*.swp **/*.swo"/>
         </copy>
 
 		<!-- copy doc dir -->
-		<copy todir="java_memcached-${ver}/doc">
+		<copy todir="memcached-${ver}/doc">
 			<fileset dir="${doc.dir}" defaultexcludes="true" excludes="**/*.swp **/*.swo"/>
         </copy>
 
 		<!-- copy license to root -->
-		<copy file="${doc.dir}/LICENSE.txt" todir="java_memcached-${ver}"/>
+		<copy file="${doc.dir}/LICENSE.txt" todir="memcached-${ver}"/>
 
 		<!-- copy changelog to root -->
-		<copy file="${doc.dir}/CHANGELOG.txt" todir="java_memcached-${ver}"/>
+		<copy file="${doc.dir}/CHANGELOG.txt" todir="memcached-${ver}"/>
 	</target>
 
 	<!-- if logger is log4j then need to filter to make sure import exists -->
 	<target name="log4j" if="log4j" depends="clean, setup">
-		<replace dir="java_memcached-${ver}/src/com/danga/MemCached" token="//import org.apache.log4j.Logger;" value="import org.apache.log4j.Logger;">
+		<replace dir="memcached-${ver}/src/com/whalin/memcached" token="//import org.apache.log4j.Logger;" value="import org.apache.log4j.Logger;">
 			<include name="**/*.java"/>
 		</replace>
 	</target>
 
 	<target name="logger" unless="log4j" depends="clean, setup">
-		<replace dir="java_memcached-${ver}/src/com/danga/MemCached" token="import org.apache.log4j.Logger;" value="//import org.apache.log4j.Logger;">
+		<replace dir="memcached-${ver}/src/com/whalin/memcached" token="import org.apache.log4j.Logger;" value="//import org.apache.log4j.Logger;">
 			<include name="**/*.java"/>
 		</replace>
 	</target>
@@ -81,12 +81,12 @@
 	<!-- javadocs -->
 	<target name="javadoc" depends="clean, setup, log4j, logger">
 		<delete>
-			<fileset dir="java_memcached-${ver}/javadocs" />
+			<fileset dir="memcached-${ver}/javadocs" />
 		</delete>
 
-		<javadoc sourcepath="java_memcached-${ver}/src"
-			destdir="java_memcached-${ver}/javadocs"
-			packagenames= "com.danga.*"
+		<javadoc sourcepath="memcached-${ver}/src"
+			destdir="memcached-${ver}/javadocs"
+			packagenames= "com.whalin.*"
 			author= "true"
 			private="true"
 			version="true"
@@ -101,13 +101,13 @@
 
 	<!-- compilation target for packeging operations -->
 	<target name="pkg-compile" depends="clean, setup, log4j, logger">
-		<javac debug="yes" srcdir="java_memcached-${ver}/src" destdir="java_memcached-${ver}/classes" deprecation="true">
+		<javac debug="yes" srcdir="memcached-${ver}/src" destdir="memcached-${ver}/classes" deprecation="true">
 			<classpath refid="project.class.path"/>
 		</javac>
 	</target>
 
 	<target name="jar" depends="pkg-compile">
-		<jar compress="yes" jarfile="java_memcached-${ver}/java_memcached-${ver}.jar" basedir="java_memcached-${ver}/classes"/>
+		<jar compress="yes" jarfile="memcached-${ver}/memcached-${ver}.jar" basedir="memcached-${ver}/classes"/>
     </target>
 
 	<!-- compilation target -->
