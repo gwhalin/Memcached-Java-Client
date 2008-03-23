@@ -1648,11 +1648,6 @@ public class SockIOPool {
 			boolean err = false;
 			StringBuilder errMsg = new StringBuilder();
 
-			if ( in == null || out == null || sock == null ) {
-				err = true;
-				errMsg.append( "++++ socket or its streams already null in trueClose call" );
-			}
-
 			if ( in != null ) {
 				try {
 					in.close();
