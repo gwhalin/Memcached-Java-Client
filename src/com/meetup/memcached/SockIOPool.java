@@ -1,5 +1,4 @@
 /**
- * MemCached client for Java, connection pool for Socket IO
  * Copyright (c) 2008 Greg Whalin
  * All rights reserved.
  *
@@ -17,7 +16,7 @@
  * @author greg whalin <greg@meetup.com> 
  * @version 2.0
  */
-package com.whalin.memcached;
+package com.meetup.memcached;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -889,7 +888,7 @@ public class SockIOPool {
 			return null;
 
 		// if only one server, return it
-		if ( ( this.hashingAlg == CONSISTENT_HASH && consistentBuckets.size() == 0 )
+		if ( ( this.hashingAlg == CONSISTENT_HASH && consistentBuckets.size() == 1 )
 				|| ( buckets != null && buckets.size() == 1 ) ) {
 
 			SockIO sock = ( this.hashingAlg == CONSISTENT_HASH )

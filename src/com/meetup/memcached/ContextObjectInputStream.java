@@ -1,5 +1,4 @@
 /**
- * MemCached Java client
  * Copyright (c) 2008 Greg Whalin
  * All rights reserved.
  *
@@ -22,7 +21,7 @@
  * @author Vin Chawla <vin@tivo.com> 
  * @version 2.0
  */
-package com.whalin.memcached;
+package com.meetup.memcached;
 
 import java.util.*;
 import java.util.zip.*;

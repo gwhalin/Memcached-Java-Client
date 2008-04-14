@@ -1,6 +1,5 @@
 /**
- * MemCached Java client
- * Copyright (c) 2007 Greg Whalin
+ * Copyright (c) 2008 Greg Whalin
  * All rights reserved.
  *
  * This library is free software; you can redistribute it and/or
@@ -17,7 +16,7 @@
  * @author greg whalin <greg@meetup.com> 
  * @version 2.0
  */
-package com.whalin.memcached;
+package com.meetup.memcached;
 
 import java.io.IOException;
 

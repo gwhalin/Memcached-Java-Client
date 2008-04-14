@@ -1,6 +1,5 @@
 /**
- * MemCached Java client
- * Copyright (c) 2007 Greg Whalin
+ * Copyright (c) 2008 Greg Whalin
  * All rights reserved.
  *
  * This library is free software; you can redistribute it and/or
@@ -21,7 +20,7 @@
  * @author Dan Zivkovic <zivkovic@apple.com>
  * @version 2.0
  */
-package com.whalin.memcached;
+package com.meetup.memcached;
 
 public interface ErrorHandler {
 
