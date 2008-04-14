@@ -462,7 +462,8 @@ public class MemcachedClient {
 			// if we get appropriate response back, then we return true
 			String line = sock.readLine();
 			if ( DELETED.equals( line ) ) {
-				log.info( "++++ deletion of key: " + key + " from cache was a success" );
+				if ( log.isInfoEnabled() )
+					log.info( "++++ deletion of key: " + key + " from cache was a success" );
 
 				// return sock to pool and bail here
 				sock.close();
@@ -470,7 +471,8 @@ public class MemcachedClient {
 				return true;
 			}
 			else if ( NOTFOUND.equals( line ) ) {
-				log.info( "++++ deletion of key: " + key + " from cache failed as the key was not found" );
+				if ( log.isInfoEnabled() )
+					log.info( "++++ deletion of key: " + key + " from cache failed as the key was not found" );
 			}
 			else {
 				log.error( "++++ error deleting key: " + key );
@@ -718,7 +720,8 @@ public class MemcachedClient {
 				// useful for sharing data between java and non-java
 				// and also for storing ints for the increment method
 				try {
-					log.info( "++++ storing data as a string for key: " + key + " for class: " + value.getClass().getName() );
+					if ( log.isInfoEnabled() )
+						log.info( "++++ storing data as a string for key: " + key + " for class: " + value.getClass().getName() );
 					val = value.toString().getBytes( defaultEncoding );
 				}
 				catch ( UnsupportedEncodingException ue ) {
@@ -735,7 +738,8 @@ public class MemcachedClient {
 			}
 			else {
 				try {
-					log.info( "Storing with native handler..." );
+					if ( log.isInfoEnabled() )
+						log.info( "Storing with native handler..." );
 					flags |= NativeHandler.getMarkerFlag( value );
 					val    = NativeHandler.encode( value );
 				}
@@ -756,7 +760,8 @@ public class MemcachedClient {
 		else {
 			// always serialize for non-primitive types
 			try {
-				log.info( "++++ serializing for key: " + key + " for class: " + value.getClass().getName() );
+				if ( log.isInfoEnabled() )
+					log.info( "++++ serializing for key: " + key + " for class: " + value.getClass().getName() );
 				ByteArrayOutputStream bos = new ByteArrayOutputStream();
 				(new ObjectOutputStream( bos )).writeObject( value );
 				val = bos.toByteArray();
@@ -785,8 +790,10 @@ public class MemcachedClient {
 		if ( compressEnable && val.length > compressThreshold ) {
 
 			try {
-				log.info( "++++ trying to compress data" );
-				log.info( "++++ size prior to compression: " + val.length );
+				if ( log.isInfoEnabled() ) {
+					log.info( "++++ trying to compress data" );
+					log.info( "++++ size prior to compression: " + val.length );
+				}
 				ByteArrayOutputStream bos = new ByteArrayOutputStream( val.length );
 				GZIPOutputStream gos = new GZIPOutputStream( bos );
 				gos.write( val, 0, val.length );
@@ -796,7 +803,8 @@ public class MemcachedClient {
 				val = bos.toByteArray();
 				flags |= F_COMPRESSED;
 
-				log.info( "++++ compression succeeded, size after: " + val.length );
+				if ( log.isInfoEnabled() )
+					log.info( "++++ compression succeeded, size after: " + val.length );
 			}
 			catch ( IOException e ) {
 
@@ -819,16 +827,19 @@ public class MemcachedClient {
 
 			// get result code
 			String line = sock.readLine();
-			log.info( "++++ memcache cmd (result code): " + cmd + " (" + line + ")" );
+			if ( log.isInfoEnabled() )
+				log.info( "++++ memcache cmd (result code): " + cmd + " (" + line + ")" );
 
 			if ( STORED.equals( line ) ) {
-				log.info("++++ data successfully stored for key: " + key );
+				if ( log.isInfoEnabled() )
+					log.info("++++ data successfully stored for key: " + key );
 				sock.close();
 				sock = null;
 				return true;
 			}
 			else if ( NOTSTORED.equals( line ) ) {
-				log.info( "++++ data not stored in cache for key: " + key );
+				if ( log.isInfoEnabled() )
+					log.info( "++++ data not stored in cache for key: " + key );
 			}
 			else {
 				log.error( "++++ error storing data in cache for key: " + key + " -- length: " + val.length );
@@ -932,7 +943,8 @@ public class MemcachedClient {
 				errorHandler.handleErrorOnGet( this, ex, key );
 
 			// not found or error getting out
-			log.info( String.format( "Failed to parse Long value for key: %s", key ) );
+			if ( log.isInfoEnabled() )
+				log.info( String.format( "Failed to parse Long value for key: %s", key ) );
 		}
 		
 		return counter;
@@ -1156,7 +1168,8 @@ public class MemcachedClient {
 				}
  			}
 			else if ( NOTFOUND.equals( line ) ) {
-				log.info( "++++ key not found to incr/decr for key: " + key );
+				if ( log.isInfoEnabled() )
+					log.info( "++++ key not found to incr/decr for key: " + key );
 			}
 			else {
 				log.error( "++++ error incr/decr key: " + key );
@@ -1335,7 +1348,8 @@ public class MemcachedClient {
 					if ( ( flag & F_SERIALIZED ) != F_SERIALIZED ) {
 						if ( primitiveAsString || asString ) {
 							// pulling out string value
-							log.info( "++++ retrieving object and stuffing into a string." );
+							if ( log.isInfoEnabled() )
+								log.info( "++++ retrieving object and stuffing into a string." );
 							o = new String( buf, defaultEncoding );
 						}
 						else {
@@ -1360,7 +1374,8 @@ public class MemcachedClient {
 							new ContextObjectInputStream( new ByteArrayInputStream( buf ), classLoader );
 						try {
 							o = ois.readObject();
-							log.info( "++++ deserializing " + o.getClass() );
+							if ( log.isInfoEnabled() )
+								log.info( "++++ deserializing " + o.getClass() );
 						}
 						catch ( ClassNotFoundException e ) {
 
@@ -1561,7 +1576,8 @@ public class MemcachedClient {
 			sock.close();
 		}
 		
-		log.info( "multi get socket count : " + cmdMap.size() );
+		if ( log.isInfoEnabled() )
+			log.info( "multi get socket count : " + cmdMap.size() );
 
 		// now query memcache
 		Map<String,Object> ret =
@@ -1675,7 +1691,8 @@ public class MemcachedClient {
 				if ( ( flag & F_SERIALIZED ) != F_SERIALIZED ) {
 					if ( primitiveAsString || asString ) {
 						// pulling out string value
-						log.info( "++++ retrieving object and stuffing into a string." );
+						if ( log.isInfoEnabled() )
+							log.info( "++++ retrieving object and stuffing into a string." );
 						o = new String( buf, defaultEncoding );
 					}
 					else {
@@ -1700,7 +1717,8 @@ public class MemcachedClient {
 						new ContextObjectInputStream( new ByteArrayInputStream( buf ), classLoader );
 					try {
 						o = ois.readObject();
-						log.info( "++++ deserializing " + o.getClass() );
+						if ( log.isInfoEnabled() )
+							log.info( "++++ deserializing " + o.getClass() );
 					}
 					catch ( ClassNotFoundException e ) {
 
