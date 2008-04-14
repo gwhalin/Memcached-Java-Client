@@ -41,7 +41,7 @@ public class TestMemcached  {
 		MemcachedClient mcc = new MemcachedClient();
 
 		// turn off most memcached client logging:
-		com.whalin.memcached.Logger.getLogger( MemcachedClient.class.getName() ).setLevel( com.whalin.memcached.Logger.LEVEL_WARN );
+		com.meetup.memcached.Logger.getLogger( MemcachedClient.class.getName() ).setLevel( com.meetup.memcached.Logger.LEVEL_WARN );
 
 		for ( int i = 0; i < 10; i++ ) {
 			boolean success = mcc.set( "" + i, "Hello!" );
