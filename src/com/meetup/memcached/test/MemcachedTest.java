@@ -1,5 +1,4 @@
 /**
- * MemcachedTest.java
  * Copyright (c) 2008 Greg Whalin
  * All rights reserved.
  *
@@ -15,11 +14,10 @@
  * library.
  *
  * @author Greg Whalin <greg@meetup.com> 
- * @version 1.5.2
  */
-package com.whalin.memcached.test;
+package com.meetup.memcached.test;
 
-import com.whalin.memcached.*;
+import com.meetup.memcached.*;
 import java.util.*;
 
 public class MemcachedTest {

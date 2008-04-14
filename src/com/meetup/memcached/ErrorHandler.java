@@ -18,7 +18,6 @@
  * things like flush caches or perform additioonal logging.
  *
  * @author Dan Zivkovic <zivkovic@apple.com>
- * @version 2.0
  */
 package com.meetup.memcached;
 

@@ -14,7 +14,6 @@
  * library.
  *
  * @author Kevin A. Burton <burton@peerfear.org> 
- * @version 2.0
  */
 package com.meetup.memcached;
 
