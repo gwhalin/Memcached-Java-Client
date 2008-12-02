@@ -1556,7 +1556,7 @@ public class SockIOPool {
 			sock.setTcpNoDelay( noDelay );
 
 			// wrap streams
-			in  = new DataInputStream( sock.getInputStream() );
+			in  = new DataInputStream( new BufferedInputStream( sock.getInputStream() ) );
 			out = new BufferedOutputStream( sock.getOutputStream() );
 
 			this.host = host + ":" + port;
@@ -1589,7 +1589,7 @@ public class SockIOPool {
 			sock.setTcpNoDelay( noDelay );
 
 			// wrap streams
-			in   = new DataInputStream( sock.getInputStream() );
+			in   = new DataInputStream( new BufferedInputStream( sock.getInputStream() ) );
 			out  = new BufferedOutputStream( sock.getOutputStream() );
 
 			this.host = host;
