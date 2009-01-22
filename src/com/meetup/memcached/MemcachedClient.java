@@ -2220,7 +2220,8 @@ public class MemcachedClient {
 				// run through our conns and either return them to the pool
 				// or forcibly close them
 				try {
-					selector.close();
+					if ( selector != null )
+						selector.close();
 				}
 				catch ( IOException ignoreMe ) { }
 				
