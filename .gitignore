@@ -10,3 +10,4 @@ dist/
 *.class
 scratch/
 .cachedir/
+memcached-release*
