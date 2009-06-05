@@ -1338,8 +1338,7 @@ public class MemcachedClient {
 							if ( errorHandler != null )
 								errorHandler.handleErrorOnGet( this, e, key );
 
-							log.error( "++++ IOException thrown while trying to uncompress input stream for key: " + key );
-							log.error( e.getMessage(), e );
+							log.error( "++++ IOException thrown while trying to uncompress input stream for key: " + key + " -- " + e.getMessage() );
 							throw new NestedIOException( "++++ IOException thrown while trying to uncompress input stream for key: " + key, e );
 						}
 					}
@@ -1383,7 +1382,7 @@ public class MemcachedClient {
 							if ( errorHandler != null )
 								errorHandler.handleErrorOnGet( this, e, key );
 
-							log.error( "++++ ClassNotFoundException thrown while trying to deserialize for key: " + key, e );
+							log.error( "++++ ClassNotFoundException thrown while trying to deserialize for key: " + key + " -- " + e.getMessage() );
 							throw new NestedIOException( "+++ failed while trying to deserialize for key: " + key, e );
 						}
 					}
@@ -1406,8 +1405,7 @@ public class MemcachedClient {
 				errorHandler.handleErrorOnGet( this, e, key );
 
 			// exception thrown
-			log.error( "++++ exception thrown while trying to get object from cache for key: " + key );
-			log.error( e.getMessage(), e );
+			log.error( "++++ exception thrown while trying to get object from cache for key: " + key + " -- " + e.getMessage() );
 
 			try {
 				sock.trueClose();
@@ -1681,8 +1679,7 @@ public class MemcachedClient {
 						if ( errorHandler != null )
 							errorHandler.handleErrorOnGet( this, e, key );
 
-						log.error( "++++ IOException thrown while trying to uncompress input stream for key: " + key );
-						log.error( e.getMessage(), e );
+						log.error( "++++ IOException thrown while trying to uncompress input stream for key: " + key + " -- " + e.getMessage() );
 						throw new NestedIOException( "++++ IOException thrown while trying to uncompress input stream for key: " + key, e );
 					}
 				}
@@ -1706,7 +1703,7 @@ public class MemcachedClient {
 							if ( errorHandler != null )
 								errorHandler.handleErrorOnGet( this, e, key );
 
-							log.error( "++++ Exception thrown while trying to deserialize for key: " + key, e );
+							log.error( "++++ Exception thrown while trying to deserialize for key: " + key + " -- " + e.getMessage() );
 							throw new NestedIOException( e );
 						}
 					}
@@ -1726,7 +1723,7 @@ public class MemcachedClient {
 						if ( errorHandler != null )
 							errorHandler.handleErrorOnGet( this, e, key );
 
-						log.error( "++++ ClassNotFoundException thrown while trying to deserialize for key: " + key, e );
+						log.error( "++++ ClassNotFoundException thrown while trying to deserialize for key: " + key + " -- " + e.getMessage() );
 						throw new NestedIOException( "+++ failed while trying to deserialize for key: " + key, e );
 					}
 				}
