@@ -164,18 +164,18 @@ public class SockIOPool {
 
 	// initial, min and max pool sizes
 	private int poolMultiplier        = 3;
-	private int initConn              = 1;
-	private int minConn               = 1;
-	private int maxConn               = 10;
+	private int initConn              = 10;
+	private int minConn               = 5;
+	private int maxConn               = 100;
 	private long maxIdle              = 1000 * 60 * 5;		// max idle time for avail sockets
 	private long maxBusyTime          = 1000 * 30;			// max idle time for avail sockets
 	private long maintSleep           = 1000 * 30;			// maintenance thread sleep time
-	private int socketTO              = 1000 * 30;			// default timeout of socket reads
+	private int socketTO              = 1000 * 3;			// default timeout of socket reads
 	private int socketConnectTO       = 1000 * 3;	        // default timeout of socket connections
 	private boolean aliveCheck        = false;				// default to not check each connection for being alive
 	private boolean failover          = true;				// default to failover in event of cache server dead
 	private boolean failback          = true;				// only used if failover is also set ... controls putting a dead server back into rotation
-	private boolean nagle             = true;				// enable/disable Nagle's algorithm
+	private boolean nagle             = false;				// enable/disable Nagle's algorithm
 	private int hashingAlg 		      = NATIVE_HASH;		// default to using the native hash as it is the fastest
 
 	// locks
