@@ -1376,14 +1376,26 @@ public class MemcachedClient {
 							if ( log.isInfoEnabled() )
 								log.info( "++++ deserializing " + o.getClass() );
 						}
+						catch ( InvalidClassException e ) {
+							/* Errors de-serializing are to be expected in the case of a 
+							 * long running server that spans client restarts with updated 
+							 * classes. 
+							 */
+							// if we have an errorHandler, use its hook
+							if ( errorHandler != null )
+								errorHandler.handleErrorOnGet( this, e, key );
+
+							o = null;
+							log.error( "++++ InvalidClassException thrown while trying to deserialize for key: " + key + " -- " + e.getMessage() );
+						}
 						catch ( ClassNotFoundException e ) {
 
 							// if we have an errorHandler, use its hook
 							if ( errorHandler != null )
 								errorHandler.handleErrorOnGet( this, e, key );
 
+							o = null;
 							log.error( "++++ ClassNotFoundException thrown while trying to deserialize for key: " + key + " -- " + e.getMessage() );
-							throw new NestedIOException( "+++ failed while trying to deserialize for key: " + key, e );
 						}
 					}
 				}
@@ -1717,19 +1729,32 @@ public class MemcachedClient {
 						if ( log.isInfoEnabled() )
 							log.info( "++++ deserializing " + o.getClass() );
 					}
+					catch ( InvalidClassException e ) {
+						/* Errors de-serializing are to be expected in the case of a 
+						 * long running server that spans client restarts with updated 
+						 * classes. 
+						 */
+						// if we have an errorHandler, use its hook
+						if ( errorHandler != null )
+							errorHandler.handleErrorOnGet( this, e, key );
+
+						o = null;
+						log.error( "++++ InvalidClassException thrown while trying to deserialize for key: " + key + " -- " + e.getMessage() );
+					}
 					catch ( ClassNotFoundException e ) {
 
 						// if we have an errorHandler, use its hook
 						if ( errorHandler != null )
 							errorHandler.handleErrorOnGet( this, e, key );
 
+						o = null;
 						log.error( "++++ ClassNotFoundException thrown while trying to deserialize for key: " + key + " -- " + e.getMessage() );
-						throw new NestedIOException( "+++ failed while trying to deserialize for key: " + key, e );
 					}
 				}
 
 				// store the object into the cache
-				hm.put( key, o );
+				if ( o != null )
+					hm.put( key, o );
 			}
 			else if ( END.equals( line ) ) {
 				if ( log.isDebugEnabled() )
