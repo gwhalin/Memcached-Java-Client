@@ -1,0 +1,233 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+	"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+
+	<title>gwhalin/Memcached-Java-Client @ GitHub</title>
+	
+	<style type="text/css">
+		body {
+  		margin-top: 1.0em;
+  		background-color: #99da9c;
+		  font-family: "Helvetica,Arial,FreeSans"; 
+  		color: #000000;
+    }
+    #container {
+      margin: 0 auto;
+      width: 700px;
+    }
+		h1 { font-size: 3.8em; color: #662563; margin-bottom: 3px; }
+		h1 .small { font-size: 0.4em; }
+		h1 a { text-decoration: none }
+		h2 { font-size: 1.5em; color: #662563; }
+    h3 { text-align: center; color: #662563; }
+    a { color: #662563; }
+    .description { font-size: 1.2em; margin-bottom: 30px; margin-top: 30px; font-style: italic;}
+    .download { float: right; }
+		pre { background: #000; color: #fff; padding: 15px;}
+    hr { border: 0; width: 80%; border-bottom: 1px solid #aaa}
+    .footer { text-align:center; padding-top:30px; font-style: italic; }
+	</style>
+	
+</head>
+
+<body>
+  <a href="http://github.com/gwhalin/Memcached-Java-Client"><img style="position: absolute; top: 0; right: 0; border: 0;" src="http://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub" /></a>
+  
+  <div id="container">
+
+    <div class="download">
+      <a href="http://github.com/gwhalin/Memcached-Java-Client/zipball/master">
+        <img border="0" width="90" src="http://github.com/images/modules/download/zip.png"></a>
+      <a href="http://github.com/gwhalin/Memcached-Java-Client/tarball/master">
+        <img border="0" width="90" src="http://github.com/images/modules/download/tar.png"></a>
+    </div>
+      
+    <h1><a href="http://github.com/gwhalin/Memcached-Java-Client">Memcached-Java-Client</a> 
+      <span class="small">by <a href="http://github.com/gwhalin">gwhalin</a></span></h1>
+
+    <div class="description">
+      Whalin java memcached client
+    </div>
+
+    <h2>Install</h2>
+<p>Howto
+=====
+
+Basic Example:
+==============
+
+Lets say you have 3 servers.  Server 1 and server 2 have 3GB of space
+and server 3 has 2GB of space for cache.  Here is how I would set up
+my client.
+
+import com.danga.MemCached.*;
+public class MyClass {
+
+	// create a static client as most installs only need
+	// a single instance
+	protected static MemCachedClient mcc = new MemCachedClient();
+
+	// set up connection pool once at class load
+	static {
+
+		// server list and weights
+		String[] servers =
+			{
+			  "server1.mydomain.com:1624",
+			  "server2.mydomain.com:1624",
+			  "server3.mydomain.com:1624"
+			};
+
+		Integer[] weights = { 3, 3, 2 };
+
+		// grab an instance of our connection pool
+		SockIOPool pool = SockIOPool.getInstance();
+
+		// set the servers and the weights
+		pool.setServers( servers );
+		pool.setWeights( weights );
+
+		// set some basic pool settings
+		// 5 initial, 5 min, and 250 max conns
+		// and set the max idle time for a conn
+		// to 6 hours
+		pool.setInitConn( 5 );
+		pool.setMinConn( 5 );
+		pool.setMaxConn( 250 );
+		pool.setMaxIdle( 1000 * 60 * 60 * 6 );
+
+		// set the sleep for the maint thread
+		// it will wake up every x seconds and
+		// maintain the pool size
+		pool.setMaintSleep( 30 );
+
+		// set some TCP settings
+		// disable nagle
+		// set the read timeout to 3 secs
+		// and don't set a connect timeout
+		pool.setNagle( false );
+		pool.setSocketTO( 3000 );
+		pool.setSocketConnectTO( 0 );
+
+		// initialize the connection pool
+		pool.initialize();
+
+
+		// lets set some compression on for the client
+		// compress anything larger than 64k
+		mcc.setCompressEnable( true );
+		mcc.setCompressThreshold( 64 * 1024 );
+	}
+
+	// from here on down, you can call any of the client calls
+	public static void examples() {
+        mcc.set( "foo", "This is a test String" );
+		String bar = mcc.get( "foo" );
+	}
+}
+
+Multi-client Example:
+=====================
+
+If you need to support multiple clients (i.e. Java, PHP, Perl, etc.)
+you need to make a few changes when you are setting things up:
+
+	// use a compatible hashing algorithm
+	pool.setHashingAlg( SockIOPool.NEW_COMPAT_HASH );
+
+	// store primitives as strings
+	// the java client serializes primitives
+	//
+	// note: this will not help you when it comes to
+	// storing non primitives
+	mcc.setPrimitiveAsString( true );
+
+	// don't url encode keys
+	// by default the java client url encodes keys
+	// to sanitize them so they will always work on the server
+	// however, other clients do not do this
+	mcc.setSanitizeKeys( false );
+
+
+Failover/Failback Notes:
+========================
+
+By default the java client will failover to a new server when a server
+dies.  It will also failback to the original if it detects that the
+server comes back (it checks the server in a falling off pattern).
+
+If you want to disable this (useful if you have flapping servers),
+there are two settings to handle this.
+
+	pool.setFailover( false );
+	pool.setFailback( false );
+
+
+Serialization:
+==============
+
+For java "native types", which include:
+
+Boolean
+Byte
+String
+Character
+StringBuffer
+StringBuilder
+Short
+Long
+Double
+Float
+Date
+Integer
+
+The client will by default *NOT* use java serialization, and instead
+will serialize using the primitive values to save space.  You can
+override this by using the mcc.setPrimitiveAsString( true ), which
+will use the toString representation of the object.
+
+For other java objects, you need to make sure the class implements
+Serializable in order to be able to be stored in the cache.
+
+I would also reccomend that if possible, classes should instead
+implement Externalizable as opposed to Serializable.  This allows the
+author of the class to define how objects of that class should
+serialize.  In practice at Meetup.com, we saw a 60% reduction in the size
+of our serialized objects by doing this.  This means less data to eat up
+cache space and less data to transfer over the network.
+
+Other:
+======
+See the java docs.
+</p>
+<h2>License</h2>
+<p>BSD</p>
+<h2>Authors</h2>
+<p>Gary Helmling (garyh@meetup.com)<br/>Greg Whalin (greg@meetup.com)<br/><br/>      </p>
+<h2>Contact</h2>
+<p>Greg Whalin (greg@whalin.com)<br/>      </p>
+
+
+    <h2>Download</h2>
+    <p>
+      You can download this project in either
+      <a href="http://github.com/gwhalin/Memcached-Java-Client/zipball/master">zip</a> or
+      <a href="http://github.com/gwhalin/Memcached-Java-Client/tarball/master">tar</a> formats.
+    </p>
+    <p>You can also clone the project with <a href="http://git-scm.com">Git</a>
+      by running:
+      <pre>$ git clone git://github.com/gwhalin/Memcached-Java-Client</pre>
+    </p>
+      
+    <div class="footer">
+      get the source code on GitHub : <a href="http://github.com/gwhalin/Memcached-Java-Client">gwhalin/Memcached-Java-Client</a>
+    </div>
+    
+  </div>
+
+  
+</body>
+</html>
