@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+		  Copyright (c) 2009 Schooner Information Technology, Inc.
+		  All rights reserved.
+		  
+		  http://www.schoonerinfotech.com/
+		  
+		  Redistribution and use in source and binary forms, with or without
+		  modification, are permitted provided that the following conditions
+		  are met:
+		  1. Redistributions of source code must retain the above copyright
+		     notice, this list of conditions and the following disclaimer.
+		  2. Redistributions in binary form must reproduce the above copyright
+		     notice, this list of conditions and the following disclaimer in the
+		     documentation and/or other materials provided with the distribution.
+		  3. The name of the author may not be used to endorse or promote products
+		     derived from this software without specific prior written permission.
+		  
+		  THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+		  IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+		  OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+		  IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
+		  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+		  NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+		  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+		  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+		  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+		  THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+-->
+<project name="Memcached-Java-Client" default="jar" basedir=".">
+	<property file="build.properties" />
+	<path id="emma.lib">
+		<pathelement location="${emma.dir}/emma.jar" />
+		<pathelement location="${emma.dir}/emma_ant.jar" />
+	</path>
+	<taskdef resource="emma_ant.properties" classpathref="emma.lib" />
+	<path id="test.classpath">
+		<pathelement location="${junit.jar}" />
+		<pathelement location="${log4j.jar}" />
+	</path>
+	<target name="clean">
+		<delete dir="${build.dir}" />
+		<delete dir="${test.build.dir}" />
+	</target>
+
+	<!-- compilation target for packeging operations -->
+	<target name="compile" depends="clean">
+		<mkdir dir="${build.dir}" />
+		<mkdir dir="${test.build.dir}" />
+		<javac optimize="yes" srcdir="${src.dir}" destdir="${build.dir}" deprecation="true" target="1.5" source="1.5" nowarn="true" />
+		<javac optimize="yes" srcdir="${test.dir}" destdir="${test.build.dir}" deprecation="true" target="1.5" source="1.5" nowarn="true">
+			<classpath refid="test.classpath" />
+			<classpath path="${build.dir}" />
+		</javac>
+	</target>
+
+	<target name="jar">
+		<antcall target="clean" />
+		<antcall target="compile" />
+		<jar jarfile="${project}_${ver}.jar">
+			<fileset dir="${build.dir}">
+				<include name="com/schooner/MemCached/**/*" />
+				<include name="com/danga/MemCached/**/*" />
+			</fileset>
+		</jar>
+		<jar jarfile="${project}_test_${ver}.jar">
+			<fileset dir="${test.build.dir}">
+				<include name="com/schooner/MemCached/**/*" />
+				<include name="com/danga/MemCached/**/*" />
+			</fileset>
+		</jar>
+		<antcall target="clean" />
+	</target>
+
+	<target name="runTest" depends="compile">
+		<emma enabled="${emma.enabled}">
+			<instr instrpath="${build.dir}" metadatafile="${report.dir}/metadata.emma" mode="overwrite">
+				<filter value="+com.schooner.MemCached.*, -com.schooner.MemCached.*Test*, -com.danga.MemCached.*" />
+			</instr>
+		</emma>
+		<junit printsummary="yes" showoutput="true" fork="true">
+			<classpath>
+				<pathelement location="${build.dir}" />
+				<pathelement location="${test.build.dir}" />
+				<path refid="emma.lib" />
+				<path refid="test.classpath" />
+			</classpath>
+			<jvmarg value="-Dmemcached.host=${memcached.host}" />
+			<jvmarg value="-Demma.coverage.out.file=${report.dir}/coverage.emma" />
+			<jvmarg value="-Demma.coverage.out.merge=true" />
+			<formatter type="xml" />
+			<test name="com.schooner.MemCached.MemCachedClientAsciiTest" todir="${report.dir}" />
+			<!--Enable the binary protocol unit test by uncomment the following line. 
+			Memcached binary protocol is supported by memcached 1.4+. 
+			Make sure the server is ready before starting these tests.
+			You can specify the memcached host in the build.properties file in the same folder.
+			-->
+			<test name="com.schooner.MemCached.MemCachedClientBinaryTest" todir="${report.dir}" />
+			<test name="com.schooner.MemCached.MemcachedClientUDPTest" todir="${report.dir}" />
+			<test name="com.schooner.MemCached.OtherTest" todir="${report.dir}" />
+			<test name="com.schooner.MemCached.WhalinScenarioTest" todir="${report.dir}" />
+		</junit>
+		<junitreport todir="${report.dir}">
+			<fileset dir="${report.dir}">
+				<include name="TEST-*.xml" />
+			</fileset>
+			<report format="frames" todir="${report.dir}" />
+		</junitreport>
+		<emma enabled="${emma.enabled}">
+			<report sourcepath="${src.dir}">
+				<fileset dir="${report.dir}">
+					<include name="*.emma" />
+				</fileset>
+				<txt outfile="${report.dir}/coverage.txt" />
+				<html outfile="${report.dir}/coverage.html" />
+			</report>
+		</emma>
+	</target>
+
+	<target name="checkJavadoc">
+		<available file="javadoc" property="javadoc.present" />
+	</target>
+
+	<target name="checkReport">
+		<available file="${report.dir}" property="report.present" />
+	</target>
+
+	<target name="removeJavadoc" depends="checkJavadoc" if="javadoc.present">
+		<delete>
+			<fileset dir="javadoc">
+				<include name="*" />
+			</fileset>
+		</delete>
+	</target>
+	<target name="removeReport" depends="checkReport" if="report.present">
+		<delete>
+			<fileset dir="${report.dir}">
+				<include name="*" />
+			</fileset>
+		</delete>
+	</target>
+
+	<target name="all">
+		<delete>
+			<fileset dir=".">
+				<include name="*.jar" />
+				<include name="*.zip" />
+			</fileset>
+		</delete>
+		<antcall target="removeJavadoc" />
+		<antcall target="removeReport" />
+		<antcall target="runTest" />
+		<antcall target="jar" />
+		<antcall target="sourceDist" />
+		<antcall target="javadoc" />
+	</target>
+	<target name="sourceDist">
+		<mkdir dir="${project}_${ver}" />
+		<copy todir="${project}_${ver}">
+			<fileset dir=".">
+				<include name="src/**/*" />
+				<include name="doc/**/*" />
+				<include name="lib/**/*" />
+				<include name="report/**/*" />
+				<include name=".*" />
+				<include name="*.xml" />
+				<include name="*.properties" />
+				<include name="*.cld" />
+			</fileset>
+		</copy>
+		<zip destfile="${project}_src_${ver}.zip" basedir=".">
+			<include name="${project}_${ver}/**/*" />
+		</zip>
+		<delete dir="${project}_${ver}" />
+	</target>
+	<target name="javadoc">
+		<javadoc access="public" author="true" classpath="lib/junit.jar" destdir="javadoc" nodeprecated="false" nodeprecatedlist="false" noindex="false" nonavbar="false" notree="false" packagenames="com.schooner.MemCached,com.schooner.MemCached.command,com.danga.MemCached" source="1.5" sourcepath="src/main" splitindex="true" use="true" version="true" />
+	</target>
+</project>

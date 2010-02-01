@@ -1,0 +1,66 @@
+
+Software requirement
+=======================
+1. JDK 1.5+
+2. Apache Ant 1.7.1+
+Uncompress the source package and enter the top of directory.
+
+How to build the source code
+=============================
+1. Run the following command, binary and test jar package will be generated for you.
+ant jar
+2. java_memcached-release_{version}.jar is the binary package.
+3. java_memcached-release_test_{version}.jar is the test package.
+
+Unit test and code coverage
+============================
+1. Open build.properties and set the entry "memcached.host" points to the
+address of memcached server like this <hostname:port>.
+2. Run the ant task:
+ant
+3. When the ant task finishes successfully, a directory named report will
+be created and all the unit test reports are in the directory. "index.html"
+is the entrance of the unit test report and "coverage.html" is the entrance
+of code coverage report.
+
+Simple performance test
+========================
+1. MemCachedBenchTcp
+java -Dmemcached.host=<hostname1:port1,hostname2:port2> \
+	-cp .:schooner-memcached-client-test-1.0.1.jar:schooner-memcached-client-bin-1.0.1.jar \
+	com.schooner.MemCached.MemCachedBenchTcp <runs> <start>
+	
+2. MemCachedBenchUdp
+java -Dmemcached.host=<hostname1:port1,hostname2:port2> \
+	-cp .:schooner-memcached-client-test-1.0.1.jar:schooner-memcached-client-bin-1.0.1.jar \
+	com.schooner.MemCached.MemCachedBenchUdp <runs> <start>
+
+Advanced checker
+=================
+The advanced checker provides some dynamic test features. It can be configured through XML file:
+
+You can find the default configuration file("adv_config.xml") in root directory of the source code.
+
+The advChecker will verify memcached client periodically and write error log into file "advChecker_errors.log"
+if we can't retrieve the stored data.
+
+<?xml version="1.0" encoding="UTF-8"?>
+<rule thread="8" runtime="60" sleep="2000" checkInterval="10000">
+	<op name="set" percent="40"></op>
+	<op name="get" percent="20"></op>
+	<op name="delete" percent="10"></op>
+	<op name="add" percent="10"></op>
+	<op name="append" percent="10"></op>
+	<op name="prepend" percent="10"></op>
+</rule>
+
+thread: the number of thread;
+runtime: the run time of the checker;
+sleep: the sleep time between two operations;
+checkInterval: the time interval between two checks.
+name: command name;
+percent: The proportion of this command.
+
+run the advanced checker:
+java -cp .:schooner-memcached-client-test-1.0.1.jar:schooner-memcached-client-bin-1.0.1.jar \
+	com.schooner.MemCached.MemcachedClientAdvChecker <config_file> <hostname:port> <text | binary | udp>

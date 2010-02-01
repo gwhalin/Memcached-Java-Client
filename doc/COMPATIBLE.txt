@@ -1,0 +1,35 @@
+Known compatible issues with Whalin client 2.0.1:
+
+This version includes all the public APIs in Whalin, so that any legacy systems
+can use this Java client without re-compiling source code. Due to our test, you can set 
+key/value pairs with whalin client 2.0.1 and get the key/value pairs with this new client 
+for all the native objects and default java object. But some of the APIs are fake, so 
+maybe there are still some compatible issues. 
+
+Since Whalin only supports memcached text protocol, there is no compatible
+issues when you are using binary or UDP client.
+
+Known issues:
+=============
+1. The following are fake APIs which are kept in this version to ensure the
+legacy system can use our Java client:
+MemCachedClient:
+   1) setCompressEnable(boolean)
+   2) setCompressThreshold(long)
+Compress in LAN is not a good idea, it consumes a lot of CPU resources and achieve little benefit.
+In our new client, compress is fake APIs, we don't compress anything in our client, but we will 
+decompress the data from the server side for those key/value pairs set with old whalin client.
+
+SockIOPool:
+   3) getAliveCheck()
+   4) getFailback()
+   5) getFailover()
+   6) getMaintSleep()
+   7) getMaxBusy()
+   8) getMaxIdle()
+   9) setAliveCheck(boolean)
+   10) setFailback(boolean)
+   11) setFailover(boolean)
+   12) setMaintSleep(long)
+   13) setMaxBusyTime(long)
+   14) setMaxIdle(long)

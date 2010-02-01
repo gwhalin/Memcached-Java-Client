@@ -1,0 +1,195 @@
+Howto
+=====
+
+Basic Example:
+==============
+
+Lets say you have 3 servers.  Server 1 and server 2 have 3GB of space
+and server 3 has 2GB of space for cache.  Here is how I would set up
+my client.
+-----------------------------------------------------------------------------
+import com.danga.MemCached.*;
+public class MyClass {
+
+	// create a static client as most installs only need
+	// a single instance
+	protected static MemCachedClient mcc = new MemCachedClient();
+
+	// set up connection pool once at class load
+	static {
+
+		// server list and weights
+		String[] servers =
+			{
+			  "server1.mydomain.com:1624",
+			  "server2.mydomain.com:1624",
+			  "server3.mydomain.com:1624"
+			};
+
+		Integer[] weights = { 3, 3, 2 };
+
+		// grab an instance of our connection pool
+		SockIOPool pool = SockIOPool.getInstance();
+
+		// set the servers and the weights
+		pool.setServers( servers );
+		pool.setWeights( weights );
+
+		// set some TCP settings
+		// disable nagle
+		// set the read timeout to 3 secs
+		// and don't set a connect timeout
+		pool.setNagle( false );
+		pool.setSocketTO( 3000 );
+		pool.setSocketConnectTO( 0 );
+
+		// initialize the connection pool
+		pool.initialize();
+	}
+
+	// from here on down, you can call any of the client calls
+	public static void examples() {
+        mcc.set( "foo", "This is a test String" );
+		String bar = mcc.get( "foo" ).toString();
+	}
+}
+-------------------------------------------------------------------------------
+Multi-client Example:
+=====================
+
+If you need to support multiple clients (i.e. Java, PHP, Perl, etc.)
+you need to make a few changes when you are setting things up:
+-----------------------------------------------------------------
+	// use a compatible hashing algorithm
+	pool.setHashingAlg( SockIOPool.NEW_COMPAT_HASH );
+-------------------------------------------------------------------
+
+Serialization:
+==============
+For java "native types", which include:
+
+Boolean
+Byte
+String
+Character
+StringBuffer
+StringBuilder
+Short
+Long
+Double
+Float
+Date
+Integer
+
+The client will by default *NOT* use java serialization, and instead
+will serialize using the primitive values to save space.
+
+For other java objects, you have 2 options to serialize the java objects.
+one is make sure the class implements Serializable in order to be able 
+to be stored with default object transcoder provided by this client;
+The other alternative is to write your own transcoder to do the serialization 
+and deserialization by yourself, the following is simple example:
+-------------------------------------------------------------------------
+package com.schooner.MemCached;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.OutputStream;
+/**
+ * {@link ObjectTransCoder} is the default TransCoder used to handle the
+ * serialization and deserialization in memcached operations.
+ * 
+ * @author Xingen Wang
+ * @see AbstractTransCoder
+ * @see TransCoder
+ */
+public class ObjectTransCoder extends AbstractTransCoder {
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see com.schooner.MemCached.TransCoder#decode(InputStream)
+	 */
+	public Object decode(final InputStream input) throws IOException {
+		Object obj = null;
+		ObjectInputStream ois = new ObjectInputStream(input);
+		try {
+			obj = ois.readObject();
+		} catch (ClassNotFoundException e) {
+			throw new IOException(e.getMessage());
+		}
+		ois.close();
+		return obj;
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * com.schooner.MemCached.AbstractTransCoder#encode(java.io.OutputStream,
+	 * java.lang.Object)
+	 */
+	public void encode(final OutputStream output, final Object object) throws IOException {
+		ObjectOutputStream oos = new ObjectOutputStream(output);
+		oos.writeObject(object);
+		oos.close();
+	}
+
+	public Object decode(byte[] input){
+		Object obj = null;
+		try {
+			ObjectInputStream ois = new ObjectInputStream(
+					new ByteArrayInputStream(input));
+			obj = ois.readObject();
+			ois.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (ClassNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return obj;
+	}
+}
+-----------------------------------------------------------------------------------------
+After that, you should set transcoder to your client:
+-----------------------------------------------------------------------------
+MemCachedClient mc = new MemCachedClient();
+mc.setTransCoder(new YourTransCoder());
+-----------------------------------------------------------------------------
+
+I would also recommend that if possible, classes should instead
+implement Externalizable as opposed to Serializable or write the 
+transcoder by your self.  This allows the
+author of the class to define how objects of that class should
+serialize.  In practice at Meetup.com, we saw a 60% reduction in the size
+of our serialized objects by doing this.  This means less data to eat up
+cache space and less data to transfer over the network.
+
+binary protocol:
+================
+In Schooner's implementation, binary protocol for memcached has been implemented, and 
+due to our test performance increased about 5% overall, but you have to use 
+memcached 1.4+ in the server side to support this features.
+The following code snipets shows how to use this feature: 
+-----------------------------------------------------------------------------
+mc = new MemCachedClient(true, true);
+-----------------------------------------------------------------------------
+
+UDP protocol:
+=============
+In schooner's implementation, UDP protocol for memcached is also supported. While due
+to our test, the performance is not that good as tcp protocol, we are still working on 
+performance tuning.
+In our latest implementation, UDP protocol works in asynchronized mode.
+We recommend user memcached 1.4.4+ when UDP protocol is used.  
+-----------------------------------------------------------------------------
+mc = new MemCachedClient(false, false);
+-----------------------------------------------------------------------------
+
+Other:
+======
+See the java docs.

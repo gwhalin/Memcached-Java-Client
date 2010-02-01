@@ -1,0 +1,7 @@
+This file lists the portability status of this client.  Please send me any
+additional information.
+
+The newest release has only been tested on:
+
+Sun's JRE 5 and up on Linux/x86/amd64
+Sun's JRE 5 and up on Windows/x86/32
