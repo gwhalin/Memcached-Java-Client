@@ -56,13 +56,6 @@ import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectStreamClass;
 
-/**
- * subclass of ObjectInputStream, clients can use its own classloader to load
- * the bytes from inputstream instead of the default classloader.
- * 
- * @author Qinliang Ling
- * @since 2.5.1
- */
 public class ContextObjectInputStream extends ObjectInputStream {
 
 	ClassLoader mLoader;
