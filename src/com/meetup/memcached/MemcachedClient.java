@@ -798,6 +798,7 @@ public class MemcachedClient {
 				GZIPOutputStream gos = new GZIPOutputStream( bos );
 				gos.write( val, 0, val.length );
 				gos.finish();
+				gos.close();
 				
 				// store it and set compression flag
 				val = bos.toByteArray();
