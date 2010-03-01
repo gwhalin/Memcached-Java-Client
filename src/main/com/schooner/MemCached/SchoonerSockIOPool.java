@@ -406,7 +406,6 @@ public class SchoonerSockIOPool {
 				socket = new UDPSockIO(this, host, bufferSize, socketTO);
 			}
 		} catch (Exception ex) {
-			poolCurrentConn.get(host).decrementAndGet();
 			log.error("++++ failed to get SockIO obj for: " + host);
 			// log.error(ex.getMessage(), ex);
 			socket = null;
@@ -541,6 +540,7 @@ public class SchoonerSockIOPool {
 		ConcurrentLinkedQueue<SchoonerSockIO> sockets = socketPool.get(host);
 		SchoonerSockIO socket = sockets.poll();
 		if (socket == null) {
+			System.out.println(poolCurrentConn.get(host).get());
 			if (poolCurrentConn.get(host).get() < maxConn) {
 				socket = createSocketWithAdd(host);
 			} else {
