@@ -388,7 +388,7 @@ public class SchoonerSockIOPool {
 			}
 		} catch (Exception ex) {
 			log.error("++++ failed to get SockIO obj for: " + host);
-			log.error(ex.getMessage(), ex);
+			//log.error(ex.getMessage(), ex);
 			socket = null;
 		}
 
@@ -540,7 +540,6 @@ public class SchoonerSockIOPool {
 		ConcurrentLinkedQueue<SchoonerSockIO> sockets = socketPool.get(host);
 		SchoonerSockIO socket = sockets.poll();
 		if (socket == null) {
-			System.out.println(poolCurrentConn.get(host).get());
 			if (poolCurrentConn.get(host).get() < maxConn) {
 				socket = createSocketWithAdd(host);
 			} else {

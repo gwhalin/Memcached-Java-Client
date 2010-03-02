@@ -27,7 +27,7 @@
 		  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 		  THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 -->
-<project name="Memcached-Java-Client" default="jar" basedir=".">
+<project name="schooner_memcached_client" default="jar" basedir=".">
 	<property file="build.properties" />
 	<path id="emma.lib">
 		<pathelement location="${emma.dir}/emma.jar" />
@@ -175,5 +175,27 @@
 	</target>
 	<target name="javadoc">
 		<javadoc access="public" author="true" classpath="lib/junit.jar" destdir="javadoc" nodeprecated="false" nodeprecatedlist="false" noindex="false" nonavbar="false" notree="false" packagenames="com.schooner.MemCached,com.schooner.MemCached.command,com.danga.MemCached" source="1.5" sourcepath="src/main" splitindex="true" use="true" version="true" />
+	</target>
+	<target name="release">
+		<antcall target="jar" />
+		<antcall target="javadoc" />
+		<zip destfile="${project}_${ver}.zip" basedir=".">
+			<include name="${project}_${ver}/**/*" />
+			<include name="javadoc" />
+			<include name="${project}_${ver}.jar" />
+			<include name="src/**/*" />
+			<include name="doc/**/*" />
+			<include name="lib/**/*" />
+			<include name="report/**/*" />
+			<include name="*.xml" />
+			<include name="*.properties" />
+			<include name="*.cld" />
+			<include name="*.classpath" />
+			<include name="*.project" />
+		</zip>
+		<delete dir="${project}_${ver}" />
+		<delete dir="javadoc" />
+		<delete file="${project}_${ver}.jar" />
+		<delete file="${project}_test_${ver}.jar" />
 	</target>
 </project>
