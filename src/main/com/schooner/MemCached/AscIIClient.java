@@ -442,7 +442,7 @@ public class AscIIClient extends MemCachedClient {
 				 */
 				return true;
 			}
-		} catch (IOException e) {
+		} catch (Exception e) {
 			// if we have an errorHandler, use its hook
 			if (errorHandler != null)
 				errorHandler.handleErrorOnSet(this, e, key);
@@ -599,7 +599,7 @@ public class AscIIClient extends MemCachedClient {
 				log.error(new StringBuffer().append("++++ error incr/decr key: ").append(key).toString());
 				log.error(new StringBuffer().append("++++ server response: ").append(line).toString());
 			}
-		} catch (IOException e) {
+		} catch (Exception e) {
 
 			// if we have an errorHandler, use its hook
 			if (errorHandler != null)
@@ -789,7 +789,7 @@ public class AscIIClient extends MemCachedClient {
 			}
 			sock.readBuf.clear();
 			return o;
-		} catch (IOException ce) {
+		} catch (Exception ce) {
 			// if we have an errorHandler, use its hook
 			if (errorHandler != null)
 				errorHandler.handleErrorOnGet(this, ce, key);
@@ -930,7 +930,7 @@ public class AscIIClient extends MemCachedClient {
 			item.value = o;
 			return item;
 
-		} catch (IOException ce) {
+		} catch (Exception ce) {
 			// if we have an errorHandler, use its hook
 			if (errorHandler != null)
 				errorHandler.handleErrorOnGet(this, ce, key);
@@ -1417,7 +1417,7 @@ public class AscIIClient extends MemCachedClient {
 
 					statsMaps.put(servers[i], stats);
 				}
-			} catch (IOException e) {
+			} catch (Exception e) {
 
 				// if we have an errorHandler, use its hook
 				if (errorHandler != null)

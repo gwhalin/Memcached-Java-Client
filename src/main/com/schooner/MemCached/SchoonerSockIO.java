@@ -32,6 +32,8 @@ import java.io.IOException;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ByteChannel;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import com.danga.MemCached.SockIOPool;
 
@@ -48,7 +50,6 @@ public abstract class SchoonerSockIO extends SockIOPool.SockIO {
 	public SchoonerSockIO(int bufferSize) throws UnknownHostException, IOException {
 		super(null, null, 0, 0, false);
 		this.bufferSize = bufferSize;
-		writeBuf = ByteBuffer.allocateDirect(bufferSize);
 	}
 
 	private int bufferSize = 1024 * 1025;
@@ -58,6 +59,10 @@ public abstract class SchoonerSockIO extends SockIOPool.SockIO {
 	public ByteBuffer writeBuf;
 
 	protected boolean isPooled = true;
+	
+	protected ConcurrentLinkedQueue<SchoonerSockIO> sockets;
+
+	protected AtomicInteger sockNum;
 
 	public abstract short preWrite();
 
@@ -86,4 +91,13 @@ public abstract class SchoonerSockIO extends SockIOPool.SockIO {
 	public boolean isPooled() {
 		return isPooled;
 	}
+	
+	public AtomicInteger getSockNum() {
+		return sockNum;
+	}
+
+	public void setSockNum(AtomicInteger sockNum) {
+		this.sockNum = sockNum;
+	}
+	
 }

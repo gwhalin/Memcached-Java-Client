@@ -304,10 +304,10 @@ public class SchoonerSockIOPool {
 
 			// Create a socket pool for each host
 			socketPool.put(servers[i], new ConcurrentLinkedQueue<SchoonerSockIO>());
-			poolCurrentConn.put(servers[i], new AtomicInteger(initConn));
 
 			// Create the initial connections
-			for (int j = 0; j < initConn; j++) {
+			int j;
+			for (j = 0; j < initConn; j++) {
 				SchoonerSockIO socket = createSocket(servers[i]);
 				if (socket == null) {
 					log.error("++++ failed to create connection to: " + servers[i] + " -- only " + j + " created.");
@@ -317,6 +317,13 @@ public class SchoonerSockIOPool {
 				// Add this new connection to socket pool
 				addSocketToPool(servers[i], socket);
 			}
+			
+			ConcurrentLinkedQueue<SchoonerSockIO> sockets = socketPool.get(servers[i]);
+			AtomicInteger num = new AtomicInteger(j);
+			for (SchoonerSockIO schoonerSockIO : sockets) {
+				schoonerSockIO.setSockNum(num);
+			}
+			poolCurrentConn.put(servers[i], num);
 		}
 	}
 
@@ -351,9 +358,9 @@ public class SchoonerSockIOPool {
 
 			// Create a socket pool for each host
 			socketPool.put(servers[i], new ConcurrentLinkedQueue<SchoonerSockIO>());
-			poolCurrentConn.put(servers[i], new AtomicInteger(initConn));
 
-			for (int j = 0; j < initConn; j++) {
+			int j;
+			for (j = 0; j < initConn; j++) {
 				SchoonerSockIO socket = createSocket(servers[i]);
 				if (socket == null) {
 					log.error("++++ failed to create connection to: " + servers[i] + " -- only " + j + " created.");
@@ -363,6 +370,13 @@ public class SchoonerSockIOPool {
 				// Add this new connection to socket pool
 				addSocketToPool(servers[i], socket);
 			}
+			
+			ConcurrentLinkedQueue<SchoonerSockIO> sockets = socketPool.get(servers[i]);
+			AtomicInteger num = new AtomicInteger(j);
+			for (SchoonerSockIO schoonerSockIO : sockets) {
+				schoonerSockIO.setSockNum(num);
+			}
+			poolCurrentConn.put(servers[i], num);
 		}
 	}
 
@@ -409,6 +423,7 @@ public class SchoonerSockIOPool {
 			log.error("++++ failed to get SockIO obj for: " + host);
 			// log.error(ex.getMessage(), ex);
 			socket = null;
+			poolCurrentConn.get(host).decrementAndGet();
 		}
 
 		return socket;
@@ -539,6 +554,7 @@ public class SchoonerSockIOPool {
 		// if we have items in the pool then we can return it
 		ConcurrentLinkedQueue<SchoonerSockIO> sockets = socketPool.get(host);
 		SchoonerSockIO socket = sockets.poll();
+		System.out.println(poolCurrentConn.get(host).get());
 		if (socket == null) {
 			if (poolCurrentConn.get(host).get() < maxConn) {
 				socket = createSocketWithAdd(host);
@@ -1049,11 +1065,6 @@ public class SchoonerSockIOPool {
 
 	public static class UDPSockIO extends SchoonerSockIO {
 
-		// logger
-		// private static Logger log =
-		// Logger.getLogger(UDPSockIO.class.getName());
-		private ConcurrentLinkedQueue<SchoonerSockIO> sockets;
-
 		/**
 		 * 
 		 * <p>
@@ -1130,8 +1141,6 @@ public class SchoonerSockIOPool {
 
 		private Selector selector;
 
-		private AtomicInteger sockNum;
-
 		@Override
 		public void trueClose() throws IOException {
 			if (selector != null) {
@@ -1154,8 +1163,9 @@ public class SchoonerSockIOPool {
 			channel.socket().setSoTimeout(timeout);
 			selector = Selector.open();
 			((DatagramChannel) channel).register(selector, SelectionKey.OP_READ);
-			this.sockets = pool.socketPool.get(host);
-			this.sockNum = pool.poolCurrentConn.get(host);
+			writeBuf = ByteBuffer.allocateDirect(bufferSize);
+			sockets = pool.socketPool.get(host);
+			sockNum = pool.poolCurrentConn.get(host);
 		}
 
 		@Override
@@ -1341,10 +1351,6 @@ public class SchoonerSockIOPool {
 
 		private int hash = 0;
 
-		private ConcurrentLinkedQueue<SchoonerSockIO> sockets;
-
-		private AtomicInteger sockNum;
-
 		/**
 		 * creates a new SockIO object wrapping a socket connection to
 		 * host:port, and its input and output streams
@@ -1372,6 +1378,8 @@ public class SchoonerSockIOPool {
 
 			// get socket: default is to use non-blocking connect
 			sock = getSocket(ip[0], Integer.parseInt(ip[1]), connectTimeout);
+			
+			writeBuf = ByteBuffer.allocateDirect(bufferSize);
 
 			if (timeout >= 0)
 				this.sock.setSoTimeout(timeout);
@@ -1383,8 +1391,8 @@ public class SchoonerSockIOPool {
 			sockChannel = sock.getChannel();
 			hash = sock.hashCode();
 			this.host = host;
-			this.sockets = pool.socketPool.get(host);
-			this.sockNum = pool.poolCurrentConn.get(host);
+			sockets = pool.socketPool.get(host);
+			sockNum = pool.poolCurrentConn.get(host);
 		}
 
 		/**
