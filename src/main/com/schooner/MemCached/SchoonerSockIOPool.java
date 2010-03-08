@@ -554,7 +554,6 @@ public class SchoonerSockIOPool {
 		// if we have items in the pool then we can return it
 		ConcurrentLinkedQueue<SchoonerSockIO> sockets = socketPool.get(host);
 		SchoonerSockIO socket = sockets.poll();
-		System.out.println(poolCurrentConn.get(host).get());
 		if (socket == null) {
 			if (poolCurrentConn.get(host).get() < maxConn) {
 				socket = createSocketWithAdd(host);

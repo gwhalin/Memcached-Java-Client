@@ -181,7 +181,7 @@
 		<antcall target="javadoc" />
 		<zip destfile="${project}_${ver}.zip" basedir=".">
 			<include name="${project}_${ver}/**/*" />
-			<include name="javadoc" />
+			<include name="javadoc/**/*" />
 			<include name="${project}_${ver}.jar" />
 			<include name="src/**/*" />
 			<include name="doc/**/*" />
