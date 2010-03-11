@@ -38,7 +38,7 @@ import java.nio.BufferUnderflowException;
  * the byte length to read before invoke read.
  * 
  * @author Xingen Wang
- * @since 2.5.1
+ * @since 2.5.0
  * @see InputStream
  */
 public final class SockInputStream extends InputStream {

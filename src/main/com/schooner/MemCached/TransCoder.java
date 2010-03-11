@@ -38,7 +38,7 @@ import java.io.InputStream;
  * @see ObjectTransCoder
  * 
  * @author Xingen Wang
- * @since 2.5.1
+ * @since 2.5.0
  * @see TransCoder
  */
 public interface TransCoder {

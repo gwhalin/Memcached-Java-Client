@@ -57,7 +57,7 @@ import com.danga.MemCached.MemCachedClient;
  * memcached server.
  * 
  * @author Xingen Wang
- * @since 2.5.1
+ * @since 2.5.0
  * @see AscIIClient
  */
 public class BinaryClient extends MemCachedClient {
@@ -575,7 +575,7 @@ public class BinaryClient extends MemCachedClient {
 	}
 
 	public long addOrIncr(String key) {
-		return addOrIncr(key, 1, null);
+		return addOrIncr(key, 0, null);
 	}
 
 	public long addOrIncr(String key, long inc) {
@@ -583,17 +583,17 @@ public class BinaryClient extends MemCachedClient {
 	}
 
 	public long addOrIncr(String key, long inc, Integer hashCode) {
-		boolean ret = add(key, "0", hashCode);
+		boolean ret = add(key, "" + inc, hashCode);
 
 		if (ret) {
-			return 0;
+			return inc;
 		} else {
 			return incrdecr(OPCODE_INCREMENT, key, inc, hashCode);
 		}
 	}
 
 	public long addOrDecr(String key) {
-		return addOrDecr(key, 1, null);
+		return addOrDecr(key, 0, null);
 	}
 
 	public long addOrDecr(String key, long inc) {
@@ -601,9 +601,9 @@ public class BinaryClient extends MemCachedClient {
 	}
 
 	public long addOrDecr(String key, long inc, Integer hashCode) {
-		boolean ret = add(key, "0", hashCode);
+		boolean ret = add(key, "" + inc, hashCode);
 		if (ret) {
-			return 0;
+			return inc;
 		} else {
 			return incrdecr(OPCODE_DECREMENT, key, inc, hashCode);
 		}

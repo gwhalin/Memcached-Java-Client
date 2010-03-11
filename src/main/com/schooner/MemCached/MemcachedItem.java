@@ -32,7 +32,7 @@ package com.schooner.MemCached;
  * MemcachedItem is used to hold casUnique and related memcached value.
  * 
  * @author Xingen Wang
- * @since 2.5.1
+ * @since 2.5.0
  * @see com.schooner.MemCached.MemcachedItem
  */
 public final class MemcachedItem {

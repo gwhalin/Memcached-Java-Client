@@ -44,7 +44,7 @@ import com.schooner.MemCached.TransCoder;
  * Retrieve a item from memcached server.
  * 
  * @author Meng Li
- * @since 2.5.1
+ * @since 2.5.0
  * @see com.schooner.MemCached.command.RetrievalCommand
  */
 public class RetrievalCommand extends Command {

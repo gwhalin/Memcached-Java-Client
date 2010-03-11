@@ -30,7 +30,7 @@ import com.danga.MemCached.LineInputStream;
  * This class will only be used in the multi-get memcached operations.
  * 
  * @author Xingen Wang
- * @since 2.5.1
+ * @since 2.5.0
  * @see ByteBufArrayInputStream
  */
 public final class ByteBufArrayInputStream extends InputStream implements LineInputStream {

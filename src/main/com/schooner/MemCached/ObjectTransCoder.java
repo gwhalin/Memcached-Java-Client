@@ -41,7 +41,7 @@ import com.danga.MemCached.ContextObjectInputStream;
  * serialization and deserialization in memcached operations.
  * 
  * @author Xingen Wang
- * @since 2.5.1
+ * @since 2.5.0
  * @see AbstractTransCoder
  * @see TransCoder
  */

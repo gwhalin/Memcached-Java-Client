@@ -37,7 +37,7 @@ import java.io.OutputStream;
  * written size for memcached set operation.
  * 
  * @author Xingen Wang
- * @since 2.5.1
+ * @since 2.5.0
  * @see TransCoder
  * @see ObjectTransCoder
  */

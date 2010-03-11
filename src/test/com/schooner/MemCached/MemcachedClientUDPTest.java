@@ -213,7 +213,7 @@ public class MemcachedClientUDPTest extends TestCase {
 		long expected, actual;
 		mc.addOrIncr("foo", 1, 10);
 		actual = mc.incr("foo", 5, 10);
-		expected = 5;
+		expected = 6;
 		assertEquals(expected, actual);
 	}
 
@@ -232,7 +232,7 @@ public class MemcachedClientUDPTest extends TestCase {
 		actual = mc.addOrIncr("foo", 1, 10);
 		mc.incr("foo", 5, 10);
 
-		expected = 2;
+		expected = 3;
 		actual = mc.decr("foo", 3, 10);
 		assertEquals(expected, actual);
 	}
@@ -251,7 +251,7 @@ public class MemcachedClientUDPTest extends TestCase {
 		j = mc.incr("foo"); // foo now == 1
 		j = mc.incr("foo", (long) 5); // foo now == 6
 
-		j = mc.addOrIncr("foo"); // foo now 7
+		j = mc.addOrIncr("foo", 1); // foo now 7
 
 		j = mc.decr("foo", (long) 3); // foo now == 4
 		assertEquals(4, j);
@@ -269,7 +269,7 @@ public class MemcachedClientUDPTest extends TestCase {
 		assertEquals(expected, actual);
 
 		actual = mc.addOrDecr("foo");
-		expected = 4;
+		expected = 5;
 		assertEquals(expected, actual);
 	}
 
@@ -277,15 +277,15 @@ public class MemcachedClientUDPTest extends TestCase {
 
 		long expected, actual;
 		actual = mc.addOrDecr("foo", 2);
-		expected = 0;
+		expected = 2;
 		assertEquals(expected, actual);
 
-		expected = 5;
+		expected = 7;
 		actual = mc.addOrIncr("foo", 5);
 		assertEquals(expected, actual);
 
 		actual = mc.addOrDecr("foo", 3);
-		expected = 2;
+		expected = 4;
 		assertEquals(expected, actual);
 	}
 
@@ -294,15 +294,15 @@ public class MemcachedClientUDPTest extends TestCase {
 		long expected, actual;
 		int hashcode = 10;
 		actual = mc.addOrDecr("foo", 2, hashcode);
-		expected = 0;
+		expected = 2;
 		assertEquals(expected, actual);
 
-		expected = 5;
+		expected = 7;
 		actual = mc.addOrIncr("foo", 5, hashcode);
 		assertEquals(expected, actual, hashcode);
 
 		actual = mc.addOrDecr("foo", 3, hashcode);
-		expected = 2;
+		expected = 4;
 		assertEquals(expected, actual);
 	}
 

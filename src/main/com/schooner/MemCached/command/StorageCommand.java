@@ -44,7 +44,7 @@ import com.schooner.MemCached.TransCoder;
  * This command implements the set command using memcached UDP protocol.
  * 
  * @author Meng Li
- * @since 2.5.1
+ * @since 2.5.0
  * @see com.schooner.Memcached.StorageCommand
  */
 public class StorageCommand extends Command {

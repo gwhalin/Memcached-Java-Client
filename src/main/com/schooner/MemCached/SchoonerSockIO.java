@@ -41,7 +41,7 @@ import com.danga.MemCached.SockIOPool;
  * An adapter of com.danga.MemCached.SockIOPool.SockIO.
  * 
  * @author Xingen Wang
- * @since 2.5.1
+ * @since 2.5.0
  * @see SchoonerSockIO
  * @see com.danga.MemCached.SockIOPool.SockIO
  */

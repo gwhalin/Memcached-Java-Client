@@ -36,7 +36,7 @@ import com.schooner.MemCached.SchoonerSockIO;
  * The parent of all the command class.
  * 
  * @author Qinliang Lin
- * @since 2.5.1
+ * @since 2.5.0
  * @see com.schooner.MemCached.command.Command
  */
 public abstract class Command {

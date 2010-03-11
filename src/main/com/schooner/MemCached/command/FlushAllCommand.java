@@ -39,7 +39,7 @@ import com.schooner.MemCached.SchoonerSockIO;
  * 
  * @author Qinliang Lin
  * @see com.schooner.MemCached.command.FlushAllCommand
- * @since 2.5.1
+ * @since 2.5.0
  */
 public class FlushAllCommand extends Command {
 

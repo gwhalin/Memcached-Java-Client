@@ -40,7 +40,7 @@ import java.nio.BufferOverflowException;
  * memcached set operation.
  * 
  * @author Xingen Wang
- * @since 2.5.1
+ * @since 2.5.0
  * @see OutputStream
  * @see SchoonerSockIO
  */

@@ -114,7 +114,7 @@ import com.danga.MemCached.Logger;
  * </pre>
  * 
  * @author Xingen Wang
- * @since 2.5.1
+ * @since 2.5.0
  * @see SchoonerSockIOPool
  */
 public class SchoonerSockIOPool {
