@@ -102,7 +102,7 @@ public class MemCachedClientAsciiTest extends TestCase {
 	}
 
 	public void testSetBoolean() {
-		mc.set("foo", Boolean.TRUE);
+		assertTrue(mc.set("foo", Boolean.TRUE));
 		Boolean b = (Boolean) mc.get("foo");
 		assertEquals(b.booleanValue(), true);
 	}
@@ -116,6 +116,10 @@ public class MemCachedClientAsciiTest extends TestCase {
 		assertEquals(null, mc.get("foo"));
 	}
 
+	/**
+	 * this test case will fail in memcached 1.4+.<br>
+	 * memcached 1.4+ didn't support delete with expire time.
+	 */
 	public void testDeleteStringDate() {
 		mc.set("foo", "bar");
 		mc.delete("foo", new Date(1000));
@@ -128,6 +132,10 @@ public class MemCachedClientAsciiTest extends TestCase {
 		assertFalse(expected);
 	}
 
+	/**
+	 * this test case will fail in memcached 1.4+.<br>
+	 * memcached 1.4+ didn't support delete with expire time.
+	 */
 	public void testDeleteStringIntegerDate() {
 		mc.set("foo", "bar", 10);
 		mc.delete("foo", 10, new Date(1000));
@@ -706,11 +714,19 @@ public class MemCachedClientAsciiTest extends TestCase {
 		assertFalse(res.isEmpty());
 	}
 
+	/**
+	 * this test case will fail in memcached 1.4+.<br>
+	 * memcached 1.4+ didn't support "stats items".
+	 */
 	public void testStatsItems() {
 		Map<String, Map<String, String>> res = mc.statsItems();
 		assertFalse(res.isEmpty());
 	}
 
+	/**
+	 * this test case will fail in memcached 1.4+.<br>
+	 * memcached 1.4+ didn't support "stats items".
+	 */
 	public void testStatsItemsStringArray() {
 		Map<String, Map<String, String>> res = mc.statsItems(serverlist);
 		assertFalse(res.isEmpty());
@@ -726,11 +742,19 @@ public class MemCachedClientAsciiTest extends TestCase {
 		assertFalse(res.isEmpty());
 	}
 
+	/**
+	 * this test case will fail in memcached 1.4+.<br>
+	 * memcached 1.4+ didn't support "stats cachedump".
+	 */
 	public void testStatsCacheDumpStringArrayIntegerInteger() {
 		Map<String, Map<String, String>> res = mc.statsCacheDump(serverlist, 1, 2);
 		assertFalse(res.isEmpty());
 	}
 
+	/**
+	 * this test case will fail in memcached 1.4+.<br>
+	 * memcached 1.4+ didn't support "stats cachedump".
+	 */
 	public void testStatsCacheDumpIntegerInteger() {
 		Map<String, Map<String, String>> res = mc.statsCacheDump(1, 2);
 		assertFalse(res.isEmpty());

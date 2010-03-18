@@ -28,12 +28,10 @@
  ******************************************************************************/
 package com.schooner.MemCached;
 
-import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.StringReader;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.ByteBuffer;
@@ -184,14 +182,7 @@ public class AscIIClient extends MemCachedClient {
 
 			// if we get appropriate response back, then we return true
 			// get result code
-			sock.readBuf.clear();
-			String line;
-			sock.getChannel().read(sock.readBuf);
-			sock.readBuf.flip();
-			byte[] temp = new byte[sock.readBuf.remaining()];
-			sock.readBuf.get(temp);
-			line = new String(temp);
-
+			String line = new SockInputStream(sock, Integer.MAX_VALUE).getLine();
 			if (DELETED.equals(line)) { // successful
 				if (log.isInfoEnabled())
 					log.info(new StringBuffer().append("++++ deletion of key: ").append(key).append(
@@ -428,14 +419,7 @@ public class AscIIClient extends MemCachedClient {
 			// now write the data to the cache server
 			sock.flush();
 			// get result code
-			sock.readBuf.clear();
-			String line; // response from server
-			// read response from server, and store it in readBuf
-			sock.getChannel().read(sock.readBuf);
-			byte[] temp = new byte[sock.readBuf.position()];
-			sock.readBuf.flip();
-			sock.readBuf.get(temp);
-			line = new String(temp);
+			String line = new SockInputStream(sock, Integer.MAX_VALUE).getLine();
 			if (STORED.equals(line)) {
 				/*
 				 * Successfully set here.
@@ -578,15 +562,8 @@ public class AscIIClient extends MemCachedClient {
 			String cmd = new StringBuffer().append(cmdname).append(" ").append(key).append(" ").append(inc).append(
 					"\r\n").toString();
 			sock.write(cmd.getBytes());
-			// get result back
 			// get result code
-			sock.readBuf.clear();
-			String line;
-			sock.getChannel().read(sock.readBuf);
-			sock.readBuf.flip();
-			byte[] temp = new byte[sock.readBuf.limit()];
-			sock.readBuf.get(temp);
-			line = new String(temp).split("\r\n")[0];
+			String line = new SockInputStream(sock, Integer.MAX_VALUE).getLine().split("\r\n")[0];
 			if (line.matches("\\d+")) {
 				// Sucessfully increase.
 				// return sock to pool and return result
@@ -714,23 +691,23 @@ public class AscIIClient extends MemCachedClient {
 			int flag = 0;
 
 			// get result code
-			sock.readBuf.clear();
-			sock.getChannel().read(sock.readBuf);
-
+			SockInputStream input = new SockInputStream(sock, Integer.MAX_VALUE);
 			// Then analysis the return metadata from server
 			// including key, flag and data size
 			boolean stop = false;
 			StringBuffer sb = new StringBuffer();
-			sock.readBuf.flip();
-			byte b;
+			int b;
 			int index = 0;
 			while (!stop) {
 				/*
 				 * Critical block to parse the response header.
 				 */
-				b = sock.readBuf.get();
+				b = input.read();
 				if (b == ' ' || b == '\r') {
 					switch (index) {
+					case 0:
+						if (END.startsWith(sb.toString()))
+							return null;
 					case 1:
 						break;
 					case 2:
@@ -744,7 +721,7 @@ public class AscIIClient extends MemCachedClient {
 					index++;
 					sb = new StringBuffer();
 					if (b == '\r') {
-						sock.readBuf.get();
+						input.read();
 						stop = true;
 					}
 					continue;
@@ -753,7 +730,6 @@ public class AscIIClient extends MemCachedClient {
 			}
 
 			Object o = null;
-			SockInputStream input = new SockInputStream(sock);
 			input.willRead(dataSize);
 			// we can only take out serialized objects
 			if (dataSize > 0) {
@@ -787,7 +763,11 @@ public class AscIIClient extends MemCachedClient {
 						o = ((ObjectTransCoder) transCoder).decode(in, classLoader);
 				}
 			}
-			sock.readBuf.clear();
+			input.willRead(Integer.MAX_VALUE);
+			// Skip "\r\n" after each data block for VALUE
+			input.getLine();
+			// Skip "END\r\n" after get
+			input.getLine();
 			return o;
 		} catch (Exception ce) {
 			// if we have an errorHandler, use its hook
@@ -853,23 +833,23 @@ public class AscIIClient extends MemCachedClient {
 			MemcachedItem item = new MemcachedItem();
 
 			// get result code
-			sock.readBuf.clear();
-			sock.getChannel().read(sock.readBuf);
-
+			SockInputStream input = new SockInputStream(sock, Integer.MAX_VALUE);
 			// Then analysis the return metadata from server
 			// including key, flag and data size
 			boolean stop = false;
 			StringBuffer sb = new StringBuffer();
-			sock.readBuf.flip();
-			byte b;
+			int b;
 			int index = 0;
 			while (!stop) {
 				/*
 				 * Critical block to parse the response header.
 				 */
-				b = sock.readBuf.get();
+				b = input.read();
 				if (b == ' ' || b == '\r') {
 					switch (index) {
+					case 0:
+						if (END.startsWith(sb.toString()))
+							return null;
 					case 1:
 						break;
 					case 2:
@@ -887,7 +867,7 @@ public class AscIIClient extends MemCachedClient {
 					index++;
 					sb = new StringBuffer();
 					if (b == '\r') {
-						sock.readBuf.get();
+						input.read();
 						stop = true;
 					}
 					continue;
@@ -895,7 +875,6 @@ public class AscIIClient extends MemCachedClient {
 				sb.append((char) b);
 			}
 			Object o = null;
-			SockInputStream input = new SockInputStream(sock);
 			input.willRead(dataSize);
 			// we can only take out serialized objects
 			if (dataSize > 0) {
@@ -926,8 +905,12 @@ public class AscIIClient extends MemCachedClient {
 					o = transCoder.decode(in);
 				}
 			}
-			sock.readBuf.clear();
 			item.value = o;
+			input.willRead(Integer.MAX_VALUE);
+			// Skip "\r\n" after each data block for VALUE
+			input.getLine();
+			// Skip "END\r\n" after get
+			input.getLine();
 			return item;
 
 		} catch (Exception ce) {
@@ -1287,13 +1270,7 @@ public class AscIIClient extends MemCachedClient {
 				sock.write(command.getBytes());
 				// if we get appropriate response back, then we return true
 				// get result code
-				sock.readBuf.clear();
-				String line;
-				sock.getChannel().read(sock.readBuf);
-				sock.readBuf.flip();
-				byte[] temp = new byte[sock.readBuf.remaining()];
-				sock.readBuf.get(temp);
-				line = new String(temp);
+				String line = new SockInputStream(sock, Integer.MAX_VALUE).getLine();
 				success = (OK.equals(line)) ? success && true : false;
 			} catch (IOException e) {
 
@@ -1391,15 +1368,10 @@ public class AscIIClient extends MemCachedClient {
 				// map to hold key value pairs
 				Map<String, String> stats = new HashMap<String, String>();
 				// get result code
-				sock.readBuf.clear();
+				SockInputStream input = new SockInputStream(sock, Integer.MAX_VALUE);
 				String line;
-				sock.getChannel().read(sock.readBuf);
-				sock.readBuf.flip();
-				byte[] temp = new byte[sock.readBuf.remaining()];
-				sock.readBuf.get(temp);
-				BufferedReader reader = new BufferedReader(new StringReader(new String(temp)));
 				// loop over results
-				while ((line = reader.readLine()) != null) {
+				while ((line = input.getLine()) != null) {
 
 					if (line.startsWith(lineStart)) {
 						String[] info = line.split(" ", 3);
@@ -1683,14 +1655,7 @@ public class AscIIClient extends MemCachedClient {
 
 			// if we get appropriate response back, then we return true
 			// get result code
-			sock.readBuf.clear();
-			String line;
-			sock.getChannel().read(sock.readBuf);
-			sock.readBuf.flip();
-			byte[] temp = new byte[sock.readBuf.remaining()];
-			sock.readBuf.get(temp);
-			line = new String(temp);
-
+			String line = new SockInputStream(sock, Integer.MAX_VALUE).getLine();
 			if (SYNCED.equals(line)) {
 				if (log.isInfoEnabled())
 					log.info(new StringBuffer().append("++++ sync of key: ").append(key).append(
@@ -1773,13 +1738,7 @@ public class AscIIClient extends MemCachedClient {
 				sock.write(command.getBytes());
 				// if we get appropriate response back, then we return true
 				// get result code
-				sock.readBuf.clear();
-				String line;
-				sock.getChannel().read(sock.readBuf);
-				sock.readBuf.flip();
-				byte[] temp = new byte[sock.readBuf.remaining()];
-				sock.readBuf.get(temp);
-				line = new String(temp);
+				String line = new SockInputStream(sock, Integer.MAX_VALUE).getLine();
 				success = (SYNCED.equals(line)) ? success && true : false;
 			} catch (IOException e) {
 				// exception thrown

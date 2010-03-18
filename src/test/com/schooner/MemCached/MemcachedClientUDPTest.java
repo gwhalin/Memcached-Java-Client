@@ -123,6 +123,10 @@ public class MemcachedClientUDPTest extends TestCase {
 		assertEquals(null, mc.get("foo"));
 	}
 
+	/**
+	 * this test case will fail in memcached 1.4+.<br>
+	 * memcached 1.4+ didn't support delete with expire time.
+	 */
 	public void testDeleteStringDate() {
 		mc.set("foo", "bar");
 		mc.delete("foo", new Date(1000));
@@ -706,19 +710,19 @@ public class MemcachedClientUDPTest extends TestCase {
 		Map<String, Map<String, String>> res = mc.statsCacheDump(1, 2);
 		assertFalse(res.isEmpty());
 	}
-	
+
 	public void testGetWithIOException() {
 		TestClass expect = new TestClass("bar1", "bar2", 3);
 		mc.set("foo", expect);
 		Object actual = mc.get("foo");
 		assertEquals(expect, actual);
 		mc.setTransCoder(new TransCoder() {
-			
+
 			@Override
 			public int encode(SockOutputStream out, Object object) throws IOException {
 				throw new IOException();
 			}
-			
+
 			@Override
 			public Object decode(InputStream input) throws IOException {
 				throw new IOException();
@@ -729,19 +733,19 @@ public class MemcachedClientUDPTest extends TestCase {
 		actual = mc.get("foo", null, false);
 		assertNotSame(expect, actual);
 	}
-	
+
 	public void testGetsWithIOException() {
 		TestClass expect = new TestClass("bar1", "bar2", 3);
 		mc.set("foo", expect);
 		Object actual = mc.get("foo");
 		assertEquals(expect, actual);
 		mc.setTransCoder(new TransCoder() {
-			
+
 			@Override
 			public int encode(SockOutputStream out, Object object) throws IOException {
 				throw new IOException();
 			}
-			
+
 			@Override
 			public Object decode(InputStream input) throws IOException {
 				throw new IOException();
@@ -750,15 +754,15 @@ public class MemcachedClientUDPTest extends TestCase {
 		actual = mc.gets("foo");
 		assertNotSame(expect, actual);
 	}
-	
+
 	public void testSetWithIOException() {
 		mc.setTransCoder(new TransCoder() {
-			
+
 			@Override
 			public int encode(SockOutputStream out, Object object) throws IOException {
 				throw new IOException();
 			}
-			
+
 			@Override
 			public Object decode(InputStream input) throws IOException {
 				throw new IOException();

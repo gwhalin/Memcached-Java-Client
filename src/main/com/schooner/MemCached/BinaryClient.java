@@ -174,12 +174,11 @@ public class BinaryClient extends MemCachedClient {
 			sock.flush();
 			// if we get appropriate response back, then we return true
 			// get result code
-			sock.readBuf.clear();
-			sock.getChannel().read(sock.readBuf);
-			sock.readBuf.flip();
-			sock.readBuf.getInt();
-			sock.readBuf.getShort();
-			short status = sock.readBuf.getShort();
+			SockInputStream input = new SockInputStream(sock, Integer.MAX_VALUE);
+			DataInputStream dis = new DataInputStream(input);
+			dis.readInt();
+			dis.readShort();
+			short status = dis.readShort();
 
 			if (status == STAT_NO_ERROR) {
 				if (log.isInfoEnabled())
@@ -417,13 +416,10 @@ public class BinaryClient extends MemCachedClient {
 			// now write the data to the cache server
 			sock.flush();
 			// get result code
-			sock.readBuf.clear();
-			// read response from server, and store it in readBuf
-			sock.getChannel().read(sock.readBuf);
-			sock.readBuf.flip();
-			sock.readBuf.getInt();
-			sock.readBuf.getShort();
-			if (STAT_NO_ERROR == sock.readBuf.getShort()) {
+			DataInputStream dis = new DataInputStream(new SockInputStream(sock, Integer.MAX_VALUE));
+			dis.readInt();
+			dis.readShort();
+			if (STAT_NO_ERROR == dis.readShort()) {
 				return true;
 			}
 		} catch (IOException e) {
@@ -542,13 +538,10 @@ public class BinaryClient extends MemCachedClient {
 			// now write the data to the cache server
 			sock.flush();
 			// get result code
-			sock.readBuf.clear();
-			// read response from server, and store it in readBuf
-			sock.getChannel().read(sock.readBuf);
-			sock.readBuf.flip();
-			sock.readBuf.getInt();
-			sock.readBuf.getShort();
-			if (STAT_NO_ERROR == sock.readBuf.getShort()) {
+			DataInputStream dis = new DataInputStream(new SockInputStream(sock, Integer.MAX_VALUE));
+			dis.readInt();
+			dis.readShort();
+			if (STAT_NO_ERROR == dis.readShort()) {
 				return true;
 			}
 		} catch (IOException e) {
@@ -697,18 +690,16 @@ public class BinaryClient extends MemCachedClient {
 			sock.writeBuf.put(keyBuf);
 			sock.flush();
 			// get result code
-			sock.readBuf.clear();
-			sock.getChannel().read(sock.readBuf);
-			sock.readBuf.flip();
-			sock.readBuf.getInt();
-			sock.readBuf.getShort();
-			short status = sock.readBuf.getShort();
+			DataInputStream dis = new DataInputStream(new SockInputStream(sock, Integer.MAX_VALUE));
+			dis.readInt();
+			dis.readShort();
+			short status = dis.readShort();
 
 			if (status == STAT_NO_ERROR) {
 
-				sock.readBuf.getLong();
-				sock.readBuf.getLong();
-				long res = sock.readBuf.getLong();
+				dis.readLong();
+				dis.readLong();
+				long res = dis.readLong();
 				return res;
 			} else {
 				log.error(new StringBuffer().append("++++ error incr/decr key: ").append(key).toString());
@@ -1048,12 +1039,10 @@ public class BinaryClient extends MemCachedClient {
 				sock.flush();
 				// if we get appropriate response back, then we return true
 				// get result code
-				sock.readBuf.clear();
-				sock.getChannel().read(sock.readBuf);
-				sock.readBuf.flip();
-				sock.readBuf.getInt();
-				sock.readBuf.getShort();
-				success = sock.readBuf.getShort() == STAT_NO_ERROR ? success && true : false;
+				DataInputStream dis = new DataInputStream(new SockInputStream(sock, Integer.MAX_VALUE));
+				dis.readInt();
+				dis.readShort();
+				success = dis.readShort() == STAT_NO_ERROR ? success && true : false;
 			} catch (IOException e) {
 
 				// if we have an errorHandler, use its hook
@@ -1170,9 +1159,6 @@ public class BinaryClient extends MemCachedClient {
 				sock.getChannel().write(sock.writeBuf);
 
 				// response
-				sock.readBuf.clear();
-				sock.getChannel().read(sock.readBuf);
-				sock.readBuf.flip();
 				DataInputStream input = new DataInputStream(new SockInputStream(sock, Integer.MAX_VALUE));
 				while (true) {
 					input.skip(2);
@@ -1542,22 +1528,20 @@ public class BinaryClient extends MemCachedClient {
 			int flag = 0;
 
 			// get result code
-			sock.readBuf.clear();
-			sock.getChannel().read(sock.readBuf);
-			sock.readBuf.flip();
+			SockInputStream input = new SockInputStream(sock, Integer.MAX_VALUE);
+			DataInputStream dis = new DataInputStream(input);
 			// process the header
-			sock.readBuf.getInt();
-			byte extra = sock.readBuf.get();
-			sock.readBuf.get();
-			if (STAT_NO_ERROR == sock.readBuf.getShort()) {
-				dataSize = sock.readBuf.getInt() - extra;
-				sock.readBuf.getInt();
-				sock.readBuf.getLong();
+			dis.readInt();
+			byte extra = dis.readByte();
+			dis.readByte();
+			if (STAT_NO_ERROR == dis.readShort()) {
+				dataSize = dis.readInt() - extra;
+				dis.readInt();
+				dis.readLong();
 			}
 
-			flag = sock.readBuf.getInt();
+			flag = dis.readInt();
 			Object o = null;
-			SockInputStream input = new SockInputStream(sock);
 			input.willRead(dataSize);
 			// we can only take out serialized objects
 			if (dataSize > 0) {
@@ -1591,7 +1575,6 @@ public class BinaryClient extends MemCachedClient {
 						o = ((ObjectTransCoder) transCoder).decode(in, classLoader);
 				}
 			}
-			sock.readBuf.clear();
 			return o;
 		} catch (IOException e) {
 			if (errorHandler != null)
@@ -1662,22 +1645,20 @@ public class BinaryClient extends MemCachedClient {
 			MemcachedItem item = new MemcachedItem();
 
 			// get result code
-			sock.readBuf.clear();
-			sock.getChannel().read(sock.readBuf);
-			sock.readBuf.flip();
+			SockInputStream input = new SockInputStream(sock, Integer.MAX_VALUE);
+			DataInputStream dis = new DataInputStream(input);
 			// process the header
-			sock.readBuf.getInt();
-			byte extra = sock.readBuf.get();
-			sock.readBuf.get();
-			if (STAT_NO_ERROR == sock.readBuf.getShort()) {
-				dataSize = sock.readBuf.getInt() - extra;
-				sock.readBuf.getInt();
-				item.casUnique = sock.readBuf.getLong();
+			dis.readInt();
+			byte extra = dis.readByte();
+			dis.readByte();
+			if (STAT_NO_ERROR == dis.readShort()) {
+				dataSize = dis.readInt() - extra;
+				dis.readInt();
+				item.casUnique = dis.readLong();
 			}
 
-			flag = sock.readBuf.getInt();
+			flag = dis.readInt();
 			Object o = null;
-			SockInputStream input = new SockInputStream(sock);
 			input.willRead(dataSize);
 			// we can only take out serialized objects
 			if (dataSize > 0) {
@@ -1711,7 +1692,6 @@ public class BinaryClient extends MemCachedClient {
 						o = ((ObjectTransCoder) transCoder).decode(in, classLoader);
 				}
 			}
-			sock.readBuf.clear();
 			item.value = o;
 			return item;
 		} catch (IOException e) {

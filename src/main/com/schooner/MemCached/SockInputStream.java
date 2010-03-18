@@ -28,6 +28,7 @@
  ******************************************************************************/
 package com.schooner.MemCached;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.BufferUnderflowException;
@@ -73,10 +74,15 @@ public final class SockInputStream extends InputStream {
 	 *            {@link SchoonerSockIO}, read from this socket.
 	 * @param limit
 	 *            limited length to read from specified socket.
+	 * @throws IOException
+	 *             error happened in reading.
 	 */
-	public SockInputStream(final SchoonerSockIO sock, int limit) {
+	public SockInputStream(final SchoonerSockIO sock, int limit) throws IOException {
 		this.sock = sock;
 		willRead(limit);
+		sock.readBuf.clear();
+		sock.getChannel().read(sock.readBuf);
+		sock.readBuf.flip();
 	}
 
 	/**
@@ -84,8 +90,10 @@ public final class SockInputStream extends InputStream {
 	 * 
 	 * @param sock
 	 *            {@link SchoonerSockIO}, read from this socket.
+	 * @throws IOException
+	 *             error happened in reading.
 	 */
-	public SockInputStream(final SchoonerSockIO sock) {
+	public SockInputStream(final SchoonerSockIO sock) throws IOException {
 		this(sock, sock.readBuf.remaining());
 	}
 
@@ -149,6 +157,26 @@ public final class SockInputStream extends InputStream {
 		byte[] bs = new byte[limit - count];
 		read(bs);
 		return bs;
+	}
+
+	/**
+	 * get a line from the socket.
+	 * 
+	 * @return a line
+	 * @throws IOException
+	 *             error happend in reading.
+	 * @since 2.5.1
+	 */
+	public final String getLine() throws IOException {
+		ByteArrayOutputStream bos = new ByteArrayOutputStream();
+		int b;
+		while ((b = read()) != -1) {
+			bos.write(b);
+			if (b == '\n') {
+				break;
+			}
+		}
+		return new String(bos.toByteArray());
 	}
 
 	@Override
