@@ -396,9 +396,9 @@ public class SchoonerSockIOPool {
 		SchoonerSockIO socket = null;
 		try {
 			if (isTcp) {
-				socket = new TCPSockIO(this, host, bufferSize, this.socketTO, this.socketConnectTO, this.nagle);
+				socket = new TCPSockIO(this, host, bufferSize, this.socketTO, this.socketConnectTO, this.nagle, false);
 			} else {
-				socket = new UDPSockIO(this, host, bufferSize, socketTO);
+				socket = new UDPSockIO(this, host, bufferSize, socketTO, false);
 			}
 		} catch (Exception ex) {
 			log.error("++++ failed to get SockIO obj for: " + host);
@@ -415,9 +415,9 @@ public class SchoonerSockIOPool {
 		try {
 			poolCurrentConn.get(host).addAndGet(1);
 			if (isTcp) {
-				socket = new TCPSockIO(this, host, bufferSize, this.socketTO, this.socketConnectTO, this.nagle);
+				socket = new TCPSockIO(this, host, bufferSize, this.socketTO, this.socketConnectTO, this.nagle, true);
 			} else {
-				socket = new UDPSockIO(this, host, bufferSize, socketTO);
+				socket = new UDPSockIO(this, host, bufferSize, socketTO, true);
 			}
 		} catch (Exception ex) {
 			log.error("++++ failed to get SockIO obj for: " + host);
@@ -1150,7 +1150,7 @@ public class SchoonerSockIOPool {
 				this.sockNum.decrementAndGet();
 		}
 
-		public UDPSockIO(SchoonerSockIOPool pool, String host, int bufferSize, int timeout) throws IOException,
+		public UDPSockIO(SchoonerSockIOPool pool, String host, int bufferSize, int timeout, boolean isPooled) throws IOException,
 				UnknownHostException {
 			super(bufferSize);
 
@@ -1162,7 +1162,10 @@ public class SchoonerSockIOPool {
 			channel.socket().setSoTimeout(timeout);
 			selector = Selector.open();
 			((DatagramChannel) channel).register(selector, SelectionKey.OP_READ);
-			writeBuf = ByteBuffer.allocateDirect(bufferSize);
+			if (isPooled)
+				writeBuf = ByteBuffer.allocateDirect(bufferSize);
+			else
+				writeBuf = ByteBuffer.allocate(bufferSize);
 			sockets = pool.socketPool.get(host);
 			sockNum = pool.poolCurrentConn.get(host);
 		}
@@ -1292,6 +1295,13 @@ public class SchoonerSockIOPool {
 			writeBuf.clear();
 			if (isPooled)
 				sockets.add(this);
+			else {
+				try {
+					trueClose();
+				} catch (IOException e) {
+					log.error("++++ error closing socket: " + toString() + " for host: " + getHost());
+				}
+			}
 		}
 
 		public String getHost() {
@@ -1368,7 +1378,7 @@ public class SchoonerSockIOPool {
 		 *             if hostname is invalid
 		 */
 		public TCPSockIO(SchoonerSockIOPool pool, String host, int bufferSize, int timeout, int connectTimeout,
-				boolean noDelay) throws IOException, UnknownHostException {
+				boolean noDelay, boolean isPooled) throws IOException, UnknownHostException {
 
 			super(bufferSize);
 
@@ -1378,7 +1388,10 @@ public class SchoonerSockIOPool {
 			// get socket: default is to use non-blocking connect
 			sock = getSocket(ip[0], Integer.parseInt(ip[1]), connectTimeout);
 			
-			writeBuf = ByteBuffer.allocateDirect(bufferSize);
+			if (isPooled)
+				writeBuf = ByteBuffer.allocateDirect(bufferSize);
+			else
+				writeBuf = ByteBuffer.allocate(bufferSize);
 
 			if (timeout >= 0)
 				this.sock.setSoTimeout(timeout);
@@ -1492,6 +1505,13 @@ public class SchoonerSockIOPool {
 			readBuf.clear();
 			if (isPooled)
 				sockets.add(this);
+			else {
+				try {
+					trueClose();
+				} catch (IOException e) {
+					log.error("++++ error closing socket: " + toString() + " for host: " + getHost());
+				}
+			}
 		}
 
 		/**

@@ -98,7 +98,7 @@ public class OtherTest extends TestCase {
 
 	public void testUDPSockIO() {
 		try {
-			UDPSockIO io = new UDPSockIO(SchoonerSockIOPool.getInstance(), serverList[0], 1024 * 105, 100);
+			UDPSockIO io = new UDPSockIO(SchoonerSockIOPool.getInstance(), serverList[0], 1024 * 105, 100, true);
 			io.getHost();
 			io.isAlive();
 			io.write(null);
@@ -114,7 +114,7 @@ public class OtherTest extends TestCase {
 	public void testTcpSockIO() {
 		try {
 			TCPSockIO io = new TCPSockIO(SchoonerSockIOPool.getInstance(), serverList[0], 1024 * 1025, 3000, 3000,
-					false);
+					false, true);
 			io.isAlive();
 			io.toString();
 			io.readBytes(0);
