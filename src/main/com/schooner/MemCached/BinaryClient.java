@@ -1224,7 +1224,15 @@ public class BinaryClient extends MemCachedClient {
 
 			public Connection(SchoonerSockIO sock, ArrayList<String> keys) throws IOException {
 				this.sock = sock;
-				outgoing = ByteBuffer.allocateDirect(10 * 1024);
+                                List<byte[]> bufList = new ArrayList<byte[]>(keys.size());
+		                int size  = 0;
+		                for (String key : keys) {
+		        	      byte[] buf = key.getBytes();
+		        	      bufList.add(buf);
+		        	      size += buf.length;
+		                }
+		        	size = size + (bufList.size()+1)*24;
+				outgoing = ByteBuffer.allocateDirect(size);
 				outgoing.clear();
 				for (String key : keys) {
 					byte[] buf = key.getBytes();
