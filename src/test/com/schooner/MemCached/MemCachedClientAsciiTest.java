@@ -337,15 +337,16 @@ public class MemCachedClientAsciiTest extends TestCase {
 	}
 
 	public void testGetMutiArrayStringArray() {
-		mc.set("foo1", "bar1");
-		mc.set("foo2", "bar2");
-		mc.set("foo3", "bar3");
-		String[] args = { "foo1", "foo2", "foo3" };
-		String[] expected = { "bar1", "bar2", "bar3" };
+		final int multiSize = 1000;
+		final String[] args = new String[multiSize];
+		for (int i = 0; i < multiSize; ++i) {
+			args[i] = "foo" + i;
+			mc.set(args[i], "bar" + i);
+		}
 		Object[] actual = mc.getMultiArray(args);
-		assertEquals(expected.length, actual.length);
+		assertEquals(multiSize, actual.length);
 		for (int i = 0; i < actual.length; i++) {
-			assertEquals(expected[i], actual[i]);
+			assertEquals("bar" + i, actual[i]);
 		}
 	}
 
