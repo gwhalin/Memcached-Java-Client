@@ -1,0 +1,27 @@
+#Author Xingen Wang (new.root@gmail.com)
+This is a performance branch for the whalin memcached java client, 
+which was first maintained by Greg Whalin and perhaps the most 
+popular memcached java client in past years. While in recent years,
+some new memcached clients were found in the open source world, and 
+most of them has better performance compared to the old version.
+
+Considering the wide use of this old client, we intend to make it run
+faster and try to make the new one 100% compatible with the old version.
+
+this 2.5.x version is supported by Schooner Information Technology, which 
+provides professional storage service over all all the world.
+
+Whalin client 2.5.x is proven to be 270% faster compared to the old version(2.0.1), 
+and we also did some comparison with other clients, please find the result 
+from following link: 
+https://github.com/gwhalin/Memcached-Java-Client/wiki/PERFORMANCE
+
+Usage:
+Just use as the previous version(2.0.1), if you've already used it, just replace 
+the old version with the newer version(2.5.x). We believe it will give you surprise.
+
+Maintainers:
+Greg Whalin
+Xingen Wang
+Meng Li
+
