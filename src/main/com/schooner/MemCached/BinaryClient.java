@@ -777,53 +777,26 @@ public class BinaryClient extends MemCachedClient {
 	}
 
 	public Map<String, Object> getMulti(String[] keys, Integer[] hashCodes) {
-
-		if (keys == null || keys.length == 0) {
-			log.error("missing keys for getMulti()");
-			return null;
-		}
-
-		Map<String, ArrayList<String>> cmdMap = new HashMap<String, ArrayList<String>>();
-
-		for (int i = 0; i < keys.length; ++i) {
-
-			String key = keys[i];
-			if (key == null) {
-				log.error("null key, so skipping");
-				continue;
-			}
-
-			Integer hash = null;
-			if (hashCodes != null && hashCodes.length > i)
-				hash = hashCodes[i];
-
-			// get SockIO obj from cache key
-			SchoonerSockIO sock = pool.getSock(key, hash);
-
-			if (sock == null) {
-				if (errorHandler != null)
-					errorHandler.handleErrorOnGet(this, new IOException("no socket to server available"), key);
-				continue;
-			}
-
-			// store in map and list if not already
-			if (!cmdMap.containsKey(sock.getHost()))
-				cmdMap.put(sock.getHost(), new ArrayList<String>());
-
-			cmdMap.get(sock.getHost()).add(key);
-
-			// return to pool
-			sock.close();
-		}
-		// now query memcache
-		Map<String, Object> ret = new HashMap<String, Object>(keys.length);
-
-		// now use new NIO implementation
-		(new NIOLoader(this)).doMulti(cmdMap, keys, ret);
-
-		return ret;
+		return getMulti(keys, hashCodes, false);
 	}
 
+	/**
+	 * Retrieve multiple keys from the memcache.
+	 * 
+	 * This is recommended over repeated calls to {@link #get(String) get()},
+	 * since it<br/>
+	 * is more efficient.<br/>
+	 * 
+	 * @param keys
+	 *            keys to retrieve
+	 * @param hashCodes
+	 *            if not null, then the Integer array of hashCodes
+	 * @param asString
+	 *            if true then retrieve using String val
+	 * @return a hashmap with entries for each key is found by the server, keys
+	 *         that are not found are not entered into the hashmap, but
+	 *         attempting to retrieve them from the hashmap gives you null.
+	 */
 	public Map<String, Object> getMulti(String[] keys, Integer[] hashCodes, boolean asString) {
 
 		if (keys == null || keys.length == 0) {
@@ -832,7 +805,7 @@ public class BinaryClient extends MemCachedClient {
 		}
 
 		Map<String, ArrayList<String>> cmdMap = new HashMap<String, ArrayList<String>>();
-
+		String[] cleanKeys = new String[keys.length];
 		for (int i = 0; i < keys.length; ++i) {
 
 			String key = keys[i];
@@ -845,9 +818,9 @@ public class BinaryClient extends MemCachedClient {
 			if (hashCodes != null && hashCodes.length > i)
 				hash = hashCodes[i];
 
-			String cleanKey = key;
+			cleanKeys[i] = key;
 			try {
-				cleanKey = sanitizeKey(key);
+				cleanKeys[i] = sanitizeKey(key);
 			} catch (UnsupportedEncodingException e) {
 
 				// if we have an errorHandler, use its hook
@@ -859,7 +832,7 @@ public class BinaryClient extends MemCachedClient {
 			}
 
 			// get SockIO obj from cache key
-			SchoonerSockIO sock = pool.getSock(cleanKey, hash);
+			SchoonerSockIO sock = pool.getSock(cleanKeys[i], hash);
 
 			if (sock == null) {
 				if (errorHandler != null)
@@ -871,7 +844,7 @@ public class BinaryClient extends MemCachedClient {
 			if (!cmdMap.containsKey(sock.getHost()))
 				cmdMap.put(sock.getHost(), new ArrayList<String>());
 
-			cmdMap.get(sock.getHost()).add(cleanKey);
+			cmdMap.get(sock.getHost()).add(cleanKeys[i]);
 
 			// return to pool
 			sock.close();
@@ -886,29 +859,17 @@ public class BinaryClient extends MemCachedClient {
 		(new NIOLoader(this)).doMulti(asString, cmdMap, keys, ret);
 
 		// fix the return array in case we had to rewrite any of the keys
-		for (String key : keys) {
+		for (int i=0;i<keys.length;++i) {
 
-			String cleanKey = key;
-			try {
-				cleanKey = sanitizeKey(key);
-			} catch (UnsupportedEncodingException e) {
-
-				// if we have an errorHandler, use its hook
-				if (errorHandler != null)
-					errorHandler.handleErrorOnGet(this, e, key);
-
-				log.error("failed to sanitize your key!", e);
-				continue;
-			}
-
-			if (!key.equals(cleanKey) && ret.containsKey(cleanKey)) {
-				ret.put(key, ret.get(cleanKey));
-				ret.remove(cleanKey);
+			//if key!=cleanKey and result has cleankey
+			if (!keys[i].equals(cleanKeys[i]) && ret.containsKey(cleanKeys[i])) {
+				ret.put(keys[i], ret.get(cleanKeys[i]));
+				ret.remove(cleanKeys[i]);
 			}
 
 			// backfill missing keys w/ null value
-			if (!ret.containsKey(key))
-				ret.put(key, null);
+			if (!ret.containsKey(cleanKeys[i]))
+				ret.put(keys[i], null);
 		}
 
 		if (log.isDebugEnabled())

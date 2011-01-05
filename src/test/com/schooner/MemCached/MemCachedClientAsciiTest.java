@@ -337,16 +337,15 @@ public class MemCachedClientAsciiTest extends TestCase {
 	}
 
 	public void testGetMutiArrayStringArray() {
-		final int multiSize = 1000;
-		final String[] args = new String[multiSize];
-		for (int i = 0; i < multiSize; ++i) {
-			args[i] = "foo" + i;
-			mc.set(args[i], "bar" + i);
-		}
+		mc.set("foo1", "bar1");
+		mc.set("foo2", "bar2");
+		mc.set("foo3", "bar3");
+		String[] args = { "foo1", "foo2", "foo3" };
+		String[] expected = { "bar1", "bar2", "bar3" };
 		Object[] actual = mc.getMultiArray(args);
-		assertEquals(multiSize, actual.length);
+		assertEquals(expected.length, actual.length);
 		for (int i = 0; i < actual.length; i++) {
-			assertEquals("bar" + i, actual[i]);
+			assertEquals(expected[i], actual[i]);
 		}
 	}
 
@@ -720,8 +719,7 @@ public class MemCachedClientAsciiTest extends TestCase {
 	 * memcached 1.4+ didn't support "stats items".
 	 */
 	public void testStatsItems() {
-		Map<String, Map<String, String>> res = mc.statsItems();
-		assertFalse(res.isEmpty());
+		mc.statsItems();
 	}
 
 	/**
@@ -729,8 +727,7 @@ public class MemCachedClientAsciiTest extends TestCase {
 	 * memcached 1.4+ didn't support "stats items".
 	 */
 	public void testStatsItemsStringArray() {
-		Map<String, Map<String, String>> res = mc.statsItems(serverlist);
-		assertFalse(res.isEmpty());
+		mc.statsItems(serverlist);
 	}
 
 	public void testStatsSlabs() {
@@ -748,8 +745,7 @@ public class MemCachedClientAsciiTest extends TestCase {
 	 * memcached 1.4+ didn't support "stats cachedump".
 	 */
 	public void testStatsCacheDumpStringArrayIntegerInteger() {
-		Map<String, Map<String, String>> res = mc.statsCacheDump(serverlist, 1, 2);
-		assertFalse(res.isEmpty());
+		mc.statsCacheDump(serverlist, 1, 2);
 	}
 
 	/**
@@ -757,8 +753,7 @@ public class MemCachedClientAsciiTest extends TestCase {
 	 * memcached 1.4+ didn't support "stats cachedump".
 	 */
 	public void testStatsCacheDumpIntegerInteger() {
-		Map<String, Map<String, String>> res = mc.statsCacheDump(1, 2);
-		assertFalse(res.isEmpty());
+		mc.statsCacheDump(1, 2);
 	}
 
 	public void testNewCompactHash() {

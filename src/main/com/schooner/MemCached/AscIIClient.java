@@ -120,7 +120,7 @@ public class AscIIClient extends MemCachedClient {
 	private void init() {
 		this.sanitizeKeys = true;
 		this.primitiveAsString = false;
-		this.compressEnable = true;
+		this.compressEnable = false;
 		this.compressThreshold = COMPRESS_THRESH;
 		this.defaultEncoding = "UTF-8";
 		this.poolName = (this.poolName == null) ? "default" : this.poolName;
@@ -185,13 +185,13 @@ public class AscIIClient extends MemCachedClient {
 			String line = new SockInputStream(sock, Integer.MAX_VALUE).getLine();
 			if (DELETED.equals(line)) { // successful
 				if (log.isInfoEnabled())
-					log.info(new StringBuffer().append("++++ deletion of key: ").append(key).append(
-							" from cache was a success").toString());
+					log.info(new StringBuffer().append("++++ deletion of key: ").append(key)
+							.append(" from cache was a success").toString());
 				return true;
 			} else if (NOTFOUND.equals(line)) { // key not found
 				if (log.isInfoEnabled())
-					log.info(new StringBuffer().append("++++ deletion of key: ").append(key).append(
-							" from cache failed as the key was not found").toString());
+					log.info(new StringBuffer().append("++++ deletion of key: ").append(key)
+							.append(" from cache failed as the key was not found").toString());
 			} else { // other error information
 				log.error(new StringBuffer().append("++++ error deleting key: ").append(key).toString());
 				log.error(new StringBuffer().append("++++ server response: ").append(line).toString());
@@ -559,8 +559,8 @@ public class AscIIClient extends MemCachedClient {
 		}
 
 		try {
-			String cmd = new StringBuffer().append(cmdname).append(" ").append(key).append(" ").append(inc).append(
-					"\r\n").toString();
+			String cmd = new StringBuffer().append(cmdname).append(" ").append(key).append(" ").append(inc)
+					.append("\r\n").toString();
 			sock.write(cmd.getBytes());
 			// get result code
 			String line = new SockInputStream(sock, Integer.MAX_VALUE).getLine().split("\r\n")[0];
@@ -626,7 +626,7 @@ public class AscIIClient extends MemCachedClient {
 	 * If the data was compressed or serialized when compressed, it will
 	 * automatically<br/>
 	 * be decompressed or serialized, as appropriate. (Inclusive or)<br/>
-	 *<br/>
+	 * <br/>
 	 * Non-serialized data will be returned as a string, so explicit conversion
 	 * to<br/>
 	 * numeric types will be necessary, if desired<br/>
@@ -1004,49 +1004,7 @@ public class AscIIClient extends MemCachedClient {
 	}
 
 	public Map<String, Object> getMulti(String[] keys, Integer[] hashCodes) {
-
-		if (keys == null || keys.length == 0) {
-			log.error("missing keys for getMulti()");
-			return null;
-		}
-
-		Map<String, StringBuilder> cmdMap = new HashMap<String, StringBuilder>();
-
-		for (int i = 0; i < keys.length; ++i) {
-
-			String key = keys[i];
-			if (key == null) {
-				log.error("null key, so skipping");
-				continue;
-			}
-
-			Integer hash = null;
-			if (hashCodes != null && hashCodes.length > i)
-				hash = hashCodes[i];
-
-			// get SockIO obj from cache key
-			SchoonerSockIO sock = pool.getSock(key, hash);
-
-			if (sock == null) {
-				continue;
-			}
-
-			// store in map and list if not already
-			if (!cmdMap.containsKey(sock.getHost()))
-				cmdMap.put(sock.getHost(), new StringBuilder("get"));
-
-			cmdMap.get(sock.getHost()).append(" " + key);
-
-			// return to pool
-			sock.close();
-		}
-		// now query memcache
-		Map<String, Object> ret = new HashMap<String, Object>(keys.length);
-
-		// now use new NIO implementation
-		(new NIOLoader(this)).doMulti(cmdMap, keys, ret);
-
-		return ret;
+		return getMulti(keys, hashCodes, false);
 	}
 
 	/**
@@ -1074,9 +1032,8 @@ public class AscIIClient extends MemCachedClient {
 		}
 
 		Map<String, StringBuilder> cmdMap = new HashMap<String, StringBuilder>();
-
+		String[] cleanKeys = new String[keys.length];
 		for (int i = 0; i < keys.length; ++i) {
-
 			String key = keys[i];
 			if (key == null) {
 				log.error("null key, so skipping");
@@ -1087,9 +1044,9 @@ public class AscIIClient extends MemCachedClient {
 			if (hashCodes != null && hashCodes.length > i)
 				hash = hashCodes[i];
 
-			String cleanKey = key;
+			cleanKeys[i] = key;
 			try {
-				cleanKey = sanitizeKey(key);
+				cleanKeys[i] = sanitizeKey(key);
 			} catch (UnsupportedEncodingException e) {
 				// if we have an errorHandler, use its hook
 				if (errorHandler != null)
@@ -1099,7 +1056,7 @@ public class AscIIClient extends MemCachedClient {
 			}
 
 			// get SockIO obj from cache key
-			SchoonerSockIO sock = pool.getSock(cleanKey, hash);
+			SchoonerSockIO sock = pool.getSock(cleanKeys[i], hash);
 
 			if (sock == null) {
 				if (errorHandler != null)
@@ -1111,7 +1068,7 @@ public class AscIIClient extends MemCachedClient {
 			if (!cmdMap.containsKey(sock.getHost()))
 				cmdMap.put(sock.getHost(), new StringBuilder("get"));
 
-			cmdMap.get(sock.getHost()).append(" " + cleanKey);
+			cmdMap.get(sock.getHost()).append(" " + cleanKeys[i]);
 
 			// return to pool
 			sock.close();
@@ -1127,28 +1084,17 @@ public class AscIIClient extends MemCachedClient {
 		(new NIOLoader(this)).doMulti(asString, cmdMap, keys, ret);
 
 		// fix the return array in case we had to rewrite any of the keys
-		for (String key : keys) {
+		for (int i=0;i<keys.length;++i) {
 
-			String cleanKey = key;
-			try {
-				cleanKey = sanitizeKey(key);
-			} catch (UnsupportedEncodingException e) {
-				// if we have an errorHandler, use its hook
-				if (errorHandler != null)
-					errorHandler.handleErrorOnGet(this, e, key);
-
-				log.error("failed to sanitize your key!", e);
-				continue;
-			}
-
-			if (!key.equals(cleanKey) && ret.containsKey(cleanKey)) {
-				ret.put(key, ret.get(cleanKey));
-				ret.remove(cleanKey);
+			//if key!=cleanKey and result has cleankey
+			if (!keys[i].equals(cleanKeys[i]) && ret.containsKey(cleanKeys[i])) {
+				ret.put(keys[i], ret.get(cleanKeys[i]));
+				ret.remove(cleanKeys[i]);
 			}
 
 			// backfill missing keys w/ null value
-			if (!ret.containsKey(key))
-				ret.put(key, null);
+			if (!ret.containsKey(keys[i]))
+				ret.put(keys[i], null);
 		}
 
 		if (log.isDebugEnabled())
@@ -1501,8 +1447,8 @@ public class AscIIClient extends MemCachedClient {
 			}
 
 			public String toString() {
-				return new StringBuffer().append("Connection to ").append(sock.getHost()).append(" with ").append(
-						incoming.size()).append(" bufs; done is ").append(isDone).toString();
+				return new StringBuffer().append("Connection to ").append(sock.getHost()).append(" with ")
+						.append(incoming.size()).append(" bufs; done is ").append(isDone).toString();
 			}
 		}
 
@@ -1658,15 +1604,15 @@ public class AscIIClient extends MemCachedClient {
 			String line = new SockInputStream(sock, Integer.MAX_VALUE).getLine();
 			if (SYNCED.equals(line)) {
 				if (log.isInfoEnabled())
-					log.info(new StringBuffer().append("++++ sync of key: ").append(key).append(
-							" from cache was a success").toString());
+					log.info(new StringBuffer().append("++++ sync of key: ").append(key)
+							.append(" from cache was a success").toString());
 
 				// return sock to pool and bail here
 				return true;
 			} else if (NOTFOUND.equals(line)) {
 				if (log.isInfoEnabled())
-					log.info(new StringBuffer().append("++++ sync of key: ").append(key).append(
-							" from cache failed as the key was not found").toString());
+					log.info(new StringBuffer().append("++++ sync of key: ").append(key)
+							.append(" from cache failed as the key was not found").toString());
 			} else {
 				log.error(new StringBuffer().append("++++ error sync key: ").append(key).toString());
 				log.error(new StringBuffer().append("++++ server response: ").append(line).toString());
