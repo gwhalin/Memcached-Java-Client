@@ -618,7 +618,7 @@ public class WhalinScenarioTest extends TestCase {
 		String[] values = new String[10];
 		for (int i = 0; i < 10; i++) {
 			keys[i] = "key " + i;
-			values[i]="value " + i;
+			values[i] = "value " + i;
 			mc.set(keys[i], values[i]);
 		}
 		Map<String, Object> rValues = mc.getMulti(keys, null, false);
@@ -753,6 +753,27 @@ public class WhalinScenarioTest extends TestCase {
 		pool.setServers(hosts);
 		pool.initialize();
 		final MemCachedClient mc = new MemCachedClient(true, false);
+		String[] keys = new String[10];
+		String[] values = new String[10];
+		for (int i = 0; i < 10; i++) {
+			keys[i] = "key/ " + i;
+			values[i] = "value " + i;
+			mc.set(keys[i], values[i]);
+		}
+		Map<String, Object> rValues = mc.getMulti(keys);
+		for (int i = 0; i < 10; i++) {
+			assertEquals(values[i], rValues.get("key/ " + i));
+		}
+		mc.flushAll();
+		pool.shutDown();
+	}
+
+	public void testGetMultiBin() {
+		SockIOPool pool = SockIOPool.getInstance();
+		pool.setServers(hosts);
+		pool.initialize();
+		final MemCachedClient mc = new MemCachedClient(true, true);
+		mc.setSanitizeKeys(true);
 		String[] keys = new String[10];
 		String[] values = new String[10];
 		for (int i = 0; i < 10; i++) {

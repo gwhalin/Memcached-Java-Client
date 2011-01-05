@@ -859,16 +859,16 @@ public class BinaryClient extends MemCachedClient {
 		(new NIOLoader(this)).doMulti(asString, cmdMap, keys, ret);
 
 		// fix the return array in case we had to rewrite any of the keys
-		for (int i=0;i<keys.length;++i) {
+		for (int i = 0; i < keys.length; ++i) {
 
-			//if key!=cleanKey and result has cleankey
+			// if key!=cleanKey and result has cleankey
 			if (!keys[i].equals(cleanKeys[i]) && ret.containsKey(cleanKeys[i])) {
 				ret.put(keys[i], ret.get(cleanKeys[i]));
 				ret.remove(cleanKeys[i]);
 			}
 
 			// backfill missing keys w/ null value
-			if (!ret.containsKey(cleanKeys[i]))
+			if (!ret.containsKey(keys[i]))
 				ret.put(keys[i], null);
 		}
 
