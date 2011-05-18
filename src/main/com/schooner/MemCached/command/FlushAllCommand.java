@@ -31,7 +31,9 @@ package com.schooner.MemCached.command;
 import java.io.IOException;
 import java.util.Arrays;
 
-import com.danga.MemCached.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.schooner.MemCached.SchoonerSockIO;
 
 /**
@@ -43,7 +45,7 @@ import com.schooner.MemCached.SchoonerSockIO;
  */
 public class FlushAllCommand extends Command {
 
-	public static Logger log = Logger.getLogger(FlushAllCommand.class.getName(), Logger.LEVEL_FATAL);
+	public static Logger log = LoggerFactory.getLogger(FlushAllCommand.class);
 	public static final byte[] OK = "OK\r\n".getBytes();
 
 	public FlushAllCommand() {

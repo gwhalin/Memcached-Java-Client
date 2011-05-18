@@ -1084,17 +1084,17 @@ public class AscIIClient extends MemCachedClient {
 		(new NIOLoader(this)).doMulti(asString, cmdMap, keys, ret);
 
 		// fix the return array in case we had to rewrite any of the keys
-		for (int i=0;i<keys.length;++i) {
+		for (int i = 0; i < keys.length; ++i) {
 
-			//if key!=cleanKey and result has cleankey
+			// if key!=cleanKey and result has cleankey
 			if (!keys[i].equals(cleanKeys[i]) && ret.containsKey(cleanKeys[i])) {
 				ret.put(keys[i], ret.get(cleanKeys[i]));
 				ret.remove(cleanKeys[i]);
 			}
 
 			// backfill missing keys w/ null value
-			if (!ret.containsKey(keys[i]))
-				ret.put(keys[i], null);
+//			if (!ret.containsKey(keys[i]))
+//				ret.put(keys[i], null);
 		}
 
 		if (log.isDebugEnabled())
@@ -1711,16 +1711,6 @@ public class AscIIClient extends MemCachedClient {
 	}
 
 	@Override
-	public void setCompressEnable(boolean compressEnable) {
-		this.compressEnable = compressEnable;
-	}
-
-	@Override
-	public void setCompressThreshold(long compressThreshold) {
-		this.compressThreshold = compressThreshold;
-	}
-
-	@Override
 	public void setDefaultEncoding(String defaultEncoding) {
 		this.defaultEncoding = defaultEncoding;
 	}
@@ -1739,13 +1729,4 @@ public class AscIIClient extends MemCachedClient {
 		return (sanitizeKeys) ? URLEncoder.encode(key, "UTF-8") : key;
 	}
 
-	@Override
-	public void setErrorHandler(ErrorHandler errorHandler) {
-		this.errorHandler = errorHandler;
-	}
-
-	@Override
-	public void setClassLoader(ClassLoader classLoader) {
-		this.classLoader = classLoader;
-	}
 }

@@ -868,8 +868,8 @@ public class BinaryClient extends MemCachedClient {
 			}
 
 			// backfill missing keys w/ null value
-			if (!ret.containsKey(keys[i]))
-				ret.put(keys[i], null);
+//			if (!ret.containsKey(keys[i]))
+//				ret.put(keys[i], null);
 		}
 
 		if (log.isDebugEnabled())
@@ -1420,16 +1420,6 @@ public class BinaryClient extends MemCachedClient {
 	}
 
 	@Override
-	public void setCompressEnable(boolean compressEnable) {
-		this.compressEnable = compressEnable;
-	}
-
-	@Override
-	public void setCompressThreshold(long compressThreshold) {
-		this.compressThreshold = compressThreshold;
-	}
-
-	@Override
 	public void setDefaultEncoding(String defaultEncoding) {
 		this.defaultEncoding = defaultEncoding;
 	}
@@ -1698,15 +1688,5 @@ public class BinaryClient extends MemCachedClient {
 		}
 
 		return res;
-	}
-
-	@Override
-	public void setErrorHandler(ErrorHandler errorHandler) {
-		this.errorHandler = errorHandler;
-	}
-
-	@Override
-	public void setClassLoader(ClassLoader classLoader) {
-		this.classLoader = classLoader;
 	}
 }

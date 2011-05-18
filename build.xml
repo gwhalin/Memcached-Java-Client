@@ -27,16 +27,15 @@
 		  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 		  THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 -->
-<project name="schooner_memcached_client" default="jar" basedir=".">
+<project name="schooner_memcached_client" default="zip" basedir=".">
 	<property file="build.properties" />
 	<path id="emma.lib">
 		<pathelement location="${emma.dir}/emma.jar" />
 		<pathelement location="${emma.dir}/emma_ant.jar" />
 	</path>
 	<taskdef resource="emma_ant.properties" classpathref="emma.lib" />
-	<path id="test.classpath">
-		<pathelement location="${junit.jar}" />
-		<pathelement location="${log4j.jar}" />
+	<path id="build.classpath">
+		<fileset dir="${basedir}/lib" includes="*.jar" />
 	</path>
 	<target name="clean">
 		<delete dir="${build.dir}" />
@@ -47,13 +46,19 @@
 	<target name="compile" depends="clean">
 		<mkdir dir="${build.dir}" />
 		<mkdir dir="${test.build.dir}" />
-		<javac optimize="yes" srcdir="${src.dir}" destdir="${build.dir}" deprecation="true" target="1.5" source="1.5" nowarn="true" />
+		<javac optimize="yes" srcdir="${src.dir}" destdir="${build.dir}" deprecation="true" target="1.5" source="1.5" nowarn="true" classpathref="build.classpath" />
 		<javac optimize="yes" srcdir="${test.dir}" destdir="${test.build.dir}" deprecation="true" target="1.5" source="1.5" nowarn="true">
-			<classpath refid="test.classpath" />
+			<classpath refid="build.classpath" />
 			<classpath path="${build.dir}" />
 		</javac>
 	</target>
-
+	<target name="zip" depends="jar">
+		<zip destfile="${project}_${ver}.zip" basedir=".">
+			<include name="${project}_${ver}.jar" />
+			<fileset dir="lib" includes="slf4j*.jar" />
+			<include name="README" />
+		</zip>
+	</target>
 	<target name="jar">
 		<antcall target="clean" />
 		<antcall target="compile" />

@@ -51,7 +51,9 @@ package com.danga.MemCached;
 import java.util.Date;
 import java.util.Map;
 
-import com.danga.MemCached.ErrorHandler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.schooner.MemCached.AscIIClient;
 import com.schooner.MemCached.AscIIUDPClient;
 import com.schooner.MemCached.BinaryClient;
@@ -142,7 +144,7 @@ public class MemCachedClient {
 	protected ErrorHandler errorHandler;
 
 	// logger
-	public static Logger log = Logger.getLogger(MemCachedClient.class.getName(), Logger.LEVEL_FATAL);
+	public static Logger log = LoggerFactory.getLogger(MemCachedClient.class);
 
 	// return codes
 	/*
@@ -361,144 +363,6 @@ public class MemCachedClient {
 			client = new BinaryClient(poolName);
 		else
 			client = isTcp ? new AscIIClient(poolName) : new AscIIUDPClient(poolName);
-	}
-
-	/**
-	 * create memcached client.
-	 * 
-	 * @param poolName
-	 *            pool name
-	 * @param isTcp
-	 *            is tcp protocol?
-	 * @param binaryProtocol
-	 *            is binary protocol?
-	 * @param cl
-	 *            classloader.
-	 * @param eh
-	 *            errorhandler.
-	 * @deprecated will be removed in next release. <br>
-	 *             Please use customized transcoder
-	 *             {@link com.schooner.MemCached.AbstractTransCoder} to achieve
-	 *             the same objective.
-	 */
-	public MemCachedClient(String poolName, boolean isTcp, boolean binaryProtocol, ClassLoader cl, ErrorHandler eh) {
-		if (binaryProtocol)
-			client = new BinaryClient(poolName, cl, eh);
-		else
-			client = isTcp ? new AscIIClient(poolName, cl, eh) : new AscIIUDPClient(poolName, cl, eh);
-	}
-
-	/**
-	 * Creates a new instance of MemCacheClient but acceptes a passed in
-	 * ClassLoader.
-	 * 
-	 * @param classLoader
-	 *            ClassLoader object.
-	 * @deprecated will be removed in next release. <br>
-	 *             Please use customized transcoder
-	 *             {@link com.schooner.MemCached.AbstractTransCoder} to achieve
-	 *             the same objective.
-	 */
-	public MemCachedClient(ClassLoader classLoader) {
-		this();
-		client.setClassLoader(classLoader);
-	}
-
-	/**
-	 * Creates a new instance of MemCacheClient but acceptes a passed in
-	 * ClassLoader and a passed in ErrorHandler.
-	 * 
-	 * @param classLoader
-	 *            ClassLoader object.
-	 * @param errorHandler
-	 *            ErrorHandler object.
-	 * @deprecated will be removed in next release. <br>
-	 *             Please use customized transcoder
-	 *             {@link com.schooner.MemCached.AbstractTransCoder} to achieve
-	 *             the same objective.
-	 */
-	public MemCachedClient(ClassLoader classLoader, ErrorHandler errorHandler) {
-		this(null, true, false, classLoader, errorHandler);
-	}
-
-	/**
-	 * Creates a new instance of MemCacheClient but acceptes a passed in
-	 * ClassLoader, ErrorHandler, and SockIOPool name.
-	 * 
-	 * @param classLoader
-	 *            ClassLoader object.
-	 * @param errorHandler
-	 *            ErrorHandler object.
-	 * @param poolName
-	 *            SockIOPool name
-	 * @deprecated will be removed in next release. <br>
-	 *             Please use customized transcoder
-	 *             {@link com.schooner.MemCached.AbstractTransCoder} to achieve
-	 *             the same objective.
-	 */
-	public MemCachedClient(ClassLoader classLoader, ErrorHandler errorHandler, String poolName) {
-		this(poolName, true, false, classLoader, errorHandler);
-	}
-
-	/**
-	 * Sets an optional ClassLoader to be used for serialization.
-	 * 
-	 * @param classLoader
-	 * @deprecated will be removed in next release. <br>
-	 *             Please use customized transcoder
-	 *             {@link com.schooner.MemCached.AbstractTransCoder} to achieve
-	 *             the same objective.
-	 */
-	public void setClassLoader(ClassLoader classLoader) {
-		client.setClassLoader(classLoader);
-	}
-
-	/**
-	 * Sets an optional ErrorHandler.
-	 * 
-	 * @param errorHandler
-	 * @deprecated will be removed in next release. The purpose of adding this
-	 *             support was to make it compatible with previous releases.
-	 */
-	public void setErrorHandler(ErrorHandler errorHandler) {
-		client.setErrorHandler(errorHandler);
-	}
-
-	/**
-	 * Enable storing compressed data, provided it meets the threshold
-	 * requirements.
-	 * 
-	 * If enabled, data will be stored in compressed form if it is<br/>
-	 * longer than the threshold length set with setCompressThreshold(int)<br/>
-	 *<br/>
-	 * The default is that compression is enabled.<br/>
-	 *<br/>
-	 * Even if compression is disabled, compressed data will be automatically<br/>
-	 * decompressed.
-	 * 
-	 * @param compressEnable
-	 *            <CODE>true</CODE> to enable compression, <CODE>false</CODE> to
-	 *            disable compression
-	 * @deprecated will be removed in next release.
-	 */
-	public void setCompressEnable(boolean compressEnable) {
-		client.setCompressEnable(compressEnable);
-	}
-
-	/**
-	 * Sets the required length for data to be considered for compression.
-	 * 
-	 * If the length of the data to be stored is not equal or larger than this
-	 * value, it will not be compressed.
-	 * 
-	 * This defaults to 15 KB.
-	 * 
-	 * @param compressThreshold
-	 *            required length of data to consider compression
-	 * @deprecated will be removed in next release.
-	 */
-	public void setCompressThreshold(long compressThreshold) {
-		client.setCompressThreshold(compressThreshold);
 	}
 
 	/**
@@ -1033,7 +897,7 @@ public class MemCachedClient {
 	 * If the data was compressed or serialized when compressed, it will
 	 * automatically<br/>
 	 * be decompressed or serialized, as appropriate. (Inclusive or)<br/>
-	 *<br/>
+	 * <br/>
 	 * Non-serialized data will be returned as a string, so explicit conversion
 	 * to<br/>
 	 * numeric types will be necessary, if desired<br/>
@@ -1053,7 +917,7 @@ public class MemCachedClient {
 	 * If the data was compressed or serialized when compressed, it will
 	 * automatically<br/>
 	 * be decompressed or serialized, as appropriate. (Inclusive or)<br/>
-	 *<br/>
+	 * <br/>
 	 * Non-serialized data will be returned as a string, so explicit conversion
 	 * to<br/>
 	 * numeric types will be necessary, if desired<br/>
@@ -1087,7 +951,7 @@ public class MemCachedClient {
 	 * If the data was compressed or serialized when compressed, it will
 	 * automatically<br/>
 	 * be decompressed or serialized, as appropriate. (Inclusive or)<br/>
-	 *<br/>
+	 * <br/>
 	 * Non-serialized data will be returned as a string, so explicit conversion
 	 * to<br/>
 	 * numeric types will be necessary, if desired<br/>

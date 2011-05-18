@@ -11,7 +11,6 @@ import java.util.Map;
 
 import junit.framework.TestCase;
 
-import com.danga.MemCached.ErrorHandler;
 import com.danga.MemCached.MemCachedClient;
 import com.danga.MemCached.SockIOPool;
 
@@ -60,50 +59,6 @@ public class WhalinScenarioTest extends TestCase {
 					&& (this.field2 == obj.getField2() || (this.field2 != null && this.field2.equals(obj.getField2()))) && (this.field3 == obj
 					.getField3() || (this.field3 != null && this.field3.equals(obj.getField3()))));
 		}
-	}
-
-	private static class TestErrorHandler implements ErrorHandler {
-
-		public boolean tag = false;
-
-		@Override
-		public void handleErrorOnDelete(MemCachedClient client, Throwable error, String cacheKey) {
-		}
-
-		@Override
-		public void handleErrorOnFlush(MemCachedClient client, Throwable error) {
-		}
-
-		@Override
-		public void handleErrorOnGet(MemCachedClient client, Throwable error, String cacheKey) {
-			tag = true;
-		}
-
-		@Override
-		public void handleErrorOnGet(MemCachedClient client, Throwable error, String[] cacheKeys) {
-		}
-
-		@Override
-		public void handleErrorOnInit(MemCachedClient client, Throwable error) {
-		}
-
-		@Override
-		public void handleErrorOnSet(MemCachedClient client, Throwable error, String cacheKey) {
-		}
-
-		@Override
-		public void handleErrorOnStats(MemCachedClient client, Throwable error) {
-		}
-
-	}
-
-	private static class TestClassLoader extends ClassLoader {
-
-		@Override
-		public boolean equals(Object obj) {
-			return super.equals(obj) && obj instanceof TestClassLoader;
-		}
-
 	}
 
 	@Override
@@ -205,23 +160,6 @@ public class WhalinScenarioTest extends TestCase {
 		pool.shutDown();
 	}
 
-	@SuppressWarnings("deprecation")
-	public void testErrorHandler() {
-		SockIOPool pool = SockIOPool.getInstance();
-		pool.setServers(hosts);
-		pool.setInitConn(1);
-		pool.initialize();
-		final MemCachedClient mc = new MemCachedClient();
-		TestErrorHandler teh = new TestErrorHandler();
-		mc.setErrorHandler(teh);
-		assertEquals(false, teh.tag);
-		SchoonerSockIOPool.getInstance().initialized = false;
-		mc.get("foo");
-		assertEquals(true, teh.tag);
-		mc.flushAll();
-		pool.shutDown();
-	}
-
 	public void testSetWeight() {
 		SockIOPool pool = SockIOPool.getInstance();
 		Integer[] weights = new Integer[] { new Integer(90), new Integer(10) };
@@ -285,138 +223,6 @@ public class WhalinScenarioTest extends TestCase {
 		pool.shutDown();
 	}
 
-	@SuppressWarnings("deprecation")
-	public void testMemCachedClientWithClassLoader() {
-		SockIOPool pool = SockIOPool.getInstance();
-		pool.setServers(hosts);
-		pool.initialize();
-		TestClassLoader tcl = new TestClassLoader();
-		final MemCachedClient mc = new MemCachedClient(tcl);
-		mc.set("key", "value");
-		assertEquals("value", mc.get("key"));
-		Class<?> classType = mc.getClass();
-		try {
-			Field[] fs = classType.getDeclaredFields();
-			for (Field f : fs) {
-				if (f.getName().equals("client")) {
-					f.setAccessible(true);
-					MemCachedClient innerMC = (MemCachedClient) f.get(mc);
-					for (Field f2 : fs) {
-						if (f2.getName().equals("classLoader")) {
-							f2.setAccessible(true);
-							assertEquals(f2.get(innerMC), tcl);
-						}
-					}
-					break;
-				}
-			}
-		} catch (SecurityException e) {
-			e.printStackTrace();
-		} catch (IllegalArgumentException e) {
-			e.printStackTrace();
-		} catch (IllegalAccessException e) {
-			e.printStackTrace();
-		}
-		mc.flushAll();
-		pool.shutDown();
-	}
-
-	@SuppressWarnings("deprecation")
-	public void testMemCachedClientWithClassLoaderAndErrorHandler() {
-		SockIOPool pool = SockIOPool.getInstance();
-		pool.setServers(hosts);
-		pool.initialize();
-		TestClassLoader tcl = new TestClassLoader();
-		TestErrorHandler teh = new TestErrorHandler();
-		final MemCachedClient mc = new MemCachedClient(tcl, teh);
-		MemCachedClient innerMC = null;
-		mc.set("key", "value");
-		assertEquals("value", mc.get("key"));
-		Class<?> classType = mc.getClass();
-		try {
-			Field[] fs = classType.getDeclaredFields();
-			for (Field f : fs) {
-				if (f.getName().equals("client")) {
-					f.setAccessible(true);
-					innerMC = (MemCachedClient) f.get(mc);
-					for (Field f2 : fs) {
-						if (f2.getName().equals("classLoader")) {
-							f2.setAccessible(true);
-							assertEquals(f2.get(innerMC), tcl);
-							break;
-						}
-					}
-					break;
-				}
-			}
-			SchoonerSockIOPool.getInstance().initialized = false;
-			mc.get("foo");
-			for (Field f2 : fs) {
-				if (f2.getName().equals("errorHandler")) {
-					f2.setAccessible(true);
-					assertEquals(true, ((TestErrorHandler) f2.get(innerMC)).tag);
-					break;
-				}
-			}
-		} catch (SecurityException e) {
-			e.printStackTrace();
-		} catch (IllegalArgumentException e) {
-			e.printStackTrace();
-		} catch (IllegalAccessException e) {
-			e.printStackTrace();
-		}
-		mc.flushAll();
-		pool.shutDown();
-	}
-
-	@SuppressWarnings("deprecation")
-	public void testMemCachedClientWithClassLoaderAndErrorHandlerAndPoolName() {
-		SockIOPool pool = SockIOPool.getInstance("test");
-		pool.setServers(hosts);
-		pool.initialize();
-		TestClassLoader tcl = new TestClassLoader();
-		TestErrorHandler teh = new TestErrorHandler();
-		final MemCachedClient mc = new MemCachedClient(tcl, teh, "test");
-		MemCachedClient innerMC = null;
-		mc.set("key", "value");
-		assertEquals("value", mc.get("key"));
-		Class<?> classType = mc.getClass();
-		try {
-			Field[] fs = classType.getDeclaredFields();
-			for (Field f : fs) {
-				if (f.getName().equals("client")) {
-					f.setAccessible(true);
-					innerMC = (MemCachedClient) f.get(mc);
-					for (Field f2 : fs) {
-						if (f2.getName().equals("classLoader")) {
-							f2.setAccessible(true);
-							assertEquals(f2.get(innerMC), tcl);
-							break;
-						}
-					}
-					break;
-				}
-			}
-			SchoonerSockIOPool.getInstance("test").initialized = false;
-			mc.get("foo");
-			for (Field f2 : fs) {
-				if (f2.getName().equals("errorHandler")) {
-					f2.setAccessible(true);
-					assertEquals(true, ((TestErrorHandler) f2.get(innerMC)).tag);
-					break;
-				}
-			}
-		} catch (SecurityException e) {
-			e.printStackTrace();
-		} catch (IllegalArgumentException e) {
-			e.printStackTrace();
-		} catch (IllegalAccessException e) {
-			e.printStackTrace();
-		}
-		mc.flushAll();
-		pool.shutDown();
-	}
-
 	public void testMemCachedClientWithBoolean() {
 		SockIOPool pool = SockIOPool.getInstance();
 		pool.setServers(hosts);
@@ -424,44 +230,6 @@ public class WhalinScenarioTest extends TestCase {
 		final MemCachedClient mc = new MemCachedClient(true, false);
 		mc.set("key", "value");
 		assertEquals("value", mc.get("key"));
-		mc.flushAll();
-		pool.shutDown();
-	}
-
-	@SuppressWarnings("deprecation")
-	public void testSetClassLoader() {
-		SockIOPool pool = SockIOPool.getInstance();
-		pool.setServers(hosts);
-		pool.initialize();
-		TestClassLoader tcl = new TestClassLoader();
-		final MemCachedClient mc = new MemCachedClient();
-		mc.setClassLoader(tcl);
-		mc.set("key", "value");
-		assertEquals("value", mc.get("key"));
-		Class<?> classType = mc.getClass();
-		try {
-			Field[] fs = classType.getDeclaredFields();
-			for (Field f : fs) {
-				if (f.getName().equals("client")) {
-					f.setAccessible(true);
-					MemCachedClient innerMC = (MemCachedClient) f.get(mc);
-					for (Field f2 : fs) {
-						if (f2.getName().equals("classLoader")) {
-							f2.setAccessible(true);
-							assertEquals(f2.get(innerMC), tcl);
-							break;
-						}
-					}
-					break;
-				}
-			}
-		} catch (SecurityException e) {
-			e.printStackTrace();
-		} catch (IllegalArgumentException e) {
-			e.printStackTrace();
-		} catch (IllegalAccessException e) {
-			e.printStackTrace();
-		}
 		mc.flushAll();
 		pool.shutDown();
 	}

@@ -334,6 +334,9 @@ public class MemCachedClientAsciiTest extends TestCase {
 		for (int i = 0; i < max; i++) {
 			assertEquals(results.get(keys[i]), "value" + i);
 		}
+
+		results = mc.getMulti(new String[] { "a", "b" });
+		assertTrue(results.size() == 0);
 	}
 
 	public void testGetMutiArrayStringArray() {

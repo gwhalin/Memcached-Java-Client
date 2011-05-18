@@ -17,17 +17,12 @@
  */
 package com.danga.MemCached.test;
 
-import org.apache.log4j.BasicConfigurator;
-
 import com.danga.MemCached.MemCachedClient;
 import com.danga.MemCached.SockIOPool;
 
 public class MemcachedBench {
 
 	public static void main(String[] args) {
-
-		BasicConfigurator.configure();
-		// org.apache.log4j.Logger.getRootLogger().setLevel(Level.OFF);
 
 		int runs = Integer.parseInt(args[0]);
 

@@ -33,7 +33,9 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.LinkedList;
 
-import com.danga.MemCached.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.schooner.MemCached.AscIIUDPClient;
 import com.schooner.MemCached.MemcachedItem;
 import com.schooner.MemCached.NativeHandler;
@@ -49,7 +51,7 @@ import com.schooner.MemCached.TransCoder;
  */
 public class RetrievalCommand extends Command {
 
-	private static Logger log = Logger.getLogger(RetrievalCommand.class.getName(), Logger.LEVEL_FATAL);
+	private static Logger log = LoggerFactory.getLogger(RetrievalCommand.class);
 
 	private static final byte[] B_END = "END\r\n".getBytes();
 	private static final byte[] B_VALUE = "VALUE ".getBytes();

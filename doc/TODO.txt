@@ -1,6 +1,3 @@
 To Do:
-- removeMulti support
 - Increase performance for UDP protocol by decreasing the latency time.
 - Give performance test report for UDP protocol.
-- Try to support big data in windows platform, seems the null bug is caused by jre.
-- dynamic test for loadMulti.

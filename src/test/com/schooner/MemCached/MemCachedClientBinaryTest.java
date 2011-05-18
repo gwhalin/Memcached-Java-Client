@@ -401,6 +401,8 @@ public class MemCachedClientBinaryTest extends TestCase {
 		for (int i = 0; i < max; i++) {
 			assertEquals(results.get(keys[i]), "value" + i);
 		}
+		results = mc.getMulti(new String[] { "a", "b" });
+		assertTrue(results.size() == 0);
 	}
 
 	public void testGetMultiString() {
@@ -921,23 +923,6 @@ public class MemCachedClientBinaryTest extends TestCase {
 
 	public void testSyncAllStringArray() {
 		assertTrue(mc.syncAll(serverlist));
-	}
-
-	@SuppressWarnings("deprecation")
-	public void testErrorHandler() {
-		SockIOPool pool = SockIOPool.getInstance();
-		pool.setServers(serverlist);
-		pool.setInitConn(1);
-		pool.initialize();
-		final MemCachedClient mc = new MemCachedClient(true);
-		TestErrorHandler teh = new TestErrorHandler();
-		mc.setErrorHandler(teh);
-		assertEquals(false, teh.tag);
-		SchoonerSockIOPool.getInstance().initialized = false;
-		mc.get("foo");
-		assertEquals(true, teh.tag);
-		mc.flushAll();
-		pool.shutDown();
 	}
 
 	public static class TestErrorHandler implements ErrorHandler {

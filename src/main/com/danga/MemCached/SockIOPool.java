@@ -63,6 +63,10 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.schooner.MemCached.SchoonerSockIOPool;
 
 /**
@@ -113,9 +117,12 @@ import com.schooner.MemCached.SchoonerSockIOPool;
  * 	long maxBusyTime = 1000 * 60 * 5; // 5 minutes
  * 	long maintThreadSleep = 1000 * 5; // 5 seconds
  * 	int socketTimeOut = 1000 * 3; // 3 seconds to block on reads
- * 	int socketConnectTO = 1000 * 3; // 3 seconds to block on initial connections.  If 0, then will use blocking connect (default)
- * 	boolean failover = false; // turn off auto-failover in event of server down	
- * 	boolean nagleAlg = false; // turn off Nagle's algorithm on all sockets in pool	
+ * 	int socketConnectTO = 1000 * 3; // 3 seconds to block on initial
+ * 									// connections. If 0, then will use blocking
+ * 									// connect (default)
+ * 	boolean failover = false; // turn off auto-failover in event of server down
+ * 	boolean nagleAlg = false; // turn off Nagle's algorithm on all sockets in
+ * 								// pool
  * 	boolean aliveCheck = false; // disable health check of socket on checkout
  * 	SockIOPool pool = SockIOPool.getInstance();
  * 	pool.setServers(serverlist);
@@ -159,7 +166,7 @@ import com.schooner.MemCached.SchoonerSockIOPool;
 public class SockIOPool {
 
 	// logger
-	private static Logger log = Logger.getLogger(SockIOPool.class.getName());
+	private static Logger log = LoggerFactory.getLogger(SockIOPool.class);
 
 	// Constants
 	private static final Integer ZERO = new Integer(0);
@@ -650,7 +657,7 @@ public class SockIOPool {
 	public static class SockIO implements LineInputStream {
 
 		// logger
-		private static Logger log = Logger.getLogger(SockIO.class.getName());
+		private static Logger log = LoggerFactory.getLogger(SockIO.class);
 
 		// pool
 		private SockIOPool pool;
@@ -1385,8 +1392,7 @@ public class SockIOPool {
 						// and remove from pool
 						if ((expire + maxIdle) < System.currentTimeMillis()) {
 							if (log.isDebugEnabled())
-								log
-										.debug("+++ removing stale entry from pool as it is past its idle timeout and pool is over max spare");
+								log.debug("+++ removing stale entry from pool as it is past its idle timeout and pool is over max spare");
 
 							// remove from the availPool
 							deadPool.put(socket, ZERO);

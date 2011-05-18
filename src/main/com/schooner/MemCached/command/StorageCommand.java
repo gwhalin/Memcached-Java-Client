@@ -32,7 +32,9 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Date;
 
-import com.danga.MemCached.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.danga.MemCached.MemCachedClient;
 import com.schooner.MemCached.NativeHandler;
 import com.schooner.MemCached.ObjectTransCoder;
@@ -49,7 +51,7 @@ import com.schooner.MemCached.TransCoder;
  */
 public class StorageCommand extends Command {
 
-	public static Logger log = Logger.getLogger(StorageCommand.class.getName(), Logger.LEVEL_FATAL);
+	public static Logger log = LoggerFactory.getLogger(StorageCommand.class);
 	public static final byte[] STORED = "STORED\r\n".getBytes();
 	public static final byte[] NOT_STORED = "NOT_STORED\r\n".getBytes();
 	public final byte[] BLAND_DATA_SIZE = "       ".getBytes();

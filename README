@@ -1,4 +1,18 @@
 #Author Xingen Wang (new.root@gmail.com)
+
+Release 2.6.0:
+add slf4j logger support.
+because compress is so slow, we remove this feature in this release.
+we also remove error handler feature and classloader feature in this release.
+fix issue 19.
+
+TODO:
+We will add SASL support in next version.
+Perhaps, we will get rid of the direct buffer, since it cause OutOfMemoryError.
+
+
+
+Release 2.5.x:
 This is a performance branch for the whalin memcached java client, 
 which was first maintained by Greg Whalin and perhaps the most 
 popular memcached java client in past years. While in recent years,

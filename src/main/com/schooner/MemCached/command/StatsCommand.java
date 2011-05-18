@@ -34,7 +34,9 @@ import java.io.StringReader;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.danga.MemCached.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.schooner.MemCached.SchoonerSockIO;
 
 /**
@@ -46,7 +48,7 @@ import com.schooner.MemCached.SchoonerSockIO;
  */
 public class StatsCommand extends Command {
 
-	public static Logger log = Logger.getLogger(StatsCommand.class.getName(), Logger.LEVEL_FATAL);
+	public static Logger log = LoggerFactory.getLogger(StatsCommand.class);
 	public static final String END = "END\r\n";
 	public static final String ERROR = "ERROR\r\n";
 	public static final String CLIENT_ERROR = "CLIENT_ERROR\r\n";

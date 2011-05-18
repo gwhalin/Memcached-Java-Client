@@ -32,7 +32,9 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Date;
 
-import com.danga.MemCached.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.schooner.MemCached.SchoonerSockIO;
 
 /**
@@ -44,7 +46,7 @@ import com.schooner.MemCached.SchoonerSockIO;
  */
 public class DeletionCommand extends Command {
 
-	private static Logger log = Logger.getLogger(DeletionCommand.class.getName(), Logger.LEVEL_FATAL);
+	private static Logger log = LoggerFactory.getLogger(DeletionCommand.class);
 	private static final byte[] DELETED = "DELETED\r\n".getBytes();
 	private static final byte[] NOTFOUND = "NOT_FOUND\r\n".getBytes();
 

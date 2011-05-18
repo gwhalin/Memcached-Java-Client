@@ -946,16 +946,6 @@ public class AscIIUDPClient extends MemCachedClient {
 	}
 
 	@Override
-	public void setCompressEnable(boolean compressEnable) {
-		this.compressEnable = compressEnable;
-	}
-
-	@Override
-	public void setCompressThreshold(long compressThreshold) {
-		this.compressThreshold = compressThreshold;
-	}
-
-	@Override
 	public void setDefaultEncoding(String defaultEncoding) {
 		this.defaultEncoding = defaultEncoding;
 	}
@@ -984,13 +974,4 @@ public class AscIIUDPClient extends MemCachedClient {
 		return getMulti(keys, hashCodes);
 	}
 
-	@Override
-	public void setErrorHandler(ErrorHandler errorHandler) {
-		this.errorHandler = errorHandler;
-	}
-
-	@Override
-	public void setClassLoader(ClassLoader classLoader) {
-		this.classLoader = classLoader;
-	}
 }

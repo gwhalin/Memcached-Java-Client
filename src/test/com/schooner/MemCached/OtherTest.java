@@ -5,7 +5,6 @@ import java.net.UnknownHostException;
 
 import junit.framework.TestCase;
 
-import com.danga.MemCached.Logger;
 import com.schooner.MemCached.SchoonerSockIOPool.TCPSockIO;
 import com.schooner.MemCached.SchoonerSockIOPool.UDPSockIO;
 
@@ -75,25 +74,6 @@ public class OtherTest extends TestCase {
 		pool.setSocketTO(1000);
 		pool.setAliveCheck(true);
 		pool.isInitialized();
-	}
-
-	public void testLogger() {
-		Logger logger = Logger.getLogger("test");
-		logger.setLevel(Logger.LEVEL_DEBUG);
-		assertTrue(logger.isDebugEnabled());
-		logger = Logger.getLogger("test");
-		logger = Logger.getLogger("test");
-		logger.debug("debug message");
-		logger.debug("message", new Exception());
-		logger.info("info message");
-		logger.info("info message", new Exception());
-		logger.warn("warn message");
-		logger.warn("warn message", new Exception());
-		logger.error("error message");
-		logger.error("error message", new Exception());
-		logger.fatal("fatal message");
-		logger.fatal("fatal message", new Exception());
-		logger.getLevel();
 	}
 
 	public void testUDPSockIO() {

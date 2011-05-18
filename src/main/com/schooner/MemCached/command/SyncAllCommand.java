@@ -30,7 +30,9 @@ package com.schooner.MemCached.command;
 
 import java.io.IOException;
 
-import com.danga.MemCached.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.schooner.MemCached.SchoonerSockIO;
 
 /**
@@ -42,7 +44,7 @@ import com.schooner.MemCached.SchoonerSockIO;
  */
 public class SyncAllCommand extends Command {
 
-	public static Logger log = Logger.getLogger(SyncAllCommand.class.getName(), Logger.LEVEL_FATAL);
+	public static Logger log = LoggerFactory.getLogger(SyncAllCommand.class);
 	public static final String SYNCED = "SYNCED\r\n";
 
 	public SyncAllCommand() {

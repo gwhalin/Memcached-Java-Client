@@ -60,7 +60,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.zip.CRC32;
 
-import com.danga.MemCached.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * 
@@ -119,7 +120,7 @@ import com.danga.MemCached.Logger;
  */
 public class SchoonerSockIOPool {
 	// logger
-	private static Logger log = Logger.getLogger(SchoonerSockIOPool.class.getName());
+	private static Logger log = LoggerFactory.getLogger(SchoonerSockIOPool.class);
 
 	// store instances of pools
 	private static ConcurrentMap<String, SchoonerSockIOPool> pools = new ConcurrentHashMap<String, SchoonerSockIOPool>();
@@ -317,7 +318,7 @@ public class SchoonerSockIOPool {
 				// Add this new connection to socket pool
 				addSocketToPool(servers[i], socket);
 			}
-			
+
 			ConcurrentLinkedQueue<SchoonerSockIO> sockets = socketPool.get(servers[i]);
 			AtomicInteger num = new AtomicInteger(j);
 			for (SchoonerSockIO schoonerSockIO : sockets) {
@@ -370,7 +371,7 @@ public class SchoonerSockIOPool {
 				// Add this new connection to socket pool
 				addSocketToPool(servers[i], socket);
 			}
-			
+
 			ConcurrentLinkedQueue<SchoonerSockIO> sockets = socketPool.get(servers[i]);
 			AtomicInteger num = new AtomicInteger(j);
 			for (SchoonerSockIO schoonerSockIO : sockets) {
@@ -402,7 +403,7 @@ public class SchoonerSockIOPool {
 			}
 		} catch (Exception ex) {
 			log.error("++++ failed to get SockIO obj for: " + host);
-			//log.error(ex.getMessage(), ex);
+			log.error(ex.getMessage(), ex);
 			socket = null;
 		}
 
@@ -421,7 +422,7 @@ public class SchoonerSockIOPool {
 			}
 		} catch (Exception ex) {
 			log.error("++++ failed to get SockIO obj for: " + host);
-			// log.error(ex.getMessage(), ex);
+			log.error(ex.getMessage(), ex);
 			socket = null;
 			poolCurrentConn.get(host).decrementAndGet();
 		}
@@ -1150,8 +1151,8 @@ public class SchoonerSockIOPool {
 				this.sockNum.decrementAndGet();
 		}
 
-		public UDPSockIO(SchoonerSockIOPool pool, String host, int bufferSize, int timeout, boolean isPooled) throws IOException,
-				UnknownHostException {
+		public UDPSockIO(SchoonerSockIOPool pool, String host, int bufferSize, int timeout, boolean isPooled)
+				throws IOException, UnknownHostException {
 			super(bufferSize);
 
 			String[] ip = host.split(":");
@@ -1351,7 +1352,7 @@ public class SchoonerSockIOPool {
 	public static class TCPSockIO extends SchoonerSockIO {
 
 		// logger
-		private static Logger log = Logger.getLogger(SchoonerSockIO.class.getName());
+		private static Logger log = LoggerFactory.getLogger(SchoonerSockIO.class);
 		// data
 		private String host;
 		private Socket sock;
@@ -1387,7 +1388,7 @@ public class SchoonerSockIOPool {
 
 			// get socket: default is to use non-blocking connect
 			sock = getSocket(ip[0], Integer.parseInt(ip[1]), connectTimeout);
-			
+
 			if (isPooled)
 				writeBuf = ByteBuffer.allocateDirect(bufferSize);
 			else
