@@ -45,6 +45,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -189,6 +190,10 @@ public class SchoonerSockIOPool {
 	// map to hold all available sockets
 	Map<String, ConcurrentLinkedQueue<SchoonerSockIO>> socketPool;
 
+	ConcurrentMap<String, Date> hostDead;
+
+	ConcurrentMap<String, Long> hostDeadDur;
+
 	private int maxConn = 32;
 
 	private Map<String, AtomicInteger> poolCurrentConn;
@@ -269,6 +274,8 @@ public class SchoonerSockIOPool {
 			}
 			// pools
 			socketPool = new HashMap<String, ConcurrentLinkedQueue<SchoonerSockIO>>(servers.length);
+			hostDead = new ConcurrentHashMap<String, Date>();
+			hostDeadDur = new ConcurrentHashMap<String, Long>();
 			poolCurrentConn = new HashMap<String, AtomicInteger>(servers.length);
 			// only create up to maxCreate connections at once
 
@@ -393,6 +400,14 @@ public class SchoonerSockIOPool {
 	 * @return SockIO obj or null if failed to create
 	 */
 	protected final SchoonerSockIO createSocket(String host) {
+		if (!failback && hostDead.containsKey(host) && hostDeadDur.containsKey(host)) {
+
+			Date store = hostDead.get(host);
+			long expire = hostDeadDur.get(host).longValue();
+
+			if ((store.getTime() + expire) > System.currentTimeMillis())
+				return null;
+		}
 
 		SchoonerSockIO socket = null;
 		try {
@@ -407,10 +422,33 @@ public class SchoonerSockIOPool {
 			socket = null;
 		}
 
+		if (socket == null) {
+			Date now = new Date();
+			hostDead.put(host, now);
+
+			long expire = (hostDeadDur.containsKey(host)) ? (((Long) hostDeadDur.get(host)).longValue() * 2) : 1000;
+
+			if (expire > MAX_RETRY_DELAY)
+				expire = MAX_RETRY_DELAY;
+
+			hostDeadDur.put(host, new Long(expire));
+
+			// also clear all entries for this host from availPool
+			clearHostFromPool(host);
+		}
+
 		return socket;
 	}
 
 	protected final SchoonerSockIO createSocketWithAdd(String host) {
+		if (!failback && hostDead.containsKey(host) && hostDeadDur.containsKey(host)) {
+
+			Date store = hostDead.get(host);
+			long expire = hostDeadDur.get(host).longValue();
+
+			if ((store.getTime() + expire) > System.currentTimeMillis())
+				return null;
+		}
 
 		SchoonerSockIO socket = null;
 		try {
@@ -427,7 +465,48 @@ public class SchoonerSockIOPool {
 			poolCurrentConn.get(host).decrementAndGet();
 		}
 
+		if (socket == null) {
+			Date now = new Date();
+			hostDead.put(host, now);
+
+			long expire = (hostDeadDur.containsKey(host)) ? (((Long) hostDeadDur.get(host)).longValue() * 2) : 1000;
+
+			if (expire > MAX_RETRY_DELAY)
+				expire = MAX_RETRY_DELAY;
+
+			hostDeadDur.put(host, new Long(expire));
+
+			// also clear all entries for this host from availPool
+			clearHostFromPool(host);
+		}
+
 		return socket;
+	}
+
+	/**
+	 * Closes and removes all sockets from specified pool for host. THIS METHOD
+	 * IS NOT THREADSAFE, SO BE CAREFUL WHEN USING!
+	 * 
+	 * Internal utility method.
+	 * 
+	 * @param pool
+	 *            pool to clear
+	 * @param host
+	 *            host to clear
+	 */
+	protected void clearHostFromPool(String host) {
+		ConcurrentLinkedQueue<SchoonerSockIO> pool = socketPool.get(host);
+
+		for (SchoonerSockIO ssock : pool) {
+			try {
+				ssock.trueClose();
+			} catch (IOException ioe) {
+				log.error("++++ failed to close socket: " + ioe.getMessage());
+			}
+		}
+
+		pool.clear();
+		poolCurrentConn.put(host, new AtomicInteger(0));
 	}
 
 	/**
@@ -550,6 +629,7 @@ public class SchoonerSockIOPool {
 			log.error("attempting to get SockIO from uninitialized pool!");
 			return null;
 		}
+
 		if (host == null)
 			return null;
 		// if we have items in the pool then we can return it
@@ -560,15 +640,13 @@ public class SchoonerSockIOPool {
 				socket = createSocketWithAdd(host);
 			} else {
 				socket = createSocket(host);
-				if (socket == null)
-					return null;
-				socket.setPooled(false);
+				if (socket != null)
+					socket.setPooled(false);
 			}
 		} else if (aliveCheck && !socket.isAlive()) {
 			socket = createSocket(host);
-			if (socket == null)
-				return null;
-			socket.setPooled(false);
+			if (socket != null)
+				socket.setPooled(false);
 		}
 		return socket;
 	}
