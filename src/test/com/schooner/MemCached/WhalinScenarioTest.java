@@ -102,7 +102,7 @@ public class WhalinScenarioTest extends TestCase {
 		assertEquals(19, pool.getMaxConn());
 		final MemCachedClient mc = new MemCachedClient();
 		Thread[] threads = new Thread[20];
-		assertEquals(pool.getInitConn(), SchoonerSockIOPool.getInstance().socketPool.get(hosts[0]).size());
+		assertEquals(pool.getInitConn(), SchoonerSockIOPool.getInstance().socketPool.get(hosts[0]).getNumIdle());
 		for (int i = 0; i < 20; ++i) {
 			threads[i] = new Thread() {
 				@Override
@@ -124,7 +124,7 @@ public class WhalinScenarioTest extends TestCase {
 				e.printStackTrace();
 			}
 		}
-		assertTrue(SchoonerSockIOPool.getInstance().socketPool.get(hosts[0]).size() < 20);
+		assertTrue(SchoonerSockIOPool.getInstance().socketPool.get(hosts[0]).getNumActive() < 20);
 		mc.flushAll();
 		pool.shutDown();
 	}
@@ -137,7 +137,7 @@ public class WhalinScenarioTest extends TestCase {
 		assertEquals(2, pool.getMinConn());
 		final MemCachedClient mc = new MemCachedClient();
 		Thread thread = new Thread();
-		assertEquals(2, SchoonerSockIOPool.getInstance().socketPool.get(hosts[0]).size());
+		assertEquals(2, SchoonerSockIOPool.getInstance().socketPool.get(hosts[0]).getMinIdle());
 		thread = new Thread() {
 			@Override
 			public void run() {
@@ -155,7 +155,7 @@ public class WhalinScenarioTest extends TestCase {
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
-		assertEquals(2, SchoonerSockIOPool.getInstance().socketPool.get(hosts[0]).size());
+		assertEquals(2, SchoonerSockIOPool.getInstance().socketPool.get(hosts[0]).getNumActive());
 		mc.flushAll();
 		pool.shutDown();
 	}

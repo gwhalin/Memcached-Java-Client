@@ -1,12 +1,6 @@
 package com.schooner.MemCached;
 
-import java.io.IOException;
-import java.net.UnknownHostException;
-
 import junit.framework.TestCase;
-
-import com.schooner.MemCached.SchoonerSockIOPool.TCPSockIO;
-import com.schooner.MemCached.SchoonerSockIOPool.UDPSockIO;
 
 public class OtherTest extends TestCase {
 	private String[] serverList;
@@ -76,37 +70,39 @@ public class OtherTest extends TestCase {
 		pool.isInitialized();
 	}
 
-	public void testUDPSockIO() {
-		try {
-			UDPSockIO io = new UDPSockIO(SchoonerSockIOPool.getInstance(), serverList[0], 1024 * 105, 100, true);
-			io.getHost();
-			io.isAlive();
-			io.write(null);
-			io.flush();
-			io.trueClose();
-		} catch (UnknownHostException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
-
-	public void testTcpSockIO() {
-		try {
-			TCPSockIO io = new TCPSockIO(SchoonerSockIOPool.getInstance(), serverList[0], 1024 * 1025, 3000, 3000,
-					false, true);
-			io.isAlive();
-			io.toString();
-			io.readBytes(0);
-			io.hashCode();
-			io.getResponse((short) 0);
-			io.preWrite();
-			io.isConnected();
-		} catch (UnknownHostException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
+	// public void testUDPSockIO() {
+	// try {
+	// UDPSockIO io = new UDPSockIO(SchoonerSockIOPool.getInstance(),
+	// serverList[0], 1024 * 105, 100, true);
+	// io.getHost();
+	// io.isAlive();
+	// io.write(null);
+	// io.flush();
+	// io.trueClose();
+	// } catch (UnknownHostException e) {
+	// e.printStackTrace();
+	// } catch (IOException e) {
+	// e.printStackTrace();
+	// }
+	// }
+	//
+	// public void testTcpSockIO() {
+	// try {
+	// TCPSockIO io = new TCPSockIO(SchoonerSockIOPool.getInstance(),
+	// serverList[0], 1024 * 1025, 3000, 3000,
+	// false, true);
+	// io.isAlive();
+	// io.toString();
+	// io.readBytes(0);
+	// io.hashCode();
+	// io.getResponse((short) 0);
+	// io.preWrite();
+	// io.isConnected();
+	// } catch (UnknownHostException e) {
+	// e.printStackTrace();
+	// } catch (IOException e) {
+	// e.printStackTrace();
+	// }
+	// }
 
 }

@@ -55,12 +55,11 @@ import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.zip.CRC32;
 
+import org.apache.commons.pool.impl.GenericObjectPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -188,15 +187,13 @@ public class SchoonerSockIOPool {
 	private TreeMap<Long, String> consistentBuckets;
 
 	// map to hold all available sockets
-	Map<String, ConcurrentLinkedQueue<SchoonerSockIO>> socketPool;
+	Map<String, GenericObjectPool> socketPool;
 
 	ConcurrentMap<String, Date> hostDead;
 
 	ConcurrentMap<String, Long> hostDeadDur;
 
 	private int maxConn = 32;
-
-	private Map<String, AtomicInteger> poolCurrentConn;
 
 	private boolean isTcp;
 
@@ -273,10 +270,9 @@ public class SchoonerSockIOPool {
 				throw new IllegalStateException("++++ trying to initialize with no servers");
 			}
 			// pools
-			socketPool = new HashMap<String, ConcurrentLinkedQueue<SchoonerSockIO>>(servers.length);
+			socketPool = new HashMap<String, GenericObjectPool>(servers.length);
 			hostDead = new ConcurrentHashMap<String, Date>();
 			hostDeadDur = new ConcurrentHashMap<String, Long>();
-			poolCurrentConn = new HashMap<String, AtomicInteger>(servers.length);
 			// only create up to maxCreate connections at once
 
 			// initalize our internal hashing structures
@@ -311,27 +307,13 @@ public class SchoonerSockIOPool {
 			}
 
 			// Create a socket pool for each host
-			socketPool.put(servers[i], new ConcurrentLinkedQueue<SchoonerSockIO>());
-
-			// Create the initial connections
-			int j;
-			for (j = 0; j < initConn; j++) {
-				SchoonerSockIO socket = createSocket(servers[i]);
-				if (socket == null) {
-					log.error("++++ failed to create connection to: " + servers[i] + " -- only " + j + " created.");
-					break;
-				}
-
-				// Add this new connection to socket pool
-				addSocketToPool(servers[i], socket);
-			}
-
-			ConcurrentLinkedQueue<SchoonerSockIO> sockets = socketPool.get(servers[i]);
-			AtomicInteger num = new AtomicInteger(j);
-			for (SchoonerSockIO schoonerSockIO : sockets) {
-				schoonerSockIO.setSockNum(num);
-			}
-			poolCurrentConn.put(servers[i], num);
+			// Create an object pool to contain our active connections
+			GenericObjectPool gop;
+			SchoonerSockIOFactory factory = new SchoonerSockIOFactory(servers[i], isTcp, bufferSize, socketTO,
+					socketConnectTO, nagle);
+			gop = new GenericObjectPool(factory, maxConn, GenericObjectPool.WHEN_EXHAUSTED_BLOCK, 1000, maxConn);
+			factory.setSockets(gop);
+			socketPool.put(servers[i], gop);
 		}
 	}
 
@@ -365,122 +347,14 @@ public class SchoonerSockIOPool {
 			}
 
 			// Create a socket pool for each host
-			socketPool.put(servers[i], new ConcurrentLinkedQueue<SchoonerSockIO>());
-
-			int j;
-			for (j = 0; j < initConn; j++) {
-				SchoonerSockIO socket = createSocket(servers[i]);
-				if (socket == null) {
-					log.error("++++ failed to create connection to: " + servers[i] + " -- only " + j + " created.");
-					break;
-				}
-
-				// Add this new connection to socket pool
-				addSocketToPool(servers[i], socket);
-			}
-
-			ConcurrentLinkedQueue<SchoonerSockIO> sockets = socketPool.get(servers[i]);
-			AtomicInteger num = new AtomicInteger(j);
-			for (SchoonerSockIO schoonerSockIO : sockets) {
-				schoonerSockIO.setSockNum(num);
-			}
-			poolCurrentConn.put(servers[i], num);
+			// Create an object pool to contain our active connections
+			GenericObjectPool gop;
+			SchoonerSockIOFactory factory = new SchoonerSockIOFactory(servers[i], isTcp, bufferSize, socketTO,
+					socketConnectTO, nagle);
+			gop = new GenericObjectPool(factory, maxConn, GenericObjectPool.WHEN_EXHAUSTED_BLOCK, 1000, maxConn);
+			factory.setSockets(gop);
+			socketPool.put(servers[i], gop);
 		}
-	}
-
-	/**
-	 * Creates a new SockIO obj for the given server.
-	 * 
-	 * If server fails to connect, then return null and do not try<br/>
-	 * again until a duration has passed. This duration will grow<br/>
-	 * by doubling after each failed attempt to connect.
-	 * 
-	 * @param host
-	 *            host:port to connect to
-	 * @return SockIO obj or null if failed to create
-	 */
-	protected final SchoonerSockIO createSocket(String host) {
-		if (!failback && hostDead.containsKey(host) && hostDeadDur.containsKey(host)) {
-
-			Date store = hostDead.get(host);
-			long expire = hostDeadDur.get(host).longValue();
-
-			if ((store.getTime() + expire) > System.currentTimeMillis())
-				return null;
-		}
-
-		SchoonerSockIO socket = null;
-		try {
-			if (isTcp) {
-				socket = new TCPSockIO(this, host, bufferSize, this.socketTO, this.socketConnectTO, this.nagle, false);
-			} else {
-				socket = new UDPSockIO(this, host, bufferSize, socketTO, false);
-			}
-		} catch (Exception ex) {
-			log.error("++++ failed to get SockIO obj for: " + host);
-			log.error(ex.getMessage(), ex);
-			socket = null;
-		}
-
-		if (socket == null) {
-			Date now = new Date();
-			hostDead.put(host, now);
-
-			long expire = (hostDeadDur.containsKey(host)) ? (((Long) hostDeadDur.get(host)).longValue() * 2) : 1000;
-
-			if (expire > MAX_RETRY_DELAY)
-				expire = MAX_RETRY_DELAY;
-
-			hostDeadDur.put(host, new Long(expire));
-
-			// also clear all entries for this host from availPool
-			clearHostFromPool(host);
-		}
-
-		return socket;
-	}
-
-	protected final SchoonerSockIO createSocketWithAdd(String host) {
-		if (!failback && hostDead.containsKey(host) && hostDeadDur.containsKey(host)) {
-
-			Date store = hostDead.get(host);
-			long expire = hostDeadDur.get(host).longValue();
-
-			if ((store.getTime() + expire) > System.currentTimeMillis())
-				return null;
-		}
-
-		SchoonerSockIO socket = null;
-		try {
-			poolCurrentConn.get(host).addAndGet(1);
-			if (isTcp) {
-				socket = new TCPSockIO(this, host, bufferSize, this.socketTO, this.socketConnectTO, this.nagle, true);
-			} else {
-				socket = new UDPSockIO(this, host, bufferSize, socketTO, true);
-			}
-		} catch (Exception ex) {
-			log.error("++++ failed to get SockIO obj for: " + host);
-			log.error(ex.getMessage(), ex);
-			socket = null;
-			poolCurrentConn.get(host).decrementAndGet();
-		}
-
-		if (socket == null) {
-			Date now = new Date();
-			hostDead.put(host, now);
-
-			long expire = (hostDeadDur.containsKey(host)) ? (((Long) hostDeadDur.get(host)).longValue() * 2) : 1000;
-
-			if (expire > MAX_RETRY_DELAY)
-				expire = MAX_RETRY_DELAY;
-
-			hostDeadDur.put(host, new Long(expire));
-
-			// also clear all entries for this host from availPool
-			clearHostFromPool(host);
-		}
-
-		return socket;
 	}
 
 	/**
@@ -495,18 +369,8 @@ public class SchoonerSockIOPool {
 	 *            host to clear
 	 */
 	protected void clearHostFromPool(String host) {
-		ConcurrentLinkedQueue<SchoonerSockIO> pool = socketPool.get(host);
-
-		for (SchoonerSockIO ssock : pool) {
-			try {
-				ssock.trueClose();
-			} catch (IOException ioe) {
-				log.error("++++ failed to close socket: " + ioe.getMessage());
-			}
-		}
-
+		GenericObjectPool pool = socketPool.get(host);
 		pool.clear();
-		poolCurrentConn.put(host, new AtomicInteger(0));
 	}
 
 	/**
@@ -632,41 +496,52 @@ public class SchoonerSockIOPool {
 
 		if (host == null)
 			return null;
-		// if we have items in the pool then we can return it
-		ConcurrentLinkedQueue<SchoonerSockIO> sockets = socketPool.get(host);
-		SchoonerSockIO socket = sockets.poll();
-		if (socket == null) {
-			if (poolCurrentConn.get(host).get() < maxConn) {
-				socket = createSocketWithAdd(host);
-			} else {
-				socket = createSocket(host);
-				if (socket != null)
-					socket.setPooled(false);
-			}
-		} else if (aliveCheck && !socket.isAlive()) {
-			socket = createSocket(host);
-			if (socket != null)
-				socket.setPooled(false);
-		}
-		return socket;
-	}
 
-	/**
-	 * Adds a socket and value to a given pool for the given host.
-	 * 
-	 * @param pool
-	 *            pool to add to
-	 * @param host
-	 *            host this socket is connected to
-	 * @param socket
-	 *            socket to add
-	 */
-	protected final boolean addSocketToPool(String host, SchoonerSockIO socket) {
-		ConcurrentLinkedQueue<SchoonerSockIO> sockets = socketPool.get(host);
-		// increase current max index number
-		// put new socket into socket pool with this index
-		sockets.add(socket);
-		return true;
+		if (!failback && hostDead.containsKey(host) && hostDeadDur.containsKey(host)) {
+
+			Date store = hostDead.get(host);
+			long expire = hostDeadDur.get(host).longValue();
+
+			if ((store.getTime() + expire) > System.currentTimeMillis())
+				return null;
+		}
+
+		// if we have items in the pool then we can return it
+		GenericObjectPool sockets = socketPool.get(host);
+		SchoonerSockIO socket;
+		try {
+
+			socket = (SchoonerSockIO) sockets.borrowObject();
+		} catch (Exception e) {
+			socket = null;
+		}
+
+		if (socket != null && aliveCheck && !socket.isAlive()) {
+			socket.close();
+			try {
+				socket.sockets.invalidateObject(socket);
+			} catch (Exception e1) {
+				log.error("++++ failed to close socket : " + socket.toString());
+			}
+			socket = null;
+		}
+
+		if (socket == null) {
+			Date now = new Date();
+			hostDead.put(host, now);
+
+			long expire = (hostDeadDur.containsKey(host)) ? (((Long) hostDeadDur.get(host)).longValue() * 2) : 1000;
+
+			if (expire > MAX_RETRY_DELAY)
+				expire = MAX_RETRY_DELAY;
+
+			hostDeadDur.put(host, new Long(expire));
+
+			// also clear all entries for this host from availPool
+			sockets.clear();
+		}
+
+		return socket;
 	}
 
 	/**
@@ -678,18 +553,11 @@ public class SchoonerSockIOPool {
 	 *            pool to close
 	 */
 	protected final void closeSocketPool() {
-		for (Iterator<ConcurrentLinkedQueue<SchoonerSockIO>> i = socketPool.values().iterator(); i.hasNext();) {
-			ConcurrentLinkedQueue<SchoonerSockIO> sockets = i.next();
-			Iterator<SchoonerSockIO> iter = sockets.iterator();
-			while (iter.hasNext()) {
-				SchoonerSockIO socket = iter.next();
-				sockets.remove(socket);
-				try {
-					socket.trueClose();
-				} catch (IOException ioe) {
-					log.error("++++ failed to close socket: " + ioe.getMessage());
-				}
-				socket = null;
+		for (Iterator<GenericObjectPool> i = socketPool.values().iterator(); i.hasNext();) {
+			GenericObjectPool sockets = i.next();
+			try {
+				sockets.close();
+			} catch (Exception e) {
 			}
 		}
 	}
@@ -1225,13 +1093,11 @@ public class SchoonerSockIOPool {
 				selector.close();
 				channel.close();
 			}
-			if (isPooled)
-				this.sockNum.decrementAndGet();
 		}
 
-		public UDPSockIO(SchoonerSockIOPool pool, String host, int bufferSize, int timeout, boolean isPooled)
-				throws IOException, UnknownHostException {
-			super(bufferSize);
+		public UDPSockIO(GenericObjectPool sockets, String host, int bufferSize, int timeout) throws IOException,
+				UnknownHostException {
+			super(sockets, bufferSize);
 
 			String[] ip = host.split(":");
 			channel = DatagramChannel.open();
@@ -1241,12 +1107,7 @@ public class SchoonerSockIOPool {
 			channel.socket().setSoTimeout(timeout);
 			selector = Selector.open();
 			((DatagramChannel) channel).register(selector, SelectionKey.OP_READ);
-			if (isPooled)
-				writeBuf = ByteBuffer.allocateDirect(bufferSize);
-			else
-				writeBuf = ByteBuffer.allocate(bufferSize);
-			sockets = pool.socketPool.get(host);
-			sockNum = pool.poolCurrentConn.get(host);
+			writeBuf = ByteBuffer.allocateDirect(bufferSize);
 		}
 
 		@Override
@@ -1372,14 +1233,10 @@ public class SchoonerSockIOPool {
 		public void close() {
 			readBuf.clear();
 			writeBuf.clear();
-			if (isPooled)
-				sockets.add(this);
-			else {
-				try {
-					trueClose();
-				} catch (IOException e) {
-					log.error("++++ error closing socket: " + toString() + " for host: " + getHost());
-				}
+			try {
+				sockets.returnObject(this);
+			} catch (Exception e) {
+				log.error("++++ error closing socket: " + toString() + " for host: " + getHost());
 			}
 		}
 
@@ -1456,10 +1313,10 @@ public class SchoonerSockIOPool {
 		 * @throws UnknownHostException
 		 *             if hostname is invalid
 		 */
-		public TCPSockIO(SchoonerSockIOPool pool, String host, int bufferSize, int timeout, int connectTimeout,
-				boolean noDelay, boolean isPooled) throws IOException, UnknownHostException {
+		public TCPSockIO(GenericObjectPool sockets, String host, int bufferSize, int timeout, int connectTimeout,
+				boolean noDelay) throws IOException, UnknownHostException {
 
-			super(bufferSize);
+			super(sockets, bufferSize);
 
 			// allocate a new receive buffer
 			String[] ip = host.split(":");
@@ -1467,10 +1324,7 @@ public class SchoonerSockIOPool {
 			// get socket: default is to use non-blocking connect
 			sock = getSocket(ip[0], Integer.parseInt(ip[1]), connectTimeout);
 
-			if (isPooled)
-				writeBuf = ByteBuffer.allocateDirect(bufferSize);
-			else
-				writeBuf = ByteBuffer.allocate(bufferSize);
+			writeBuf = ByteBuffer.allocateDirect(bufferSize);
 
 			if (timeout >= 0)
 				this.sock.setSoTimeout(timeout);
@@ -1482,8 +1336,6 @@ public class SchoonerSockIOPool {
 			sockChannel = sock.getChannel();
 			hash = sock.hashCode();
 			this.host = host;
-			sockets = pool.socketPool.get(host);
-			sockNum = pool.poolCurrentConn.get(host);
 		}
 
 		/**
@@ -1569,9 +1421,6 @@ public class SchoonerSockIOPool {
 			sockChannel = null;
 			sock = null;
 
-			if (isPooled)
-				sockNum.decrementAndGet();
-
 			if (err)
 				throw new IOException(errMsg.toString());
 		}
@@ -1582,14 +1431,10 @@ public class SchoonerSockIOPool {
 		 */
 		public final void close() {
 			readBuf.clear();
-			if (isPooled)
-				sockets.add(this);
-			else {
-				try {
-					trueClose();
-				} catch (IOException e) {
-					log.error("++++ error closing socket: " + toString() + " for host: " + getHost());
-				}
+			try {
+				sockets.returnObject(this);
+			} catch (Exception e) {
+				log.error("++++ error closing socket: " + toString() + " for host: " + getHost());
 			}
 		}
 

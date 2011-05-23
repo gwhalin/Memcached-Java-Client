@@ -203,10 +203,9 @@ public class BinaryClient extends MemCachedClient {
 			log.error(e.getMessage(), e);
 
 			try {
-				sock.trueClose();
-			} catch (IOException ioe) {
-				log.error(new StringBuffer().append("++++ failed to close socket : ").append(sock.toString())
-						.toString());
+				sock.sockets.invalidateObject(sock);
+			} catch (Exception e1) {
+				log.error("++++ failed to close socket : " + sock.toString());
 			}
 
 			sock = null;
@@ -433,10 +432,9 @@ public class BinaryClient extends MemCachedClient {
 			log.error(e.getMessage(), e);
 
 			try {
-				sock.trueClose();
-			} catch (IOException ioe) {
-				log.error(new StringBuffer().append("++++ failed to close socket : ").append(sock.toString())
-						.toString());
+				sock.sockets.invalidateObject(sock);
+			} catch (Exception e1) {
+				log.error("++++ failed to close socket : " + sock.toString());
 			}
 
 			sock = null;
@@ -550,10 +548,9 @@ public class BinaryClient extends MemCachedClient {
 			log.error(e.getMessage(), e);
 
 			try {
-				sock.trueClose();
-			} catch (IOException ioe) {
-				log.error(new StringBuffer().append("++++ failed to close socket : ").append(sock.toString())
-						.toString());
+				sock.sockets.invalidateObject(sock);
+			} catch (Exception e1) {
+				log.error("++++ failed to close socket : " + sock.toString());
 			}
 
 			sock = null;
@@ -716,10 +713,9 @@ public class BinaryClient extends MemCachedClient {
 			log.error(e.getMessage(), e);
 
 			try {
-				sock.trueClose();
-			} catch (IOException ioe) {
-				log.error(new StringBuffer().append("++++ failed to close socket : ").append(sock.toString())
-						.toString());
+				sock.sockets.invalidateObject(sock);
+			} catch (Exception e1) {
+				log.error("++++ failed to close socket : " + sock.toString());
 			}
 
 			sock = null;
@@ -868,8 +864,8 @@ public class BinaryClient extends MemCachedClient {
 			}
 
 			// backfill missing keys w/ null value
-//			if (!ret.containsKey(keys[i]))
-//				ret.put(keys[i], null);
+			// if (!ret.containsKey(keys[i]))
+			// ret.put(keys[i], null);
 		}
 
 		if (log.isDebugEnabled())
@@ -1015,8 +1011,8 @@ public class BinaryClient extends MemCachedClient {
 				log.error(e.getMessage(), e);
 
 				try {
-					sock.trueClose();
-				} catch (IOException ioe) {
+					sock.sockets.invalidateObject(sock);
+				} catch (Exception e1) {
 					log.error("++++ failed to close socket : " + sock.toString());
 				}
 
@@ -1146,8 +1142,8 @@ public class BinaryClient extends MemCachedClient {
 				log.error(e.getMessage(), e);
 
 				try {
-					sock.trueClose();
-				} catch (IOException ioe) {
+					sock.sockets.invalidateObject(sock);
+				} catch (Exception e1) {
 					log.error("++++ failed to close socket : " + sock.toString());
 				}
 
@@ -1233,9 +1229,9 @@ public class BinaryClient extends MemCachedClient {
 				}
 
 				try {
-					channel.close();
-					sock.trueClose();
-				} catch (IOException ignoreMe) {
+					sock.sockets.invalidateObject(sock);
+				} catch (Exception e1) {
+					log.error("++++ failed to close socket : " + sock.toString());
 				}
 			}
 
@@ -1543,10 +1539,9 @@ public class BinaryClient extends MemCachedClient {
 			log.error("++++ exception thrown while writing bytes to server on get");
 			log.error(e.getMessage(), e);
 			try {
-				sock.trueClose();
-			} catch (IOException ioe) {
-				log.error(new StringBuffer().append("++++ failed to close socket : ").append(sock.toString())
-						.toString());
+				sock.sockets.invalidateObject(sock);
+			} catch (Exception e1) {
+				log.error("++++ failed to close socket : " + sock.toString());
 			}
 			sock = null;
 		} catch (RuntimeException e) {
@@ -1661,10 +1656,9 @@ public class BinaryClient extends MemCachedClient {
 			log.error("++++ exception thrown while writing bytes to server on get");
 			log.error(e.getMessage(), e);
 			try {
-				sock.trueClose();
-			} catch (IOException ioe) {
-				log.error(new StringBuffer().append("++++ failed to close socket : ").append(sock.toString())
-						.toString());
+				sock.sockets.invalidateObject(sock);
+			} catch (Exception e1) {
+				log.error("++++ failed to close socket : " + sock.toString());
 			}
 			sock = null;
 		} finally {

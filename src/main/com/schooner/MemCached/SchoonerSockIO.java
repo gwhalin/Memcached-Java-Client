@@ -32,8 +32,8 @@ import java.io.IOException;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ByteChannel;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.atomic.AtomicInteger;
+
+import org.apache.commons.pool.impl.GenericObjectPool;
 
 import com.danga.MemCached.SockIOPool;
 
@@ -47,8 +47,11 @@ import com.danga.MemCached.SockIOPool;
  */
 public abstract class SchoonerSockIO extends SockIOPool.SockIO {
 
-	public SchoonerSockIO(int bufferSize) throws UnknownHostException, IOException {
+	protected GenericObjectPool sockets;
+
+	public SchoonerSockIO(GenericObjectPool sockets, int bufferSize) throws UnknownHostException, IOException {
 		super(null, null, 0, 0, false);
+		this.sockets = sockets;
 		this.bufferSize = bufferSize;
 	}
 
@@ -57,12 +60,6 @@ public abstract class SchoonerSockIO extends SockIOPool.SockIO {
 	// the datagram sent from memcached mustn't beyond 1400 bytes.
 	public ByteBuffer readBuf = ByteBuffer.allocateDirect(8 * 1024);
 	public ByteBuffer writeBuf;
-
-	protected boolean isPooled = true;
-	
-	protected ConcurrentLinkedQueue<SchoonerSockIO> sockets;
-
-	protected AtomicInteger sockNum;
 
 	public abstract short preWrite();
 
@@ -84,20 +81,4 @@ public abstract class SchoonerSockIO extends SockIOPool.SockIO {
 		return bufferSize;
 	}
 
-	public void setPooled(boolean isPooled) {
-		this.isPooled = isPooled;
-	}
-
-	public boolean isPooled() {
-		return isPooled;
-	}
-	
-	public AtomicInteger getSockNum() {
-		return sockNum;
-	}
-
-	public void setSockNum(AtomicInteger sockNum) {
-		this.sockNum = sockNum;
-	}
-	
 }

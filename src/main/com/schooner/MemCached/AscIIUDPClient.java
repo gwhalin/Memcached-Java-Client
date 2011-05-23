@@ -286,10 +286,9 @@ public class AscIIUDPClient extends MemCachedClient {
 			log.error(e.getMessage(), e);
 
 			try {
-				sock.trueClose();
-			} catch (IOException ioe) {
-				log.error(new StringBuffer().append("++++ failed to close socket : ").append(sock.toString())
-						.toString());
+				sock.sockets.invalidateObject(sock);
+			} catch (Exception e1) {
+				log.error("++++ failed to close socket : " + sock.toString());
 			}
 			sock = null;
 		} finally {
@@ -419,8 +418,8 @@ public class AscIIUDPClient extends MemCachedClient {
 				log.error(e.getMessage(), e);
 
 				try {
-					sock.trueClose();
-				} catch (IOException ioe) {
+					sock.sockets.invalidateObject(sock);
+				} catch (Exception e1) {
 					log.error("++++ failed to close socket : " + sock.toString());
 				}
 
@@ -588,10 +587,9 @@ public class AscIIUDPClient extends MemCachedClient {
 			return retrieval.response(sock, transCoder, rid);
 		} catch (IOException e) {
 			try {
-				sock.trueClose();
-			} catch (IOException ioe) {
-				log.error(new StringBuffer().append("++++ failed to close socket : ").append(sock.toString())
-						.toString());
+				sock.sockets.invalidateObject(sock);
+			} catch (Exception e1) {
+				log.error("++++ failed to close socket : " + sock.toString());
 			}
 			sock = null;
 		} finally {
@@ -676,10 +674,9 @@ public class AscIIUDPClient extends MemCachedClient {
 			log.error(e.getMessage(), e);
 
 			try {
-				sock.trueClose();
-			} catch (IOException ioe) {
-				log.error(new StringBuffer().append("++++ failed to close socket : ").append(sock.toString())
-						.toString());
+				sock.sockets.invalidateObject(sock);
+			} catch (Exception e1) {
+				log.error("++++ failed to close socket : " + sock.toString());
 			}
 
 			sock = null;
@@ -742,8 +739,8 @@ public class AscIIUDPClient extends MemCachedClient {
 				log.error(e.getMessage(), e);
 
 				try {
-					sock.trueClose();
-				} catch (IOException ioe) {
+					sock.sockets.invalidateObject(sock);
+				} catch (Exception e1) {
 					log.error("++++ failed to close socket : " + sock.toString());
 				}
 
@@ -789,10 +786,9 @@ public class AscIIUDPClient extends MemCachedClient {
 			log.error("++++ exception thrown while writing bytes to server on delete");
 			log.error(e.getMessage(), e);
 			try {
-				sock.trueClose();
-			} catch (IOException ioe) {
-				log.error(new StringBuffer().append("++++ failed to close socket : ").append(sock.toString())
-						.toString());
+				sock.sockets.invalidateObject(sock);
+			} catch (Exception e1) {
+				log.error("++++ failed to close socket : " + sock.toString());
 			}
 			sock = null;
 		} finally {
@@ -868,10 +864,9 @@ public class AscIIUDPClient extends MemCachedClient {
 			log.error(e.getMessage(), e);
 
 			try {
-				sock.trueClose();
-			} catch (IOException ioe) {
-				log.error(new StringBuffer().append("++++ failed to close socket : ").append(sock.toString())
-						.toString());
+				sock.sockets.invalidateObject(sock);
+			} catch (Exception e1) {
+				log.error("++++ failed to close socket : " + sock.toString());
 			}
 
 			sock = null;
@@ -928,8 +923,8 @@ public class AscIIUDPClient extends MemCachedClient {
 				log.error(e.getMessage(), e);
 
 				try {
-					sock.trueClose();
-				} catch (IOException ioe) {
+					sock.sockets.invalidateObject(sock);
+				} catch (Exception e1) {
 					log.error("++++ failed to close socket : " + sock.toString());
 				}
 
