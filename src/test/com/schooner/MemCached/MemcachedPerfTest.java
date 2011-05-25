@@ -28,14 +28,9 @@
  ******************************************************************************/
 package com.schooner.MemCached;
 
-import java.util.Hashtable;
-
 import com.danga.MemCached.MemCachedClient;
 
 public class MemcachedPerfTest {
-
-	// store results from threads
-	private static Hashtable<Integer, StringBuilder> threadInfo = new Hashtable<Integer, StringBuilder>();
 
 	/**
 	 * This runs through some simple tests of the MemcacheClient.
@@ -62,34 +57,37 @@ public class MemcachedPerfTest {
 		pool.setNagle(false);
 		pool.initialize();
 
-		int threads = Integer.parseInt(args[0]);
-		int runs = Integer.parseInt(args[1]);
-		int size = 1024 * Integer.parseInt(args[2]); // how many kilobytes
+		int threads = Integer.parseInt(args[1]);
+		int runs = Integer.parseInt(args[2]);
+		int size = 1024 * Integer.parseInt(args[3]); // how many kilobytes
 
 		// get object to store
 		int[] obj = new int[size];
 		for (int i = 0; i < size; i++) {
 			obj[i] = i;
 		}
-
+		bench[] b = new bench[threads];
 		for (int i = 0; i < threads; i++) {
-			bench b = new bench(runs, i, obj);
-			b.start();
+			b[i] = new bench(runs, obj, args[0]);
 		}
 
-		int i = 0;
-		while (i < threads) {
-			if (threadInfo.containsKey(new Integer(i))) {
-				System.out.println(threadInfo.get(new Integer(i)));
-				i++;
-			} else {
-				try {
-					Thread.sleep(1000);
-				} catch (InterruptedException e) {
-					e.printStackTrace();
-				}
+		long start, elapse;
+		float avg;
+		start = System.currentTimeMillis();
+		for (int i = 0; i < threads; i++) {
+			b[i].start();
+		}
+		for (int i = 0; i < threads; i++) {
+			try {
+				b[i].join();
+			} catch (InterruptedException e) {
+				e.printStackTrace();
 			}
 		}
+		elapse = System.currentTimeMillis() - start;
+		avg = (float) elapse * 1000 / (runs * threads);
+		System.out.println(args[0] + " runs: " + runs * threads + " stores of obj " + (size / 1024)
+				+ "KB -- avg time per req " + avg + " us (total: " + elapse + " ms)");
 
 		pool.shutDown();
 		System.exit(1);
@@ -100,54 +98,36 @@ public class MemcachedPerfTest {
 	 */
 	private static class bench extends Thread {
 		private int runs;
-		private int threadNum;
+		private String threadName;
 		private int[] object;
-		private int size;
+		private String opKind;
 
-		public bench(int runs, int threadNum, int[] object) {
+		public bench(int runs, int[] object, String opKind) {
 			this.runs = runs;
-			this.threadNum = threadNum;
+			this.threadName = getName();
 			this.object = object;
-			this.size = object.length;
+			this.opKind = opKind;
 		}
 
 		public void run() {
-
-			StringBuilder result = new StringBuilder();
-
 			// get client instance
 			MemCachedClient mc = new MemCachedClient("test");
 
-			// time stores
-			long start = System.currentTimeMillis();
-			for (int i = 0; i < runs; i++) {
-				mc.set(getName() + " " + i, object);
+			if (opKind.equals("set")) {
+				// time stores
+				for (int i = 0; i < runs; i++) {
+					mc.set(threadName + "_" + i, object);
+				}
+			} else if (opKind.equals("get")) {
+				for (int i = 0; i < runs; i++) {
+					mc.get(threadName + "_" + i);
+				}
+			} else {
+				// time deletes
+				for (int i = 0; i < runs; i++) {
+					mc.delete(threadName + "_" + i);
+				}
 			}
-			long elapse = System.currentTimeMillis() - start;
-			float avg = (float) elapse / runs;
-			result.append("\nthread " + threadNum + ": runs: " + runs + " stores of obj " + (size / 1024)
-					+ "KB -- avg time per req " + avg + " ms (total: " + elapse + " ms)");
-
-			start = System.currentTimeMillis();
-			for (int i = 0; i < runs; i++) {
-				mc.get(getName() + " " + i);
-			}
-			elapse = System.currentTimeMillis() - start;
-			avg = (float) elapse / runs;
-			result.append("\nthread " + threadNum + ": runs: " + runs + " gets of obj " + (size / 1024)
-					+ "KB -- avg time per req " + avg + " ms (total: " + elapse + " ms)");
-
-			// time deletes
-			start = System.currentTimeMillis();
-			for (int i = 0; i < runs; i++) {
-				mc.delete(getName() + " " + i);
-			}
-			elapse = System.currentTimeMillis() - start;
-			avg = (float) elapse / runs;
-			result.append("\nthread " + threadNum + ": runs: " + runs + " deletes of obj " + (size / 1024)
-					+ "KB -- avg time per req " + avg + " ms (total: " + elapse + " ms)");
-
-			threadInfo.put(new Integer(threadNum), result);
 		}
 	}
 }
