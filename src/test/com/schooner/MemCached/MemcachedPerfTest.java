@@ -118,25 +118,13 @@ public class MemcachedPerfTest {
 			// get client instance
 			MemCachedClient mc = new MemCachedClient("test");
 
-			// time deletes
-			long start = System.currentTimeMillis();
-			// for (int i = 0; i < runs; i++) {
-			// mc.delete(keys[i]);
-			// }
-			long elapse = System.currentTimeMillis() - start;
-			float avg = (float) elapse / runs;
-			// result.append("\nthread " + threadNum + ": runs: " + runs +
-			// " deletes of obj " + (size / 1024)
-			// + "KB -- avg time per req " + avg + " ms (total: " + elapse +
-			// " ms)");
-
 			// time stores
-			start = System.currentTimeMillis();
+			long start = System.currentTimeMillis();
 			for (int i = 0; i < runs; i++) {
 				mc.set(getName() + " " + i, object);
 			}
-			elapse = System.currentTimeMillis() - start;
-			avg = (float) elapse / runs;
+			long elapse = System.currentTimeMillis() - start;
+			float avg = (float) elapse / runs;
 			result.append("\nthread " + threadNum + ": runs: " + runs + " stores of obj " + (size / 1024)
 					+ "KB -- avg time per req " + avg + " ms (total: " + elapse + " ms)");
 
@@ -147,6 +135,16 @@ public class MemcachedPerfTest {
 			elapse = System.currentTimeMillis() - start;
 			avg = (float) elapse / runs;
 			result.append("\nthread " + threadNum + ": runs: " + runs + " gets of obj " + (size / 1024)
+					+ "KB -- avg time per req " + avg + " ms (total: " + elapse + " ms)");
+
+			// time deletes
+			start = System.currentTimeMillis();
+			for (int i = 0; i < runs; i++) {
+				mc.delete(getName() + " " + i);
+			}
+			elapse = System.currentTimeMillis() - start;
+			avg = (float) elapse / runs;
+			result.append("\nthread " + threadNum + ": runs: " + runs + " deletes of obj " + (size / 1024)
 					+ "KB -- avg time per req " + avg + " ms (total: " + elapse + " ms)");
 
 			threadInfo.put(new Integer(threadNum), result);
