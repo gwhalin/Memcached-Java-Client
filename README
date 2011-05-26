@@ -1,4 +1,13 @@
 #Author Xingen Wang (new.root@gmail.com)
+        Meng Li (jowett.lee@gmail.com)
+
+Release 2.6.1:
+Add failback support.
+We also re-implement the connection pool based on Apache commons pool in this release.
+Fix issue 18.
+
+TODO:
+We will add SASL support in next version.
 
 Release 2.6.0:
 add slf4j logger support.
