@@ -184,21 +184,17 @@ public class AscIIClient extends MemCachedClient {
 			// get result code
 			String line = new SockInputStream(sock, Integer.MAX_VALUE).getLine();
 			if (DELETED.equals(line)) { // successful
-				if (log.isInfoEnabled())
-					// log.info(new
-					// StringBuffer().append("++++ deletion of key: ").append(key)
-					// .append(" from cache was a success").toString());
-					return true;
+				if (log.isDebugEnabled())
+					log.debug(new StringBuffer().append("++++ deletion of key: ").append(key)
+							.append(" from cache was a success").toString());
+				return true;
 			} else if (NOTFOUND.equals(line)) { // key not found
-			// if (log.isInfoEnabled())
-			// log.info(new
-			// StringBuffer().append("++++ deletion of key: ").append(key)
-			// .append(" from cache failed as the key was not found").toString());
+				if (log.isDebugEnabled())
+					log.debug(new StringBuffer().append("++++ deletion of key: ").append(key)
+							.append(" from cache failed as the key was not found").toString());
 			} else { // other error information
-			// log.error(new
-			// StringBuffer().append("++++ error deleting key: ").append(key).toString());
-			// log.error(new
-			// StringBuffer().append("++++ server response: ").append(line).toString());
+				log.error(new StringBuffer().append("++++ error deleting key: ").append(key).toString());
+				log.error(new StringBuffer().append("++++ server response: ").append(line).toString());
 			}
 		} catch (IOException e) {
 

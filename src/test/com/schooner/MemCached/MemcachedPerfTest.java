@@ -48,18 +48,15 @@ public class MemcachedPerfTest {
 		// initialize the pool for memcache servers
 		SchoonerSockIOPool pool = SchoonerSockIOPool.getInstance("test");
 		pool.setServers(serverlist);
-
-		// pool.setInitConn(5);
-		// pool.setMinConn(5);
-		pool.setMaxConn(50);
-		// pool.setMaintSleep(30);
-
+		pool.setMaxConn(Integer.parseInt(args[5]));
+		pool.setMinConn(Integer.parseInt(args[4]));
+		pool.setMaxIdle(Integer.parseInt(args[6]));
 		pool.setNagle(false);
 		pool.initialize();
 
 		int threads = Integer.parseInt(args[1]);
 		int runs = Integer.parseInt(args[2]);
-		int size = 1024 * Integer.parseInt(args[3]); // how many kilobytes
+		int size = 1024 * Integer.parseInt(args[3]) / 4; // how many kilobytes
 
 		// get object to store
 		int[] obj = new int[size];

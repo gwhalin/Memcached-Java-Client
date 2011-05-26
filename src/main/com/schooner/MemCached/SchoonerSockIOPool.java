@@ -150,7 +150,8 @@ public class SchoonerSockIOPool {
 
 	boolean initialized = false;
 
-	private int initConn = 1;
+	private int minConn = 8;
+	private int maxConn = 32;
 	private long maxBusyTime = 1000 * 30; // max idle time for avail sockets
 	private long maintSleep = 1000 * 30; // maintenance thread sleep time
 	private int socketTO = 1000 * 30; // default timeout of socket reads
@@ -159,7 +160,7 @@ public class SchoonerSockIOPool {
 	@SuppressWarnings("unused")
 	private static int recBufferSize = 128;// bufsize
 
-	private long maxIdle = 1000 * 60 * 5; // max idle time for avail sockets
+	private long maxIdle = 1000; // max idle time for avail sockets
 
 	private boolean aliveCheck = false; // default to not check each connection
 	// for being alive
@@ -192,8 +193,6 @@ public class SchoonerSockIOPool {
 	ConcurrentMap<String, Date> hostDead;
 
 	ConcurrentMap<String, Long> hostDeadDur;
-
-	private int maxConn = 32;
 
 	private boolean isTcp;
 
@@ -311,7 +310,7 @@ public class SchoonerSockIOPool {
 			GenericObjectPool gop;
 			SchoonerSockIOFactory factory = new SchoonerSockIOFactory(servers[i], isTcp, bufferSize, socketTO,
 					socketConnectTO, nagle);
-			gop = new GenericObjectPool(factory, maxConn, GenericObjectPool.WHEN_EXHAUSTED_BLOCK, 1000, maxConn);
+			gop = new GenericObjectPool(factory, maxConn, GenericObjectPool.WHEN_EXHAUSTED_BLOCK, maxIdle, maxConn);
 			factory.setSockets(gop);
 			socketPool.put(servers[i], gop);
 		}
@@ -351,7 +350,7 @@ public class SchoonerSockIOPool {
 			GenericObjectPool gop;
 			SchoonerSockIOFactory factory = new SchoonerSockIOFactory(servers[i], isTcp, bufferSize, socketTO,
 					socketConnectTO, nagle);
-			gop = new GenericObjectPool(factory, maxConn, GenericObjectPool.WHEN_EXHAUSTED_BLOCK, 1000, maxConn);
+			gop = new GenericObjectPool(factory, maxConn, GenericObjectPool.WHEN_EXHAUSTED_BLOCK, maxIdle, maxConn);
 			factory.setSockets(gop);
 			socketPool.put(servers[i], gop);
 		}
@@ -558,6 +557,7 @@ public class SchoonerSockIOPool {
 			try {
 				sockets.close();
 			} catch (Exception e) {
+				log.error("++++ failed to close socket pool.");
 			}
 		}
 	}
@@ -577,7 +577,6 @@ public class SchoonerSockIOPool {
 		buckets = null;
 		consistentBuckets = null;
 		initialized = false;
-
 	}
 
 	/**
@@ -637,7 +636,8 @@ public class SchoonerSockIOPool {
 	 *            int number of connections
 	 */
 	public final void setInitConn(int initConn) {
-		this.initConn = initConn;
+		if (initConn < minConn)
+			minConn = initConn;
 	}
 
 	/**
@@ -647,7 +647,7 @@ public class SchoonerSockIOPool {
 	 * @return number of connections
 	 */
 	public final int getInitConn() {
-		return this.initConn;
+		return this.minConn;
 	}
 
 	/**
@@ -994,11 +994,11 @@ public class SchoonerSockIOPool {
 	}
 
 	public void setMinConn(int minConn) {
-		this.initConn = minConn;
+		this.minConn = minConn;
 	}
 
 	public int getMinConn() {
-		return initConn;
+		return minConn;
 	}
 
 	public void setBufferSize(int bufferSize) {
