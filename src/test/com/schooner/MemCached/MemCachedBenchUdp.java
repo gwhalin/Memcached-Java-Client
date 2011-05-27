@@ -56,7 +56,10 @@ public class MemCachedBenchUdp {
 		MemCachedClient mc = new MemCachedClient("test", false, false);
 
 		String keyBase = "testKey";
-		String object = "This is a test of an object blah blah es, serialization does not seem to slow things down so much.  The gzip compression is horrible horrible performance, so we only use it for very large objects.  I have not done any heavy benchmarking recently";
+		int[] object = new int[16 * 1020]; // 64K limit for UDP
+		for (int i = 0; i < 16 * 1020; i++) {
+			object[i] = i;
+		}
 
 		long begin = System.currentTimeMillis();
 		for (int i = start; i < start + runs; i++) {
@@ -68,7 +71,7 @@ public class MemCachedBenchUdp {
 
 		begin = System.currentTimeMillis();
 		for (int i = start; i < start + runs; i++) {
-			mc.get(keyBase + i);
+			System.out.println(mc.get(keyBase + i));
 		}
 		end = System.currentTimeMillis();
 		time = end - begin;

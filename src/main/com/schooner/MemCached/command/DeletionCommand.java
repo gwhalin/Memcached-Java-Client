@@ -65,12 +65,12 @@ public class DeletionCommand extends Command {
 	public boolean response(SchoonerSockIO sock, short rid) throws IOException {
 		byte[] res = sock.getResponse(rid);
 		if (Arrays.equals(res, DELETED)) {
-			if (log.isInfoEnabled())
-				log.info("DELETED!");
+			if (log.isDebugEnabled())
+				log.debug("DELETED!");
 			return true;
 		} else if (Arrays.equals(res, NOTFOUND)) {
-			if (log.isInfoEnabled())
-				log.info("NOT_FOUND!");
+			// if (log.isDebugEnabled())
+			log.debug("NOT_FOUND!");
 		} else {
 			log.error("error");
 		}

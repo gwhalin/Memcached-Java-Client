@@ -31,7 +31,6 @@ package com.schooner.MemCached.command;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.LinkedList;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -88,7 +87,6 @@ public class RetrievalCommand extends Command {
 	}
 
 	public class ResponseParser {
-		private LinkedList<Value> list;
 		public Value retvalue = null;
 
 		public void exec(byte[] res) throws IOException {
@@ -97,7 +95,6 @@ public class RetrievalCommand extends Command {
 			byte[] end = new byte[5];
 			byte next;
 			int length = 0;
-			int i = 0;
 
 			// check if it is the end.
 			stream.mark(0);
@@ -107,80 +104,70 @@ public class RetrievalCommand extends Command {
 			}
 			stream.reset();
 
-			while (true) {
-				Value value = new Value();
-				// skip "VALUE <key> "
-				stream.skip(B_VALUE.length + key.length() + 1);
+			Value value = new Value();
+			// skip "VALUE <key> "
+			stream.skip(B_VALUE.length + key.length() + 1);
 
-				// get the length of <flags> and build it.
+			// get the length of <flags> and build it.
+			length = 0;
+			while ((next = (byte) stream.read()) != AscIIUDPClient.B_DELIMITER) {
+				length++;
+				sb.append((char) next);
+			}
+			try {
+				value.flags = Integer.valueOf(sb.toString());
+			} catch (NumberFormatException e) {
+				retvalue = null;
+				return;
+			}
+			sb.delete(0, length);
+
+			// get the length of <byte> and build it.
+			length = 0;
+			while (((next = (byte) stream.read()) != AscIIUDPClient.B_DELIMITER) && (next != B_RETURN)) {
+				length++;
+				sb.append((char) next);
+			}
+
+			try {
+				value.bytes = Integer.valueOf(sb.toString());
+			} catch (NumberFormatException e) {
+				retvalue = null;
+				return;
+			}
+			sb.delete(0, length);
+
+			if (cmd.equals("gets")) {
+				// if gets then get the length of <casUnique> and build it.
 				length = 0;
-				while ((next = (byte) stream.read()) != AscIIUDPClient.B_DELIMITER) {
+				while ((next = (byte) stream.read()) != B_RETURN) {
 					length++;
 					sb.append((char) next);
 				}
 				try {
-					value.flags = Integer.valueOf(sb.toString());
+					value.casUnique = Long.valueOf(sb.toString());
 				} catch (NumberFormatException e) {
 					retvalue = null;
 					return;
 				}
 				sb.delete(0, length);
+			}
 
-				// get the length of <byte> and build it.
-				length = 0;
-				while (((next = (byte) stream.read()) != AscIIUDPClient.B_DELIMITER) && (next != B_RETURN)) {
-					length++;
-					sb.append((char) next);
-				}
+			// skip "\n"
+			stream.skip(1);
 
-				try {
-					value.bytes = Integer.valueOf(sb.toString());
-				} catch (NumberFormatException e) {
-					retvalue = null;
-					return;
-				}
-				sb.delete(0, length);
+			// build datablock
+			value.dataBlock = new byte[value.bytes];
+			stream.read(value.dataBlock);
 
-				if (cmd.equals("gets")) {
-					// if gets then get the length of <casUnique> and build it.
-					length = 0;
-					while ((next = (byte) stream.read()) != B_RETURN) {
-						length++;
-						sb.append((char) next);
-					}
-					try {
-						value.casUnique = Long.valueOf(sb.toString());
-					} catch (NumberFormatException e) {
-						retvalue = null;
-						return;
-					}
-					sb.delete(0, length);
-				}
+			// skip "\r\n"
+			stream.skip(2);
 
-				// skip "\n"
-				stream.skip(1);
-
-				// build datablock
-				value.dataBlock = new byte[value.bytes];
-				stream.read(value.dataBlock);
-
-				// skip "\r\n"
-				stream.skip(2);
-
-				// check if it is the end.
-				stream.mark(0);
-				stream.read(end);
-				if (Arrays.equals(end, B_END)) {
-					retvalue = value;
-					break;
-				} else {
-					stream.reset();
-				}
-				if (i == 0) {
-					list = new LinkedList<Value>();
-				}
-				list.add(value);
-				i++;
+			// check if it is the end.
+			stream.mark(0);
+			stream.read(end);
+			if (Arrays.equals(end, B_END)) {
+				retvalue = value;
 			}
 		}
 	}
