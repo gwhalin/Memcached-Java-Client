@@ -289,8 +289,8 @@ public class MemCachedClient {
 	 * used when you want to create a ASCIIClient/BinaryClient/UDPASCIIClient
 	 * instance
 	 */
-	protected MemCachedClient(String a, String b) {
-		client = null;
+	protected MemCachedClient(MemCachedClient client) {
+		this.client = client;
 	}
 
 	/**

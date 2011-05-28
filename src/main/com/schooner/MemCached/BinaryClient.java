@@ -53,7 +53,8 @@ import com.danga.MemCached.MemCachedClient;
 /**
  * This client implements the binary protocol of memcached in a very high
  * performance way.<br>
- * Please use the wrapper class {@link MemCachedClient2} for accessing the
+ * <br>
+ * Please use the wrapper class {@link MemCachedClient} for accessing the
  * memcached server.
  * 
  * @author Xingen Wang
@@ -102,7 +103,7 @@ public class BinaryClient extends MemCachedClient {
 	}
 
 	public BinaryClient(String poolName, ClassLoader cl, ErrorHandler eh) {
-		super("a", "b");
+		super((MemCachedClient) null);
 		this.poolName = poolName;
 		this.classLoader = cl;
 		this.errorHandler = eh;

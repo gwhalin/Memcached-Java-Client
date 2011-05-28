@@ -47,10 +47,23 @@ import com.schooner.MemCached.command.SyncAllCommand;
 import com.schooner.MemCached.command.SyncCommand;
 
 /**
- * This client implements the text protocol of memcached in a very high
+ * This client implements the UDP protocol of memcached in a very high
  * performance way.<br>
- * Please use the wrapper class {@link MemCachedClient2} for accessing the
- * memcached server.
+ * <br>
+ * Please use the wrapper class {@link MemCachedClient} for accessing the
+ * memcached server.<br>
+ * <br>
+ * 
+ * When you are using memcached UDP protocol, pay attention that the data size
+ * limit is about 64K due to the datagram length limit of UDP protocol.<br>
+ * <br>
+ * 
+ * A UDP datagram length field specifies the length in bytes of the entire
+ * datagram: header and data. The minimum length is 8 bytes since that's the
+ * length of the header. The field size sets a theoretical limit of 65,535 bytes
+ * (8 byte header + 65,527 bytes of data) for a UDP datagram. The practical
+ * limit for the data length which is imposed by the underlying IPv4 protocol is
+ * 65,507 bytes (65,535 − 8 byte UDP header − 20 byte IP header).
  * 
  * @author Xingen Wang
  * @since 2.5.0

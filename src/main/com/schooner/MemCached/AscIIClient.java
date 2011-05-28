@@ -53,7 +53,8 @@ import com.danga.MemCached.MemCachedClient;
 /**
  * This client implements the text protocol of memcached in a very high
  * performance way.<br>
- * Please use the wrapper class {@link MemCachedClient2} for accessing the
+ * <br>
+ * Please use the wrapper class {@link MemCachedClient} for accessing the
  * memcached server.
  * 
  * @author Xingen Wang
@@ -99,13 +100,13 @@ public class AscIIClient extends MemCachedClient {
 	 *            whether use binary protocol.
 	 */
 	public AscIIClient(String poolName) {
-		super("a", "b");
+		super((MemCachedClient) null);
 		this.poolName = poolName;
 		init();
 	}
 
 	public AscIIClient(String poolName, ClassLoader cl, ErrorHandler eh) {
-		super("a", "b");
+		super((MemCachedClient) null);
 		this.poolName = poolName;
 		this.classLoader = cl;
 		this.errorHandler = eh;
