@@ -250,6 +250,12 @@ public class MemCachedClient {
 	public static final byte OPCODE_APPEND = (byte) 0x0E;
 	public static final byte OPCODE_PREPEND = (byte) 0x0F;
 	public static final byte OPCODE_STAT = (byte) 0x10;
+	public static final byte OPCODE_AUTH_LIST = (byte) 0x20;
+	public static final byte OPCODE_START_AUTH = (byte) 0x21;
+	public static final byte OPCODE_AUTH_STEPS = (byte) 0x22;
+
+	public static final byte AUTH_FAILED = 0x20;
+	public static final byte FURTHER_AUTH = 0x21;
 
 	/**
 	 * This is used for set command only.<br>

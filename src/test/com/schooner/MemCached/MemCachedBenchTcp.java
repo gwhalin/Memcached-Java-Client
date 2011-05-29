@@ -30,7 +30,6 @@ package com.schooner.MemCached;
 
 import com.danga.MemCached.MemCachedClient;
 
-
 public class MemCachedBenchTcp {
 
 	// logger
@@ -38,8 +37,8 @@ public class MemCachedBenchTcp {
 	// Logger.getLogger(MemCachedBench.class.getName());
 
 	public static void main(String[] args) {
-		int runs = Integer.parseInt(args[0]);
-		int start = Integer.parseInt(args[1]);
+		int runs = Integer.parseInt(args[1]);
+		int start = Integer.parseInt(args[2]);
 
 		String servers = System.getProperty("memcached.host");
 		String[] serverlist = servers.split(",");
@@ -54,7 +53,11 @@ public class MemCachedBenchTcp {
 		pool.initialize();
 
 		// get client instance
-		MemCachedClient mc = new MemCachedClient("test");
+		MemCachedClient mc;
+		if (args[0].equals("ascii"))
+			mc = new MemCachedClient("test", false);
+		else
+			mc = new MemCachedClient("test", true);
 
 		String keyBase = "testKey";
 		String object = "This is a test of an object blah blah es, serialization does not seem to slow things down so much.  The gzip compression is horrible horrible performance, so we only use it for very large objects.  I have not done any heavy benchmarking recently";

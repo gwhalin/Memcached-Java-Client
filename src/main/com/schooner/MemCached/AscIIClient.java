@@ -1072,8 +1072,8 @@ public class AscIIClient extends MemCachedClient {
 			sock.close();
 		}
 
-		if (log.isInfoEnabled())
-			log.info("multi get socket count : " + cmdMap.size());
+		if (log.isDebugEnabled())
+			log.debug("multi get socket count : " + cmdMap.size());
 
 		// now query memcache
 		Map<String, Object> ret = new HashMap<String, Object>(keys.length);

@@ -194,6 +194,8 @@ public class SchoonerSockIOPool {
 
 	ConcurrentMap<String, Long> hostDeadDur;
 
+	private AuthInfo authInfo;
+
 	private boolean isTcp;
 
 	private int bufferSize = 1024 * 1025;
@@ -215,6 +217,20 @@ public class SchoonerSockIOPool {
 		synchronized (pools) {
 			if (!pools.containsKey(poolName)) {
 				pool = new SchoonerSockIOPool(true);
+				pools.putIfAbsent(poolName, pool);
+			}
+		}
+
+		return pools.get(poolName);
+	}
+
+	public static SchoonerSockIOPool getInstance(String poolName, AuthInfo authInfo) {
+		SchoonerSockIOPool pool;
+
+		synchronized (pools) {
+			if (!pools.containsKey(poolName)) {
+				pool = new SchoonerSockIOPool(true);
+				pool.authInfo = authInfo;
 				pools.putIfAbsent(poolName, pool);
 			}
 		}
@@ -249,6 +265,10 @@ public class SchoonerSockIOPool {
 	 */
 	public static SchoonerSockIOPool getInstance() {
 		return getInstance("default", true);
+	}
+
+	public static SchoonerSockIOPool getInstance(AuthInfo authInfo) {
+		return getInstance("default", authInfo);
 	}
 
 	public static SchoonerSockIOPool getInstance(boolean isTcp) {
@@ -308,8 +328,13 @@ public class SchoonerSockIOPool {
 			// Create a socket pool for each host
 			// Create an object pool to contain our active connections
 			GenericObjectPool gop;
-			SchoonerSockIOFactory factory = new SchoonerSockIOFactory(servers[i], isTcp, bufferSize, socketTO,
-					socketConnectTO, nagle);
+			SchoonerSockIOFactory factory;
+			if (authInfo != null) {
+				factory = new AuthSchoonerSockIOFactory(servers[i], isTcp, bufferSize, socketTO, socketConnectTO,
+						nagle, authInfo);
+			} else {
+				factory = new SchoonerSockIOFactory(servers[i], isTcp, bufferSize, socketTO, socketConnectTO, nagle);
+			}
 			gop = new GenericObjectPool(factory, maxConn, GenericObjectPool.WHEN_EXHAUSTED_BLOCK, maxIdle, maxConn);
 			factory.setSockets(gop);
 			socketPool.put(servers[i], gop);
@@ -348,8 +373,13 @@ public class SchoonerSockIOPool {
 			// Create a socket pool for each host
 			// Create an object pool to contain our active connections
 			GenericObjectPool gop;
-			SchoonerSockIOFactory factory = new SchoonerSockIOFactory(servers[i], isTcp, bufferSize, socketTO,
-					socketConnectTO, nagle);
+			SchoonerSockIOFactory factory;
+			if (authInfo != null) {
+				factory = new AuthSchoonerSockIOFactory(servers[i], isTcp, bufferSize, socketTO, socketConnectTO,
+						nagle, authInfo);
+			} else {
+				factory = new SchoonerSockIOFactory(servers[i], isTcp, bufferSize, socketTO, socketConnectTO, nagle);
+			}
 			gop = new GenericObjectPool(factory, maxConn, GenericObjectPool.WHEN_EXHAUSTED_BLOCK, maxIdle, maxConn);
 			factory.setSockets(gop);
 			socketPool.put(servers[i], gop);

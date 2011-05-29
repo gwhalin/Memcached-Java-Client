@@ -182,14 +182,14 @@ public class BinaryClient extends MemCachedClient {
 			short status = dis.readShort();
 
 			if (status == STAT_NO_ERROR) {
-				if (log.isInfoEnabled())
-					log.info("++++ deletion of key: " + key + " from cache was a success");
+				if (log.isDebugEnabled())
+					log.debug("++++ deletion of key: " + key + " from cache was a success");
 
 				// return sock to pool and bail here
 				return true;
 			} else if (status == STAT_KEY_NOT_FOUND) {
-				if (log.isInfoEnabled())
-					log.info("++++ deletion of key: " + key + " from cache failed as the key was not found");
+				if (log.isDebugEnabled())
+					log.debug("++++ deletion of key: " + key + " from cache failed as the key was not found");
 			} else {
 				log.error("++++ error deleting key: " + key);
 				log.error("++++ server response: " + status);
@@ -847,7 +847,8 @@ public class BinaryClient extends MemCachedClient {
 			sock.close();
 		}
 
-		log.info("multi get socket count : " + cmdMap.size());
+		if (log.isDebugEnabled())
+			log.debug("multi get socket count : " + cmdMap.size());
 
 		// now query memcache
 		Map<String, Object> ret = new HashMap<String, Object>(keys.length);

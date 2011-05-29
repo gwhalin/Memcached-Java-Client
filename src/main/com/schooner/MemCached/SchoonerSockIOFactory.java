@@ -13,19 +13,19 @@ import com.schooner.MemCached.SchoonerSockIOPool.UDPSockIO;
  */
 public class SchoonerSockIOFactory extends BasePoolableObjectFactory {
 
-	private GenericObjectPool sockets;
+	protected GenericObjectPool sockets;
 
-	private String host;
+	protected String host;
 
-	private int bufferSize;
+	protected int bufferSize;
 
-	private int socketTO;
+	protected int socketTO;
 
-	private int socketConnectTO;
+	protected int socketConnectTO;
 
-	private boolean isTcp;
+	protected boolean isTcp;
 
-	private boolean nagle;
+	protected boolean nagle;
 
 	public SchoonerSockIOFactory(String host, boolean isTcp, int bufferSize, int socketTO, int socketConnectTO,
 			boolean nagle) {
