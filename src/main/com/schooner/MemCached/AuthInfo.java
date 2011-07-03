@@ -2,6 +2,11 @@ package com.schooner.MemCached;
 
 import javax.security.auth.callback.CallbackHandler;
 
+/**
+ * @author Meng Li
+ * @since 2.6.1
+ * @see AuthInfo
+ */
 public class AuthInfo {
 
 	private final CallbackHandler callbackHandler;

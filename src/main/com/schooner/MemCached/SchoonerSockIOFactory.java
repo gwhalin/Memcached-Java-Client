@@ -7,6 +7,9 @@ import com.schooner.MemCached.SchoonerSockIOPool.TCPSockIO;
 import com.schooner.MemCached.SchoonerSockIOPool.UDPSockIO;
 
 /**
+ * {@link SchoonerSockIOFactory} is used to create and destroy socket for
+ * connection pool.
+ * 
  * @author Meng Li
  * @since 2.6.0
  * @see SchoonerSockIOFactory

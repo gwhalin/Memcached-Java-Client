@@ -10,6 +10,14 @@ import org.slf4j.LoggerFactory;
 
 import com.danga.MemCached.MemCachedClient;
 
+/**
+ * * {@link AuthSchoonerSockIOFactory} is used to create and destroy socket for
+ * connection pool with authorized information.
+ * 
+ * @author Meng Li
+ * @since 2.6.1
+ * @see AuthSchoonerSockIOFactory
+ */
 public class AuthSchoonerSockIOFactory extends SchoonerSockIOFactory {
 
 	// logger
