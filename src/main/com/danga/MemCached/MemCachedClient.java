@@ -854,7 +854,8 @@ public class MemCachedClient {
 	public long getCounter(String key, Integer hashCode) {
 
 		if (key == null) {
-			log.error("null key for getCounter()");
+			if (log.isErrorEnabled())
+				log.error("null key for getCounter()");
 			return -1;
 		}
 
@@ -868,7 +869,8 @@ public class MemCachedClient {
 				errorHandler.handleErrorOnGet(this, ex, key);
 
 			// not found or error getting out
-			log.info(String.format("Failed to parse Long value for key: %s", key));
+			if (log.isDebugEnabled())
+				log.info(String.format("Failed to parse Long value for key: %s", key));
 		}
 
 		return counter;

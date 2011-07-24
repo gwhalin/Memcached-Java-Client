@@ -65,7 +65,8 @@ public class IncrdecrCommand extends Command {
 				result = Long.parseLong(line);
 				return true;
 			} catch (Exception ex) {
-				log.error(new StringBuffer().append("Failed to parse Long value for key: ").toString());
+				if (log.isErrorEnabled())
+					log.error(new StringBuffer().append("Failed to parse Long value for key: ").toString());
 			}
 		}
 

@@ -20,6 +20,8 @@ public class MemcachedClientSASLTest {
 		pool.setInitConn(1);
 		pool.setMaxConn(1);
 		pool.setNagle(false);
+		pool.setFailback(true);
+		pool.setFailover(true);
 		pool.initialize();
 
 		// get client instance

@@ -817,8 +817,11 @@ public class SockIOPool {
 				try {
 					in.close();
 				} catch (IOException ioe) {
-					log.error("++++ error closing input stream for socket: " + toString() + " for host: " + getHost());
-					log.error(ioe.getMessage(), ioe);
+					if (log.isErrorEnabled()) {
+						log.error("++++ error closing input stream for socket: " + toString() + " for host: "
+								+ getHost());
+						log.error(ioe.getMessage(), ioe);
+					}
 					errMsg.append("++++ error closing input stream for socket: " + toString() + " for host: "
 							+ getHost() + "\n");
 					errMsg.append(ioe.getMessage());
@@ -830,8 +833,11 @@ public class SockIOPool {
 				try {
 					out.close();
 				} catch (IOException ioe) {
-					log.error("++++ error closing output stream for socket: " + toString() + " for host: " + getHost());
-					log.error(ioe.getMessage(), ioe);
+					if (log.isErrorEnabled()) {
+						log.error("++++ error closing output stream for socket: " + toString() + " for host: "
+								+ getHost());
+						log.error(ioe.getMessage(), ioe);
+					}
 					errMsg.append("++++ error closing output stream for socket: " + toString() + " for host: "
 							+ getHost() + "\n");
 					errMsg.append(ioe.getMessage());
@@ -843,8 +849,10 @@ public class SockIOPool {
 				try {
 					sock.close();
 				} catch (IOException ioe) {
-					log.error("++++ error closing socket: " + toString() + " for host: " + getHost());
-					log.error(ioe.getMessage(), ioe);
+					if (log.isErrorEnabled()) {
+						log.error("++++ error closing socket: " + toString() + " for host: " + getHost());
+						log.error(ioe.getMessage(), ioe);
+					}
 					errMsg.append("++++ error closing socket: " + toString() + " for host: " + getHost() + "\n");
 					errMsg.append(ioe.getMessage());
 					err = true;
@@ -916,7 +924,8 @@ public class SockIOPool {
 		 */
 		public String readLine() throws IOException {
 			if (sock == null || !sock.isConnected()) {
-				log.error("++++ attempting to read from closed socket");
+				if (log.isErrorEnabled())
+					log.error("++++ attempting to read from closed socket");
 				throw new IOException("++++ attempting to read from closed socket");
 			}
 
@@ -957,7 +966,8 @@ public class SockIOPool {
 		 */
 		public void clearEOL() throws IOException {
 			if (sock == null || !sock.isConnected()) {
-				log.error("++++ attempting to read from closed socket");
+				if (log.isErrorEnabled())
+					log.error("++++ attempting to read from closed socket");
 				throw new IOException("++++ attempting to read from closed socket");
 			}
 
@@ -991,7 +1001,8 @@ public class SockIOPool {
 		 */
 		public int read(byte[] b) throws IOException {
 			if (sock == null || !sock.isConnected()) {
-				log.error("++++ attempting to read from closed socket");
+				if (log.isErrorEnabled())
+					log.error("++++ attempting to read from closed socket");
 				throw new IOException("++++ attempting to read from closed socket");
 			}
 
@@ -1012,7 +1023,8 @@ public class SockIOPool {
 		 */
 		public void flush() throws IOException {
 			if (sock == null || !sock.isConnected()) {
-				log.error("++++ attempting to write to closed socket");
+				if (log.isErrorEnabled())
+					log.error("++++ attempting to write to closed socket");
 				throw new IOException("++++ attempting to write to closed socket");
 			}
 			out.flush();
@@ -1028,7 +1040,8 @@ public class SockIOPool {
 		 */
 		public void write(byte[] b) throws IOException {
 			if (sock == null || !sock.isConnected()) {
-				log.error("++++ attempting to write to closed socket");
+				if (log.isErrorEnabled())
+					log.error("++++ attempting to write to closed socket");
 				throw new IOException("++++ attempting to write to closed socket");
 			}
 			out.write(b);
@@ -1058,12 +1071,14 @@ public class SockIOPool {
 		protected void finalize() throws Throwable {
 			try {
 				if (sock != null) {
-					log.error("++++ closing potentially leaked socket in finalize");
+					if (log.isErrorEnabled())
+						log.error("++++ closing potentially leaked socket in finalize");
 					sock.close();
 					sock = null;
 				}
 			} catch (Throwable t) {
-				log.error(t.getMessage(), t);
+				if (log.isErrorEnabled())
+					log.error(t.getMessage(), t);
 			} finally {
 				super.finalize();
 			}
@@ -1257,13 +1272,16 @@ public class SockIOPool {
 			socket = new SockIO(this, host, this.socketTO, this.socketConnectTO, this.nagle);
 
 			if (!socket.isConnected()) {
-				log.error("++++ failed to get SockIO obj for: " + host + " -- new socket is not connected");
+				if (log.isErrorEnabled())
+					log.error("++++ failed to get SockIO obj for: " + host + " -- new socket is not connected");
 				deadPool.put(socket, ZERO);
 				socket = null;
 			}
 		} catch (Exception ex) {
-			log.error("++++ failed to get SockIO obj for: " + host);
-			log.error(ex.getMessage(), ex);
+			if (log.isErrorEnabled()) {
+				log.error("++++ failed to get SockIO obj for: " + host);
+				log.error(ex.getMessage(), ex);
+			}
 			socket = null;
 		}
 
@@ -1424,8 +1442,9 @@ public class SockIOPool {
 					// then close socket
 					// and remove from pool
 					if ((hungTime + maxBusyTime) < System.currentTimeMillis()) {
-						log.error("+++ removing potentially hung connection from busy pool ... socket in pool for "
-								+ (System.currentTimeMillis() - hungTime) + "ms");
+						if (log.isErrorEnabled())
+							log.error("+++ removing potentially hung connection from busy pool ... socket in pool for "
+									+ (System.currentTimeMillis() - hungTime) + "ms");
 
 						// remove from the busy pool
 						deadPool.put(socket, ZERO);
@@ -1446,8 +1465,10 @@ public class SockIOPool {
 			try {
 				socket.trueClose(false);
 			} catch (Exception ex) {
-				log.error("++++ failed to close SockIO obj from deadPool");
-				log.error(ex.getMessage(), ex);
+				if (log.isErrorEnabled()) {
+					log.error("++++ failed to close SockIO obj from deadPool");
+					log.error(ex.getMessage(), ex);
+				}
 			}
 
 			socket = null;
@@ -1530,7 +1551,8 @@ public class SockIOPool {
 					try {
 						socket.trueClose();
 					} catch (IOException ioe) {
-						log.error("++++ failed to close socket: " + ioe.getMessage());
+						if (log.isErrorEnabled())
+							log.error("++++ failed to close socket: " + ioe.getMessage());
 					}
 
 					i.remove();

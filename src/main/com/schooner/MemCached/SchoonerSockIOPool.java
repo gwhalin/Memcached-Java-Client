@@ -132,7 +132,8 @@ public class SchoonerSockIOPool {
 			try {
 				return MessageDigest.getInstance("MD5");
 			} catch (NoSuchAlgorithmException e) {
-				log.error("++++ no md5 algorithm found");
+				if (log.isErrorEnabled())
+					log.error("++++ no md5 algorithm found");
 				throw new IllegalStateException("++++ no md5 algorythm found");
 			}
 		}
@@ -285,7 +286,8 @@ public class SchoonerSockIOPool {
 			// if servers is not set, or it empty, then
 			// throw a runtime exception
 			if (servers == null || servers.length <= 0) {
-				log.error("++++ trying to initialize with no servers");
+				if (log.isErrorEnabled())
+					log.error("++++ trying to initialize with no servers");
 				throw new IllegalStateException("++++ trying to initialize with no servers");
 			}
 			// pools
@@ -453,7 +455,8 @@ public class SchoonerSockIOPool {
 	public final SchoonerSockIO getSock(String key, Integer hashCode) {
 
 		if (!this.initialized) {
-			log.error("attempting to get SockIO from uninitialized pool!");
+			if (log.isErrorEnabled())
+				log.error("attempting to get SockIO from uninitialized pool!");
 			return null;
 		}
 
@@ -519,7 +522,8 @@ public class SchoonerSockIOPool {
 	 */
 	public final SchoonerSockIO getConnection(String host) {
 		if (!this.initialized) {
-			log.error("attempting to get SockIO from uninitialized pool!");
+			if (log.isErrorEnabled())
+				log.error("attempting to get SockIO from uninitialized pool!");
 			return null;
 		}
 
@@ -545,12 +549,13 @@ public class SchoonerSockIOPool {
 			socket = null;
 		}
 
-		if (socket != null && aliveCheck && !socket.isAlive()) {
+		if (socket != null) {
 			socket.close();
 			try {
 				socket.sockets.invalidateObject(socket);
 			} catch (Exception e1) {
-				log.error("++++ failed to close socket : " + socket.toString());
+				if (log.isErrorEnabled())
+					log.error("++++ failed to close socket : " + socket.toString());
 			}
 			socket = null;
 		}
@@ -587,7 +592,8 @@ public class SchoonerSockIOPool {
 			try {
 				sockets.close();
 			} catch (Exception e) {
-				log.error("++++ failed to close socket pool.");
+				if (log.isErrorEnabled())
+					log.error("++++ failed to close socket pool.");
 			}
 		}
 	}
@@ -1266,7 +1272,8 @@ public class SchoonerSockIOPool {
 			try {
 				sockets.returnObject(this);
 			} catch (Exception e) {
-				log.error("++++ error closing socket: " + toString() + " for host: " + getHost());
+				if (log.isErrorEnabled())
+					log.error("++++ error closing socket: " + toString() + " for host: " + getHost());
 			}
 		}
 
@@ -1427,8 +1434,11 @@ public class SchoonerSockIOPool {
 				try {
 					sockChannel.close();
 				} catch (IOException ioe) {
-					log.error("++++ error closing input stream for socket: " + toString() + " for host: " + getHost());
-					log.error(ioe.getMessage(), ioe);
+					if (log.isErrorEnabled()) {
+						log.error("++++ error closing input stream for socket: " + toString() + " for host: "
+								+ getHost());
+						log.error(ioe.getMessage(), ioe);
+					}
 					errMsg.append("++++ error closing input stream for socket: " + toString() + " for host: "
 							+ getHost() + "\n");
 					errMsg.append(ioe.getMessage());
@@ -1440,8 +1450,10 @@ public class SchoonerSockIOPool {
 				try {
 					sock.close();
 				} catch (IOException ioe) {
-					log.error("++++ error closing socket: " + toString() + " for host: " + getHost());
-					log.error(ioe.getMessage(), ioe);
+					if (log.isErrorEnabled()) {
+						log.error("++++ error closing socket: " + toString() + " for host: " + getHost());
+						log.error(ioe.getMessage(), ioe);
+					}
 					errMsg.append("++++ error closing socket: " + toString() + " for host: " + getHost() + "\n");
 					errMsg.append(ioe.getMessage());
 					err = true;
@@ -1464,7 +1476,8 @@ public class SchoonerSockIOPool {
 			try {
 				sockets.returnObject(this);
 			} catch (Exception e) {
-				log.error("++++ error closing socket: " + toString() + " for host: " + getHost());
+				if (log.isErrorEnabled())
+					log.error("++++ error closing socket: " + toString() + " for host: " + getHost());
 			}
 		}
 
@@ -1508,7 +1521,8 @@ public class SchoonerSockIOPool {
 		 */
 		public final void readBytes(int length) throws IOException {
 			if (sock == null || !sock.isConnected()) {
-				log.error("++++ attempting to read from closed socket");
+				if (log.isErrorEnabled())
+					log.error("++++ attempting to read from closed socket");
 				throw new IOException("++++ attempting to read from closed socket");
 			}
 
@@ -1529,7 +1543,8 @@ public class SchoonerSockIOPool {
 		 */
 		public void write(byte[] b) throws IOException {
 			if (sock == null || !sock.isConnected()) {
-				log.error("++++ attempting to write to closed socket");
+				if (log.isErrorEnabled())
+					log.error("++++ attempting to write to closed socket");
 				throw new IOException("++++ attempting to write to closed socket");
 			}
 			sockChannel.write(ByteBuffer.wrap(b));
@@ -1598,7 +1613,8 @@ public class SchoonerSockIOPool {
 		@Override
 		public void clearEOL() throws IOException {
 			if (sock == null || !sock.isConnected()) {
-				log.error("++++ attempting to read from closed socket");
+				if (log.isErrorEnabled())
+					log.error("++++ attempting to read from closed socket");
 				throw new IOException("++++ attempting to read from closed socket");
 			}
 
@@ -1626,7 +1642,8 @@ public class SchoonerSockIOPool {
 		@Override
 		public int read(byte[] b) throws IOException {
 			if (sock == null || !sock.isConnected()) {
-				log.error("++++ attempting to read from closed socket");
+				if (log.isErrorEnabled())
+					log.error("++++ attempting to read from closed socket");
 				throw new IOException("++++ attempting to read from closed socket");
 			}
 
@@ -1643,7 +1660,8 @@ public class SchoonerSockIOPool {
 		@Override
 		public String readLine() throws IOException {
 			if (sock == null || !sock.isConnected()) {
-				log.error("++++ attempting to read from closed socket");
+				if (log.isErrorEnabled())
+					log.error("++++ attempting to read from closed socket");
 				throw new IOException("++++ attempting to read from closed socket");
 			}
 

@@ -60,7 +60,8 @@ public class AuthSchoonerSockIOFactory extends SchoonerSockIOFactory {
 		if (sendAuthData(socket, MemCachedClient.OPCODE_AUTH_STEPS, saslClient.getMechanismName(), authData) == null)
 			return;
 
-		log.error("Auth Failed: mechanism = " + saslClient.getMechanismName());
+		if (log.isErrorEnabled())
+			log.error("Auth Failed: mechanism = " + saslClient.getMechanismName());
 		throw new Exception();
 	}
 
@@ -93,7 +94,8 @@ public class AuthSchoonerSockIOFactory extends SchoonerSockIOFactory {
 			dis.readLong();
 			dis.read(response);
 		} else if (status == MemCachedClient.AUTH_FAILED) {
-			log.error("Auth Failed: mechanism = " + mechanism);
+			if (log.isErrorEnabled())
+				log.error("Auth Failed: mechanism = " + mechanism);
 			throw new Exception();
 		}
 

@@ -252,7 +252,8 @@ public class AscIIUDPClient extends MemCachedClient {
 	private boolean set(String cmdname, String key, Object value, Date expiry, Integer hashCode, Long casUnique) {
 
 		if (cmdname == null || key == null) {
-			log.error("key is null or cmd is null/empty for set()");
+			if (log.isErrorEnabled())
+				log.error("key is null or cmd is null/empty for set()");
 			return false;
 		}
 
@@ -264,12 +265,14 @@ public class AscIIUDPClient extends MemCachedClient {
 			if (errorHandler != null)
 				errorHandler.handleErrorOnSet(this, e, key);
 
-			log.error("failed to sanitize your key!", e);
+			if (log.isErrorEnabled())
+				log.error("failed to sanitize your key!", e);
 			return false;
 		}
 
 		if (value == null) {
-			log.error("trying to store a null value to cache");
+			if (log.isErrorEnabled())
+				log.error("trying to store a null value to cache");
 			return false;
 		}
 
@@ -295,13 +298,16 @@ public class AscIIUDPClient extends MemCachedClient {
 				errorHandler.handleErrorOnSet(this, e, key);
 
 			// exception thrown
-			log.error("++++ exception thrown while writing bytes to server on set");
-			log.error(e.getMessage(), e);
+			if (log.isErrorEnabled()) {
+				log.error("++++ exception thrown while writing bytes to server on set");
+				log.error(e.getMessage(), e);
+			}
 
 			try {
 				sock.sockets.invalidateObject(sock);
 			} catch (Exception e1) {
-				log.error("++++ failed to close socket : " + sock.toString());
+				if (log.isErrorEnabled())
+					log.error("++++ failed to close socket : " + sock.toString());
 			}
 			sock = null;
 		} finally {
@@ -386,7 +392,8 @@ public class AscIIUDPClient extends MemCachedClient {
 		// get SockIOPool instance
 		// return false if unable to get SockIO obj
 		if (pool == null) {
-			log.error("++++ unable to get SockIOPool instance");
+			if (log.isErrorEnabled())
+				log.error("++++ unable to get SockIOPool instance");
 			return false;
 		}
 
@@ -395,7 +402,8 @@ public class AscIIUDPClient extends MemCachedClient {
 
 		// if no servers, then return early
 		if (servers == null || servers.length <= 0) {
-			log.error("++++ no servers to flush");
+			if (log.isErrorEnabled())
+				log.error("++++ no servers to flush");
 			return false;
 		}
 
@@ -408,7 +416,8 @@ public class AscIIUDPClient extends MemCachedClient {
 				if (errorHandler != null)
 					errorHandler.handleErrorOnFlush(this, new IOException("no socket to server available"));
 
-				log.error("++++ unable to get connection to : " + servers[i]);
+				if (log.isErrorEnabled())
+					log.error("++++ unable to get connection to : " + servers[i]);
 				success = false;
 				continue;
 			}
@@ -427,13 +436,16 @@ public class AscIIUDPClient extends MemCachedClient {
 					errorHandler.handleErrorOnFlush(this, e);
 
 				// exception thrown
-				log.error("++++ exception thrown while writing bytes to server on flushAll");
-				log.error(e.getMessage(), e);
+				if (log.isErrorEnabled()) {
+					log.error("++++ exception thrown while writing bytes to server on flushAll");
+					log.error(e.getMessage(), e);
+				}
 
 				try {
 					sock.sockets.invalidateObject(sock);
 				} catch (Exception e1) {
-					log.error("++++ failed to close socket : " + sock.toString());
+					if (log.isErrorEnabled())
+						log.error("++++ failed to close socket : " + sock.toString());
 				}
 
 				success = false;
@@ -464,7 +476,8 @@ public class AscIIUDPClient extends MemCachedClient {
 	public Map<String, Object> getMulti(String[] keys, Integer[] hashCodes) {
 
 		if (keys == null || keys.length == 0) {
-			log.error("missing keys for getMulti()");
+			if (log.isErrorEnabled())
+				log.error("missing keys for getMulti()");
 			return null;
 		}
 
@@ -474,7 +487,8 @@ public class AscIIUDPClient extends MemCachedClient {
 
 			String key = keys[i];
 			if (key == null) {
-				log.error("null key, so skipping");
+				if (log.isErrorEnabled())
+					log.error("null key, so skipping");
 				continue;
 			}
 
@@ -570,7 +584,8 @@ public class AscIIUDPClient extends MemCachedClient {
 		MemcachedItem item = new MemcachedItem();
 
 		if (key == null) {
-			log.error("key is null for get()");
+			if (log.isErrorEnabled())
+				log.error("key is null for get()");
 			return item;
 		}
 
@@ -581,7 +596,8 @@ public class AscIIUDPClient extends MemCachedClient {
 			if (errorHandler != null)
 				errorHandler.handleErrorOnGet(this, e, key);
 
-			log.error("failed to sanitize your key!", e);
+			if (log.isErrorEnabled())
+				log.error("failed to sanitize your key!", e);
 			return null;
 		}
 
@@ -602,7 +618,8 @@ public class AscIIUDPClient extends MemCachedClient {
 			try {
 				sock.sockets.invalidateObject(sock);
 			} catch (Exception e1) {
-				log.error("++++ failed to close socket : " + sock.toString());
+				if (log.isErrorEnabled())
+					log.error("++++ failed to close socket : " + sock.toString());
 			}
 			sock = null;
 		} finally {
@@ -665,7 +682,8 @@ public class AscIIUDPClient extends MemCachedClient {
 
 	public boolean sync(String key, Integer hashCode) {
 		if (key == null) {
-			log.error("null value for key passed to delete()");
+			if (log.isErrorEnabled())
+				log.error("null value for key passed to delete()");
 			return false;
 		}
 
@@ -683,13 +701,16 @@ public class AscIIUDPClient extends MemCachedClient {
 			return syncCmd.response(sock, rid);
 		} catch (IOException e) {
 			// exception thrown
-			log.error("++++ exception thrown while writing bytes to server on delete");
-			log.error(e.getMessage(), e);
+			if (log.isErrorEnabled()) {
+				log.error("++++ exception thrown while writing bytes to server on delete");
+				log.error(e.getMessage(), e);
+			}
 
 			try {
 				sock.sockets.invalidateObject(sock);
 			} catch (Exception e1) {
-				log.error("++++ failed to close socket : " + sock.toString());
+				if (log.isErrorEnabled())
+					log.error("++++ failed to close socket : " + sock.toString());
 			}
 
 			sock = null;
@@ -715,7 +736,8 @@ public class AscIIUDPClient extends MemCachedClient {
 		// get SockIOPool instance
 		// return false if unable to get SockIO obj
 		if (pool == null) {
-			log.error("++++ unable to get SockIOPool instance");
+			if (log.isErrorEnabled())
+				log.error("++++ unable to get SockIOPool instance");
 			return false;
 		}
 
@@ -724,7 +746,8 @@ public class AscIIUDPClient extends MemCachedClient {
 
 		// if no servers, then return early
 		if (servers == null || servers.length <= 0) {
-			log.error("++++ no servers to sync");
+			if (log.isErrorEnabled())
+				log.error("++++ no servers to sync");
 			return false;
 		}
 
@@ -734,7 +757,8 @@ public class AscIIUDPClient extends MemCachedClient {
 
 			SchoonerSockIO sock = pool.getConnection(servers[i]);
 			if (sock == null) {
-				log.error("++++ unable to get connection to : " + servers[i]);
+				if (log.isErrorEnabled())
+					log.error("++++ unable to get connection to : " + servers[i]);
 				success = false;
 				continue;
 			}
@@ -748,13 +772,16 @@ public class AscIIUDPClient extends MemCachedClient {
 					return false;
 			} catch (IOException e) {
 				// exception thrown
-				log.error("++++ exception thrown while writing bytes to server on flushAll");
-				log.error(e.getMessage(), e);
+				if (log.isErrorEnabled()) {
+					log.error("++++ exceptionthrown while writing bytes to server on flushAll");
+					log.error(e.getMessage(), e);
+				}
 
 				try {
 					sock.sockets.invalidateObject(sock);
 				} catch (Exception e1) {
-					log.error("++++ failed to close socket : " + sock.toString());
+					if (log.isErrorEnabled())
+						log.error("++++ failed to close socket : " + sock.toString());
 				}
 
 				success = false;
@@ -773,7 +800,8 @@ public class AscIIUDPClient extends MemCachedClient {
 	public boolean delete(String key, Integer hashCode, Date expiry) {
 
 		if (key == null) {
-			log.error("null value for key passed to delete()");
+			if (log.isErrorEnabled())
+				log.error("null value for key passed to delete()");
 			return false;
 		}
 
@@ -796,12 +824,15 @@ public class AscIIUDPClient extends MemCachedClient {
 				errorHandler.handleErrorOnDelete(this, e, key);
 
 			// exception thrown
-			log.error("++++ exception thrown while writing bytes to server on delete");
-			log.error(e.getMessage(), e);
+			if (log.isErrorEnabled()) {
+				log.error("++++ exception thrown while writing bytes to server on delete");
+				log.error(e.getMessage(), e);
+			}
 			try {
 				sock.sockets.invalidateObject(sock);
 			} catch (Exception e1) {
-				log.error("++++ failed to close socket : " + sock.toString());
+				if (log.isErrorEnabled())
+					log.error("++++ failed to close socket : " + sock.toString());
 			}
 			sock = null;
 		} finally {
@@ -835,7 +866,8 @@ public class AscIIUDPClient extends MemCachedClient {
 	private long incrdecr(String cmdname, String key, long inc, Integer hashCode) {
 
 		if (key == null) {
-			log.error("null key for incrdecr()");
+			if (log.isErrorEnabled())
+				log.error("null key for incrdecr()");
 			return -1;
 		}
 
@@ -846,7 +878,8 @@ public class AscIIUDPClient extends MemCachedClient {
 			if (errorHandler != null)
 				errorHandler.handleErrorOnGet(this, e, key);
 
-			log.error("failed to sanitize your key!", e);
+			if (log.isErrorEnabled())
+				log.error("failed to sanitize your key!", e);
 			return -1;
 		}
 
@@ -873,13 +906,16 @@ public class AscIIUDPClient extends MemCachedClient {
 				errorHandler.handleErrorOnGet(this, e, key);
 
 			// exception thrown
-			log.error("++++ exception thrown while writing bytes to server on incr/decr");
-			log.error(e.getMessage(), e);
+			if (log.isErrorEnabled()) {
+				log.error("++++ exception thrown while writing bytes to server on incr/decr");
+				log.error(e.getMessage(), e);
+			}
 
 			try {
 				sock.sockets.invalidateObject(sock);
 			} catch (Exception e1) {
-				log.error("++++ failed to close socket : " + sock.toString());
+				if (log.isErrorEnabled())
+					log.error("++++ failed to close socket : " + sock.toString());
 			}
 
 			sock = null;
@@ -896,7 +932,8 @@ public class AscIIUDPClient extends MemCachedClient {
 	private Map<String, Map<String, String>> stats(String[] servers, String command, String lineStart) {
 
 		if (command == null || command.trim().equals("")) {
-			log.error("++++ invalid / missing command for stats()");
+			if (log.isErrorEnabled())
+				log.error("++++ invalid / missing command for stats()");
 			return null;
 		}
 
@@ -905,7 +942,8 @@ public class AscIIUDPClient extends MemCachedClient {
 
 		// if no servers, then return early
 		if (servers == null || servers.length <= 0) {
-			log.error("++++ no servers to check stats");
+			if (log.isErrorEnabled())
+				log.error("++++ no servers to check stats");
 			return null;
 		}
 
@@ -932,13 +970,16 @@ public class AscIIUDPClient extends MemCachedClient {
 					errorHandler.handleErrorOnStats(this, e);
 
 				// exception thrown
-				log.error("++++ exception thrown while writing bytes to server on stats");
-				log.error(e.getMessage(), e);
+				if (log.isErrorEnabled()) {
+					log.error("++++ exception thrown while writing bytes to server on stats");
+					log.error(e.getMessage(), e);
+				}
 
 				try {
 					sock.sockets.invalidateObject(sock);
 				} catch (Exception e1) {
-					log.error("++++ failed to close socket : " + sock.toString());
+					if (log.isErrorEnabled())
+						log.error("++++ failed to close socket : " + sock.toString());
 				}
 
 				sock = null;

@@ -71,11 +71,13 @@ public class SyncCommand extends Command {
 			return true;
 		} else if (NOTFOUND.equals(line)) {
 			if (log.isInfoEnabled())
-				log.info(new StringBuffer().append("++++ sync of key: ").append(key).append(
-						" from cache failed as the key was not found").toString());
+				log.info(new StringBuffer().append("++++ sync of key: ").append(key)
+						.append(" from cache failed as the key was not found").toString());
 		} else {
-			log.error(new StringBuffer().append("++++ error sync key: ").append(key).toString());
-			log.error(new StringBuffer().append("++++ server response: ").append(line).toString());
+			if (log.isErrorEnabled()) {
+				log.error(new StringBuffer().append("++++ error sync key: ").append(key).toString());
+				log.error(new StringBuffer().append("++++ server response: ").append(line).toString());
+			}
 		}
 
 		return false;

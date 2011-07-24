@@ -194,7 +194,8 @@ public class RetrievalCommand extends Command {
 					item.value = transCoder.decode(new ByteArrayInputStream(value.dataBlock));
 				}
 			} catch (IOException e) {
-				log.error("error happend in decoding the object");
+				if (log.isErrorEnabled())
+					log.error("error happend in decoding the object");
 				throw e;
 			}
 			return item;

@@ -69,10 +69,11 @@ public class DeletionCommand extends Command {
 				log.debug("DELETED!");
 			return true;
 		} else if (Arrays.equals(res, NOTFOUND)) {
-			// if (log.isDebugEnabled())
-			log.debug("NOT_FOUND!");
+			if (log.isDebugEnabled())
+				log.debug("NOT_FOUND!");
 		} else {
-			log.error("error");
+			if (log.isErrorEnabled())
+				log.error("error");
 		}
 		return false;
 	}

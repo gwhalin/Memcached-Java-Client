@@ -119,10 +119,15 @@ public class MemcachedPerfTest {
 				for (int i = 0; i < runs; i++) {
 					mc.get(threadName + "_" + i);
 				}
-			} else {
+			} else if (opKind.equals("delete")) {
 				// time deletes
 				for (int i = 0; i < runs; i++) {
 					mc.delete(threadName + "_" + i);
+				}
+			} else if (opKind.equals("getMulti")) {
+				// time deletes
+				for (int i = 0; i < runs; i++) {
+					mc.getMulti(new String[] { threadName + "_" + 0, threadName + "_" + i });
 				}
 			}
 		}

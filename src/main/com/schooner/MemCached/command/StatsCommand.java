@@ -77,8 +77,10 @@ public class StatsCommand extends Command {
 				// finish when we get end from server
 				break;
 			} else if (line.startsWith(ERROR) || line.startsWith(CLIENT_ERROR) || line.startsWith(SERVER_ERROR)) {
-				log.error("++++ failed to query stats");
-				log.error("++++ server response: " + line);
+				if (log.isErrorEnabled()) {
+					log.error("++++ failed to query stats");
+					log.error("++++ server response: " + line);
+				}
 				break;
 			}
 		}
