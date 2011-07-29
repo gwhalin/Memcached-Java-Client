@@ -549,17 +549,6 @@ public class SchoonerSockIOPool {
 			socket = null;
 		}
 
-		if (socket != null) {
-			socket.close();
-			try {
-				socket.sockets.invalidateObject(socket);
-			} catch (Exception e1) {
-				if (log.isErrorEnabled())
-					log.error("++++ failed to close socket : " + socket.toString());
-			}
-			socket = null;
-		}
-
 		if (socket == null) {
 			Date now = new Date();
 			hostDead.put(host, now);
