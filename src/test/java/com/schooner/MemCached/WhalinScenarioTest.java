@@ -428,12 +428,10 @@ public class WhalinScenarioTest extends TestCase {
 		assertEquals(expect, actual);
 		mc.setTransCoder(new TransCoder() {
 
-			@Override
 			public int encode(SockOutputStream out, Object object) throws IOException {
 				throw new IOException();
 			}
 
-			@Override
 			public Object decode(InputStream input) throws IOException {
 				throw new IOException();
 			}
@@ -457,12 +455,10 @@ public class WhalinScenarioTest extends TestCase {
 		assertEquals(expect, actual);
 		mc.setTransCoder(new TransCoder() {
 
-			@Override
 			public int encode(SockOutputStream out, Object object) throws IOException {
 				throw new IOException();
 			}
 
-			@Override
 			public Object decode(InputStream input) throws IOException {
 				throw new IOException();
 			}
@@ -480,12 +476,10 @@ public class WhalinScenarioTest extends TestCase {
 		final MemCachedClient mc = new MemCachedClient(true, false);
 		mc.setTransCoder(new TransCoder() {
 
-			@Override
 			public int encode(SockOutputStream out, Object object) throws IOException {
 				throw new IOException();
 			}
 
-			@Override
 			public Object decode(InputStream input) throws IOException {
 				throw new IOException();
 			}

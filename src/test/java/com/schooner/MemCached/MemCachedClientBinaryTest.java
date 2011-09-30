@@ -41,9 +41,11 @@ import java.util.Random;
 
 import junit.framework.TestCase;
 
+import com.danga.MemCached.ErrorHandler;
 import com.danga.MemCached.MemCachedClient;
+import com.danga.MemCached.SockIOPool;
 
-public class MemcachedClientUDPTest extends TestCase {
+public class MemCachedClientBinaryTest extends TestCase {
 
 	protected static MemCachedClient mc = null;
 	private static String[] serverlist;
@@ -64,17 +66,16 @@ public class MemcachedClientUDPTest extends TestCase {
 		serverlist = servers.split(",");
 
 		// initialize the pool for memcache servers
-		SchoonerSockIOPool pool = SchoonerSockIOPool.getInstance("test", false);
+		SockIOPool pool = SockIOPool.getInstance("test");
 		pool.setServers(serverlist);
-		pool.setNagle(false);
+		pool.setBufferSize(1024 * 3 * 1024);
 		pool.setHashingAlg(SchoonerSockIOPool.CONSISTENT_HASH);
 		pool.initialize();
-		pool.setInitConn(1);
 	}
 
 	protected void setUp() throws Exception {
 		super.setUp();
-		mc = new MemCachedClient("test", false, false);
+		mc = new MemCachedClient("test", true);
 	}
 
 	protected void tearDown() throws Exception {
@@ -83,22 +84,29 @@ public class MemcachedClientUDPTest extends TestCase {
 		mc.flushAll();
 	}
 
+	public void testConstructor() {
+		String servers = System.getProperty("memcached.host");
+		serverlist = servers.split(",");
+
+		// initialize the pool for memcache servers
+		SchoonerSockIOPool pool = SchoonerSockIOPool.getInstance();
+		pool.setServers(serverlist);
+		pool.setNagle(false);
+		pool.setHashingAlg(SchoonerSockIOPool.CONSISTENT_HASH);
+		pool.initialize();
+		new MemCachedClient(true);
+	}
+
 	public void testFlushAll() {
 		mc.set("foo1", "bar1");
 		mc.set("foo2", "bar2");
 		mc.flushAll();
 		assertFalse(mc.keyExists("foo1"));
 		assertFalse(mc.keyExists("foo2"));
-
-		mc.set("foo1", "bar1");
-		mc.set("foo2", "bar2");
-		mc.flushAll(null);
-		assertFalse(mc.keyExists("foo1"));
-		assertFalse(mc.keyExists("foo2"));
 	}
 
 	public void testIsUseBinaryProtocol() {
-		assertFalse(mc.isUseBinaryProtocol());
+		assertTrue(mc.isUseBinaryProtocol());
 	}
 
 	public void testKeyExsits() {
@@ -121,6 +129,7 @@ public class MemcachedClientUDPTest extends TestCase {
 		assertEquals(b.booleanValue(), true);
 		mc.delete("foo");
 		assertEquals(null, mc.get("foo"));
+		assertFalse(mc.delete(null));
 	}
 
 	/**
@@ -130,12 +139,14 @@ public class MemcachedClientUDPTest extends TestCase {
 	public void testDeleteStringDate() {
 		mc.set("foo", "bar");
 		mc.delete("foo", new Date(1000));
+		boolean expected = mc.keyExists("foo");
+		assertTrue(expected);
 		try {
 			Thread.sleep(2000);
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
-		boolean expected = mc.keyExists("foo");
+		expected = mc.keyExists("foo");
 		assertFalse(expected);
 	}
 
@@ -150,6 +161,73 @@ public class MemcachedClientUDPTest extends TestCase {
 		mc.set("foo", input);
 		String s = (String) mc.get("foo");
 		assertEquals(s, input);
+		String servers = System.getProperty("memcached.host");
+		serverlist = servers.split(",");
+
+		// initialize the pool for memcache servers
+		SchoonerSockIOPool pool = SchoonerSockIOPool.getInstance("test1");
+		pool.setServers(serverlist);
+		pool.setNagle(false);
+		pool.setHashingAlg(SchoonerSockIOPool.NEW_COMPAT_HASH);
+		pool.initialize();
+		mc = new MemCachedClient("test1", true);
+		mc.set("foo", input);
+		s = (String) mc.get("foo");
+		assertEquals(s, input);
+		mc.set("foo1", input, 10);
+		s = (String) mc.get("foo1", 10);
+		assertEquals(s, input);
+		pool.shutDown();
+		pool = SchoonerSockIOPool.getInstance("test2");
+		pool.setServers(serverlist);
+		pool.setNagle(false);
+		pool.setHashingAlg(SchoonerSockIOPool.OLD_COMPAT_HASH);
+		pool.initialize();
+		mc = new MemCachedClient("test2", true);
+		mc.set("foo", input);
+		s = (String) mc.get("foo");
+		assertEquals(s, input);
+		mc.set("foo2", input, 10);
+		s = (String) mc.get("foo2", 10);
+		assertEquals(s, input);
+		pool.shutDown();
+	}
+
+	public void testSetStringBool() {
+		String input = "test of string encoding";
+		mc.set("foo", input);
+		String s = (String) mc.get("foo", null, true);
+		assertEquals(s, input);
+		String servers = System.getProperty("memcached.host");
+		serverlist = servers.split(",");
+
+		// initialize the pool for memcache servers
+		SchoonerSockIOPool pool = SchoonerSockIOPool.getInstance("test1");
+		pool.setServers(serverlist);
+		pool.setNagle(false);
+		pool.setHashingAlg(SchoonerSockIOPool.NEW_COMPAT_HASH);
+		pool.initialize();
+		mc = new MemCachedClient("test1", true);
+		mc.set("foo", input);
+		s = (String) mc.get("foo", null, true);
+		assertEquals(s, input);
+		mc.set("foo1", input, 10);
+		s = (String) mc.get("foo1", 10, true);
+		assertEquals(s, input);
+		pool.shutDown();
+		pool = SchoonerSockIOPool.getInstance("test2");
+		pool.setServers(serverlist);
+		pool.setNagle(false);
+		pool.setHashingAlg(SchoonerSockIOPool.OLD_COMPAT_HASH);
+		pool.initialize();
+		mc = new MemCachedClient("test2", true);
+		mc.set("foo", input);
+		s = (String) mc.get("foo", null, true);
+		assertEquals(s, input);
+		mc.set("foo2", input, 10);
+		s = (String) mc.get("foo2", 10, true);
+		assertEquals(s, input);
+		pool.shutDown();
 	}
 
 	public void testSetChar() {
@@ -204,6 +282,7 @@ public class MemcachedClientUDPTest extends TestCase {
 	}
 
 	public void testIncr() {
+		assertEquals(mc.incr(null), -1);
 		long i = 0;
 		mc.addOrIncr("foo", i); // now == 0
 		assertEquals(mc.get("foo"), new Long(i).toString());
@@ -311,20 +390,31 @@ public class MemcachedClientUDPTest extends TestCase {
 	}
 
 	public void testGetMulti() {
-
-		assertNull(mc.getMulti(null));
-
 		int max = 100;
 		String[] keys = new String[max];
-		for (int i = 1; i < max; i++) {
+		for (int i = 0; i < max; i++) {
 			keys[i] = Integer.toString(i);
 			mc.set(keys[i], "value" + i);
 		}
 
-		keys[0] = null;
-
 		Map<String, Object> results = mc.getMulti(keys);
-		for (int i = 1; i < max; i++) {
+		for (int i = 0; i < max; i++) {
+			assertEquals(results.get(keys[i]), "value" + i);
+		}
+		results = mc.getMulti(new String[] { "a", "b" });
+		assertTrue(results.size() == 0);
+	}
+
+	public void testGetMultiString() {
+		int max = 100;
+		String[] keys = new String[max];
+		for (int i = 0; i < max; i++) {
+			keys[i] = Integer.toString(i);
+			mc.set(keys[i], "value" + i);
+		}
+
+		Map<String, Object> results = mc.getMulti(keys, null, true);
+		for (int i = 0; i < max; i++) {
 			assertEquals(results.get(keys[i]), "value" + i);
 		}
 	}
@@ -336,6 +426,7 @@ public class MemcachedClientUDPTest extends TestCase {
 		String[] args = { "foo1", "foo2", "foo3" };
 		String[] expected = { "bar1", "bar2", "bar3" };
 		Object[] actual = mc.getMultiArray(args);
+		assertNull(mc.getMultiArray(null));
 		assertEquals(expected.length, actual.length);
 		for (int i = 0; i < actual.length; i++) {
 			assertEquals(expected[i], actual[i]);
@@ -350,6 +441,20 @@ public class MemcachedClientUDPTest extends TestCase {
 		String[] expected = { "bar1", "bar2", "bar3" };
 		Integer[] hashcodes = { 1, 2, 3 };
 		Object[] actual = mc.getMultiArray(args, hashcodes);
+		assertEquals(expected.length, actual.length);
+		for (int i = 0; i < actual.length; i++) {
+			assertEquals(expected[i], actual[i]);
+		}
+	}
+
+	public void testGetMutiArrayStringArrayIntegerArrayBool() {
+		mc.set("foo1", "bar1", 1);
+		mc.set("foo2", "bar2", 2);
+		mc.set("foo3", "bar3", 3);
+		String[] args = { "foo1", "foo2", "foo3" };
+		String[] expected = { "bar1", "bar2", "bar3" };
+		Integer[] hashcodes = { 1, 2, 3 };
+		Object[] actual = mc.getMultiArray(args, hashcodes, true);
 		assertEquals(expected.length, actual.length);
 		for (int i = 0; i < actual.length; i++) {
 			assertEquals(expected[i], actual[i]);
@@ -372,6 +477,29 @@ public class MemcachedClientUDPTest extends TestCase {
 		assertEquals(tc, tt);
 	}
 
+	public void testCusTransCoder() {
+		TransCoder coder = new ObjectTransCoder() {
+			@Override
+			public void encode(OutputStream out, Object object) throws IOException {
+				ByteArrayOutputStream bOut = new ByteArrayOutputStream();
+				ObjectOutputStream oOut = new ObjectOutputStream(bOut);
+				oOut.writeObject(object);
+				byte[] bytes = bOut.toByteArray();
+				for (byte b : bytes)
+					out.write(b);
+			}
+		};
+		mc.setTransCoder(coder);
+		TestClass tc = new TestClass("foo", "bar", new Integer(32));
+		mc.set("foo", tc);
+		TestClass tt = (TestClass) mc.get("foo");
+		assertEquals(tc, tt);
+		tc = new TestClass("foo", initString(1024 * 2), new Integer(32));
+		mc.set("foo", tc);
+		tt = (TestClass) mc.get("foo");
+		assertEquals(tc, tt);
+	}
+
 	public void testSetStringObjectDateInteger() {
 		String expected, actual;
 		mc.set("foo", "bar", new Date(1000), 10);
@@ -386,13 +514,6 @@ public class MemcachedClientUDPTest extends TestCase {
 		}
 		boolean res = mc.keyExists("foo");
 		assertFalse(res);
-
-		boolean ret = mc.set(null, "bar", new Date(1000), 10);
-		assertFalse(ret);
-
-		ret = mc.set("foo", null, new Date(1000), 10);
-		assertFalse(ret);
-
 	}
 
 	public void testSetStringObjectInteger() {
@@ -430,8 +551,7 @@ public class MemcachedClientUDPTest extends TestCase {
 		mc.add("foo", "bar2");
 		String tt2 = (String) mc.get("foo");
 		assertEquals("bar", tt2);
-
-		assertFalse(mc.add(null, "bar"));
+		assertFalse(mc.add(null, "bar2"));
 		assertFalse(mc.add("foo", null));
 	}
 
@@ -464,7 +584,7 @@ public class MemcachedClientUDPTest extends TestCase {
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
-		actual = (String) mc.get("foo");
+		actual = (String) mc.get("foo", 10);
 		assertNull(actual);
 	}
 
@@ -506,7 +626,7 @@ public class MemcachedClientUDPTest extends TestCase {
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
-		assertFalse(mc.keyExists("foo"));
+		assertNull(mc.get("foo", 10));
 	}
 
 	public void testReplaceStringObjectInteger() {
@@ -521,6 +641,8 @@ public class MemcachedClientUDPTest extends TestCase {
 	public void testAppend() {
 		String value = "aa";
 		mc.append("aa", value);
+		assertFalse(mc.append(null, value));
+		assertFalse(mc.append("aa", null));
 		assertEquals(mc.get("aa"), null);
 		mc.add("aa", value);
 		assertEquals(mc.get("aa"), value);
@@ -645,12 +767,12 @@ public class MemcachedClientUDPTest extends TestCase {
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
-		actual = (String) mc.get("foo");
+		actual = (String) mc.get("foo", 10);
 		assertNull(actual);
 
-		mc.set("foo", "bar2");
+		mc.set("foo", "bar2", 10);
 		expected = "bar2";
-		actual = (String) mc.get("foo");
+		actual = (String) mc.get("foo", 10);
 		assertEquals(expected, actual);
 
 		boolean res = mc.cas("foo", "bar3", expiry, 10, item.getCasUnique());
@@ -669,6 +791,17 @@ public class MemcachedClientUDPTest extends TestCase {
 			assertEquals(true, res);
 			assertEquals(buf, mc.get("foo" + i));
 		}
+	}
+
+	public void testExtremeBigData() {
+		TestClass cls = new TestClass(initString(1024), initString(10240), 10240);
+		for (int i = 0; i < 10; ++i) {
+			mc.set("foo" + i, cls);
+			assertEquals(cls, mc.get("foo" + i));
+		}
+		String buf = initString(1024 * 1024 * 2);
+		mc.set("foo", buf);
+		assertEquals(buf, mc.get("foo"));
 	}
 
 	public void testStats() {
@@ -718,12 +851,10 @@ public class MemcachedClientUDPTest extends TestCase {
 		assertEquals(expect, actual);
 		mc.setTransCoder(new TransCoder() {
 
-			@Override
 			public int encode(SockOutputStream out, Object object) throws IOException {
 				throw new IOException();
 			}
 
-			@Override
 			public Object decode(InputStream input) throws IOException {
 				throw new IOException();
 			}
@@ -741,12 +872,10 @@ public class MemcachedClientUDPTest extends TestCase {
 		assertEquals(expect, actual);
 		mc.setTransCoder(new TransCoder() {
 
-			@Override
 			public int encode(SockOutputStream out, Object object) throws IOException {
 				throw new IOException();
 			}
 
-			@Override
 			public Object decode(InputStream input) throws IOException {
 				throw new IOException();
 			}
@@ -758,12 +887,10 @@ public class MemcachedClientUDPTest extends TestCase {
 	public void testSetWithIOException() {
 		mc.setTransCoder(new TransCoder() {
 
-			@Override
 			public int encode(SockOutputStream out, Object object) throws IOException {
 				throw new IOException();
 			}
 
-			@Override
 			public Object decode(InputStream input) throws IOException {
 				throw new IOException();
 			}
@@ -792,27 +919,32 @@ public class MemcachedClientUDPTest extends TestCase {
 		assertTrue(mc.syncAll(serverlist));
 	}
 
-	public void testCusTransCoder() {
-		TransCoder coder = new ObjectTransCoder() {
-			@Override
-			public void encode(OutputStream out, Object object) throws IOException {
-				ByteArrayOutputStream bOut = new ByteArrayOutputStream();
-				ObjectOutputStream oOut = new ObjectOutputStream(bOut);
-				oOut.writeObject(object);
-				byte[] bytes = bOut.toByteArray();
-				for (byte b : bytes)
-					out.write(b);
-			}
-		};
-		mc.setTransCoder(coder);
-		TestClass tc = new TestClass("foo", "bar", new Integer(32));
-		mc.set("foo", tc);
-		TestClass tt = (TestClass) mc.get("foo");
-		assertEquals(tc, tt);
-		tc = new TestClass("foo", initString(1024 * 2), new Integer(32));
-		mc.set("foo", tc);
-		tt = (TestClass) mc.get("foo");
-		assertEquals(tc, tt);
+	public static class TestErrorHandler implements ErrorHandler {
+
+		public boolean tag = false;
+
+		public void handleErrorOnDelete(MemCachedClient client, Throwable error, String cacheKey) {
+		}
+
+		public void handleErrorOnFlush(MemCachedClient client, Throwable error) {
+		}
+
+		public void handleErrorOnGet(MemCachedClient client, Throwable error, String cacheKey) {
+			tag = true;
+		}
+
+		public void handleErrorOnGet(MemCachedClient client, Throwable error, String[] cacheKeys) {
+		}
+
+		public void handleErrorOnInit(MemCachedClient client, Throwable error) {
+		}
+
+		public void handleErrorOnSet(MemCachedClient client, Throwable error, String cacheKey) {
+		}
+
+		public void handleErrorOnStats(MemCachedClient client, Throwable error) {
+		}
+
 	}
 
 	public static final class TestClass implements Serializable {

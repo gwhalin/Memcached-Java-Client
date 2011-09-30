@@ -15,3 +15,5 @@ memcached-release*
 /java_memcached-release_2.6.0.zip
 /java_memcached-release_2.6.0.jar
 /java_memcached-release_test_2.6.0.jar
+/bin
+/target
