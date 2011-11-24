@@ -110,7 +110,10 @@ public final class SockInputStream extends InputStream {
 			b = sock.readBuf.get();
 		}
 		count++;
-		return b & 0xff;
+		/*
+		 * a potencial bug for read int or read long.
+		 */
+		return (b & 0xff);
 	}
 
 	/**
