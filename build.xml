@@ -55,7 +55,10 @@
 	<target name="zip" depends="jar">
 		<zip destfile="${project}_${ver}.zip" basedir=".">
 			<include name="${project}_${ver}.jar" />
-			<fileset dir="lib" includes="slf4j*.jar" />
+			<fileset dir="lib">
+				<include name="slf4j*.jar" />
+				<include name="commons*.jar" />
+			</fileset>
 			<include name="README" />
 		</zip>
 	</target>
