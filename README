@@ -1,6 +1,9 @@
 #Author Xingen Wang (new.root@gmail.com)
         Meng Li (jowett.lee@gmail.com)
 
+Release 2.6.3:
+Perhaps solve the hang issue.
+
 Release 2.6.1:
 Add failback support.
 We also re-implement the connection pool based on Apache commons pool in this release.
