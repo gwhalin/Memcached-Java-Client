@@ -4,7 +4,7 @@
 
 	<groupId>com.danga</groupId>
 	<artifactId>Memcached-Java-Client</artifactId>
-	<version>2.6.2</version>
+	<version>2.6.3</version>
 	<packaging>jar</packaging>
 
 	<name>Memcached-Java-Client</name>
@@ -28,8 +28,14 @@
 		</dependency>
 		<dependency>
 			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-api</artifactId>
+			<version>1.6.4</version>
+		</dependency>
+		<dependency>
+			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-simple</artifactId>
-			<version>1.6.2</version>
+			<version>1.6.4</version>
+			<scope>provided</scope>
 		</dependency>
 	</dependencies>
 	<build>
@@ -40,6 +46,17 @@
 				<version>2.9</version>
 				<configuration>
 					<skipTests>true</skipTests>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>2.3.2</version>
+				<configuration>
+					<debuglevel>none</debuglevel>
+					<optimize>true</optimize>
+					<source>1.5</source>
+					<target>1.5</target>
 				</configuration>
 			</plugin>
 			<plugin>
