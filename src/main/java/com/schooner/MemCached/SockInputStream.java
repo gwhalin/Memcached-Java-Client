@@ -32,6 +32,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.BufferUnderflowException;
+import java.nio.channels.Channels;
+import java.nio.channels.ReadableByteChannel;
 
 /**
  * {@link SockInputStream} is a inputstream based on a socket. Due to memcached
@@ -124,7 +126,10 @@ public final class SockInputStream extends InputStream {
 	 */
 	private final void readFromChannel() throws IOException {
 		sock.readBuf.clear();
-		sock.getChannel().read(sock.readBuf);
+		// sock.getChannel().read(sock.readBuf); // This is blocking indefinitely
+		InputStream is = sock.getChannel().socket().getInputStream();
+                ReadableByteChannel wrappedChannel = Channels.newChannel(is);
+                wrappedChannel.read(sock.readBuf);
 		sock.readBuf.flip();
 	}
 
