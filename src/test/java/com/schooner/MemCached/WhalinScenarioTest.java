@@ -251,7 +251,7 @@ public class WhalinScenarioTest extends TestCase {
 		pool.setServers(hosts);
 		pool.initialize();
 		final MemCachedClient mc = new MemCachedClient(true, false);
-		mc.storeCounter("long", 1000);
+		mc.storeCounter("long", 1000L);
 		assertEquals(mc.get("long"), new Long(1000));
 		mc.flushAll();
 		pool.shutDown();

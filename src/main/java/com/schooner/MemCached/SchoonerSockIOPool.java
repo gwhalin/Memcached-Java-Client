@@ -105,9 +105,9 @@ import org.slf4j.LoggerFactory;
  * static {
  * 	String[] serverlist = { &quot;cache0.server.com:12345&quot;, &quot;cache1.server.com:12345&quot; };
  * 	Integer[] weights = { new Integer(5), new Integer(2) };
- * 	pool.setInitConn(500);
- * 	pool.setMinConn(50);
- * 	pool.setMaxConn(50000);
+ * 	pool.setInitConn(5);
+ * 	pool.setMinConn(5);
+ * 	pool.setMaxConn(10);
  * 	pool.setMaintSleep(0);
  * 	pool.setNagle(false);
  * 	pool.initialize();

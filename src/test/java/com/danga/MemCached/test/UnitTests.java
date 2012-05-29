@@ -143,7 +143,7 @@ public class UnitTests {
 		log.error("+ store/retrieve test passed");
 
 		assert !mc.keyExists("counterTest123");
-		mc.storeCounter("counterTest123", 0);
+		mc.storeCounter("counterTest123", 0L);
 		assert mc.keyExists("counterTest123");
 		log.error("+ counter store test passed");
 	}

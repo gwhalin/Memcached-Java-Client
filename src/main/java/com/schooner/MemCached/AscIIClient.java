@@ -582,7 +582,7 @@ public class AscIIClient extends MemCachedClient {
 				// Sucessfully increase.
 				// return sock to pool and return result
 				return Long.parseLong(line);
-			} else if (NOTFOUND.equals(line)) {
+			} else if (NOTFOUND.equals(line + "\r\n")) {
 				if (log.isInfoEnabled())
 					log.info(new StringBuffer().append("++++ key not found to incr/decr for key: ").append(key)
 							.toString());
@@ -1630,7 +1630,7 @@ public class AscIIClient extends MemCachedClient {
 	public boolean sync(String key, Integer hashCode) {
 		if (key == null) {
 			if (log.isErrorEnabled())
-				log.error("null value for key passed to delete()");
+				log.error("null value for key passed to sync()");
 			return false;
 		}
 

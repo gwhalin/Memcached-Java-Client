@@ -136,24 +136,36 @@ public class MemCachedClientBinaryTest extends TestCase {
 	 * this test case will fail in memcached 1.4+.<br>
 	 * memcached 1.4+ didn't support delete with expire time.
 	 */
-	public void testDeleteStringDate() {
-		mc.set("foo", "bar");
-		mc.delete("foo", new Date(1000));
-		boolean expected = mc.keyExists("foo");
-		assertTrue(expected);
-		try {
-			Thread.sleep(2000);
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}
-		expected = mc.keyExists("foo");
-		assertFalse(expected);
-	}
+	// public void testDeleteStringDate() {
+	// mc.set("foo", "bar");
+	// mc.delete("foo", new Date(1000));
+	// boolean expected = mc.keyExists("foo");
+	// assertTrue(expected);
+	// try {
+	// Thread.sleep(2000);
+	// } catch (InterruptedException e) {
+	// e.printStackTrace();
+	// }
+	// expected = mc.keyExists("foo");
+	// assertFalse(expected);
+	// }
 
 	public void testSetInteger() {
 		mc.set("foo", new Integer(Integer.MAX_VALUE));
 		Integer i = (Integer) mc.get("foo");
 		assertEquals(i.intValue(), Integer.MAX_VALUE);
+	}
+
+	public void testSetStringArray() {
+		String[] values = new String[8000];
+		int j = 0;
+		for (int i = 0; i < values.length; i++) {
+			values[j] = "3";
+			j++;
+		}
+		mc.set("foo", values);
+		String[] vs = (String[]) mc.get("foo");
+		assertEquals(values.length, vs.length);
 	}
 
 	public void testSetString() {
@@ -277,6 +289,38 @@ public class MemCachedClientBinaryTest extends TestCase {
 		try {
 			Thread.sleep(2000);
 		} catch (Exception ex) {
+		}
+		assertNull(mc.get("foo"));
+	}
+
+	public void testStoreCounterStringLong() {
+		mc.storeCounter("foo", 10L);
+		Long s = (Long) mc.get("foo");
+		assertTrue(s == 10L);
+	}
+
+	public void testStoreCounterStringLongInteger() {
+		mc.storeCounter("foo", 10L, "foo".hashCode());
+		Long s = (Long) mc.get("foo");
+		assertTrue(s == 10L);
+	}
+
+	public void testStoreCounterStringLongDate() {
+		mc.storeCounter("foo", 10L, new Date(1000));
+		try {
+			Thread.sleep(2000);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+		assertNull(mc.get("foo"));
+	}
+
+	public void testStoreCounterStringLongDateInteger() {
+		mc.storeCounter("foo", 10L, new Date(1000), "foo".hashCode());
+		try {
+			Thread.sleep(2000);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
 		}
 		assertNull(mc.get("foo"));
 	}
@@ -901,23 +945,40 @@ public class MemCachedClientBinaryTest extends TestCase {
 		assertNotSame(expect, actual);
 	}
 
-	// TODO:
-	public void testSyncString() {
-		assertTrue(mc.sync("key"));
+	public void testStoreCounterWithAsString() {
+		mc.setPrimitiveAsString(true);
+		final String key = "testKey" + Math.random();
+		mc.storeCounter(key, 3L);
+		mc.incr(key);
+
+		assertTrue((Long) mc.getCounter(key) == 4);
 	}
 
-	public void testSyncStringInteger() {
-		assertFalse(mc.sync(null, 10));
-		assertTrue(mc.sync("key", 10));
+	public void testStoreCounterWithoutAsString() {
+		final String key = "testKey" + Math.random();
+		mc.storeCounter(key, 3L);
+		mc.incr(key);
+		long value = (Long) mc.getCounter(key);
+		assertEquals(value, -1L);
 	}
 
-	public void testSyncAll() {
-		assertTrue(mc.syncAll());
-	}
-
-	public void testSyncAllStringArray() {
-		assertTrue(mc.syncAll(serverlist));
-	}
+	//
+	// public void testSyncString() {
+	// assertTrue(mc.sync("key"));
+	// }
+	//
+	// public void testSyncStringInteger() {
+	// assertFalse(mc.sync(null, 10));
+	// assertTrue(mc.sync("key", 10));
+	// }
+	//
+	// public void testSyncAll() {
+	// assertTrue(mc.syncAll());
+	// }
+	//
+	// public void testSyncAllStringArray() {
+	// assertTrue(mc.syncAll(serverlist));
+	// }
 
 	public static class TestErrorHandler implements ErrorHandler {
 

@@ -1,5 +1,7 @@
 #Author Xingen Wang (new.root@gmail.com)
         Meng Li (jowett.lee@gmail.com)
+Release 2.6.4:
+add storeCounter with expiry support. 
 
 Release 2.6.3:
 Perhaps solve the hang issue.

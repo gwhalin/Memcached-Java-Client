@@ -568,6 +568,7 @@ public class MemCachedClient {
 	/**
 	 * Deletes an object from cache given cache key and expiration date.
 	 * 
+	 * @deprecated not supported in memcached 1.4+
 	 * @param key
 	 *            the key to be removed
 	 * @param expiry
@@ -590,6 +591,7 @@ public class MemCachedClient {
 	 * specified time. However, {@link #set(String, Object) set} will succeed,<br/>
 	 * and the new value will not be deleted.
 	 * 
+	 * @deprecated not supported in memcached 1.4+
 	 * @param key
 	 *            the key to be removed
 	 * @param hashCode
@@ -799,8 +801,8 @@ public class MemCachedClient {
 	 *            number to store
 	 * @return true/false indicating success
 	 */
-	public boolean storeCounter(String key, long counter) {
-		return storeCounter(key, new Long(counter));
+	public boolean storeCounter(String key, Long counter) {
+		return storeCounter(key, counter, null, null);
 	}
 
 	/**
@@ -810,10 +812,29 @@ public class MemCachedClient {
 	 *            cache key
 	 * @param counter
 	 *            number to store
+	 * @param date
+	 *            when to expire the record
 	 * @return true/false indicating success
 	 */
-	public boolean storeCounter(String key, Long counter) {
-		return storeCounter(key, counter, null);
+	public boolean storeCounter(String key, Long counter, Date date) {
+		return storeCounter(key, counter, date, null);
+	}
+
+	/**
+	 * Store a counter to memcached given a key
+	 * 
+	 * @param key
+	 *            cache key
+	 * @param counter
+	 *            number to store
+	 * @param date
+	 *            when to expire the record
+	 * @param hashCode
+	 *            if not null, then the int hashcode to use
+	 * @return true/false indicating success
+	 */
+	public boolean storeCounter(String key, Long counter, Date date, Integer hashCode) {
+		return set(key, counter, date, hashCode);
 	}
 
 	/**
@@ -828,7 +849,7 @@ public class MemCachedClient {
 	 * @return true/false indicating success
 	 */
 	public boolean storeCounter(String key, Long counter, Integer hashCode) {
-		return set(key, counter, hashCode);
+		return storeCounter(key, counter, null, hashCode);
 	}
 
 	/**
@@ -955,7 +976,9 @@ public class MemCachedClient {
 	}
 
 	/**
-	 * Increment the value at the specified key by 1, and then return it.
+	 * Increment the value at the specified key by 1, and then return it.<br>
+	 * Please make sure setPrimitiveAsString=true if the key/value pair is
+	 * stored with set command.
 	 * 
 	 * @param key
 	 *            key where the data is stored
@@ -967,7 +990,9 @@ public class MemCachedClient {
 	}
 
 	/**
-	 * Increment the value at the specified key by passed in val.
+	 * Increment the value at the specified key by passed in val.<br>
+	 * Please make sure setPrimitiveAsString=true if the key/value pair is
+	 * stored with set command.
 	 * 
 	 * @param key
 	 *            key where the data is stored
@@ -982,7 +1007,9 @@ public class MemCachedClient {
 
 	/**
 	 * Increment the value at the specified key by the specified increment, and
-	 * then return it.
+	 * then return it.<br>
+	 * Please make sure setPrimitiveAsString=true if the key/value pair is
+	 * stored with set command.
 	 * 
 	 * @param key
 	 *            key where the data is stored
@@ -998,7 +1025,9 @@ public class MemCachedClient {
 	}
 
 	/**
-	 * Decrement the value at the specified key by 1, and then return it.
+	 * Decrement the value at the specified key by 1, and then return it.<br>
+	 * Please make sure setPrimitiveAsString=true if the key/value pair is
+	 * stored with set command.
 	 * 
 	 * @param key
 	 *            key where the data is stored
@@ -1011,7 +1040,9 @@ public class MemCachedClient {
 
 	/**
 	 * Decrement the value at the specified key by passed in value, and then
-	 * return it.
+	 * return it.<br>
+	 * Please make sure setPrimitiveAsString=true if the key/value pair is
+	 * stored with set command.
 	 * 
 	 * @param key
 	 *            key where the data is stored
@@ -1026,7 +1057,9 @@ public class MemCachedClient {
 
 	/**
 	 * Decrement the value at the specified key by the specified increment, and
-	 * then return it.
+	 * then return it.<br>
+	 * Please make sure setPrimitiveAsString=true if the key/value pair is
+	 * stored with set command.
 	 * 
 	 * @param key
 	 *            key where the data is stored
