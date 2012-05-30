@@ -32,6 +32,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.BufferUnderflowException;
+import java.nio.channels.Channels;
+import java.nio.channels.ReadableByteChannel;
 
 /**
  * {@link SockInputStream} is a inputstream based on a socket. Due to memcached
@@ -46,6 +48,8 @@ public final class SockInputStream extends InputStream {
 	private SchoonerSockIO sock;
 	private int limit;
 	private int count = 0;
+	private byte b;
+	private ByteArrayOutputStream bos = new ByteArrayOutputStream();
 
 	/**
 	 * get length of to-be-read.
@@ -102,7 +106,7 @@ public final class SockInputStream extends InputStream {
 		if (count >= limit) {
 			return -1;
 		}
-		byte b = 0;
+		b = 0;
 		try {
 			b = sock.readBuf.get();
 		} catch (BufferUnderflowException e) {
@@ -124,7 +128,9 @@ public final class SockInputStream extends InputStream {
 	 */
 	private final void readFromChannel() throws IOException {
 		sock.readBuf.clear();
-		sock.getChannel().read(sock.readBuf);
+		// sock.getChannel().read(sock.readBuf);
+		ReadableByteChannel wrappedChannel = Channels.newChannel(sock.getChannel().socket().getInputStream());
+		wrappedChannel.read(sock.readBuf);
 		sock.readBuf.flip();
 	}
 
@@ -171,7 +177,7 @@ public final class SockInputStream extends InputStream {
 	 * @since 2.5.1
 	 */
 	public final String getLine() throws IOException {
-		ByteArrayOutputStream bos = new ByteArrayOutputStream();
+		bos.reset();
 		int b;
 		while ((b = read()) != -1) {
 			bos.write(b);
