@@ -1,5 +1,8 @@
 #Author Xingen Wang (new.root@gmail.com)
         Meng Li (jowett.lee@gmail.com)
+Release 2.6.6:
+Resove issue #38. you can now get Boolean, Long with gets command in AsciiClient.
+
 Release 2.6.5:
 since nio doesn't support soTimeout, solve this issue in com.schooner.MemCached.SockInputStream.readFromChannel(). 
 

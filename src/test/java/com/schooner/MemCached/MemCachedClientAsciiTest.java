@@ -399,6 +399,15 @@ public class MemCachedClientAsciiTest extends TestCase {
 		}
 	}
 
+	public void testGets() {
+		mc.set("foo1", "bar1");
+		mc.set("foo2", 2000L);
+		mc.set("foo3", true);
+		assertEquals("bar1", mc.gets("foo1").value);
+		assertEquals(2000L, mc.gets("foo2").value);
+		assertEquals(true, mc.gets("foo3").value);
+	}
+
 	public void testSetByteArray() {
 		byte[] b = new byte[10];
 		for (int i = 0; i < 10; i++)
