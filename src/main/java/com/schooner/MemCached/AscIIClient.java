@@ -854,7 +854,7 @@ public class AscIIClient extends MemCachedClient {
 			sock.flush();
 
 			int dataSize = 0;
-			byte flag = 0;
+			int flag = 0;
 			MemcachedItem item = new MemcachedItem();
 
 			// get result code
@@ -878,7 +878,7 @@ public class AscIIClient extends MemCachedClient {
 					case 1:
 						break;
 					case 2:
-						flag = Byte.parseByte(sb.toString());
+						flag = Integer.parseInt(sb.toString());
 						break;
 					case 3:
 						// get the data size
