@@ -14,3 +14,8 @@ memcached-release*
 /bin
 /target
 /java_memcached-release*
+/release.properties
+/pom.xml.releaseBackup
+/ocalCheckout=true
+/pom.xml.next
+/pom.xml.tag

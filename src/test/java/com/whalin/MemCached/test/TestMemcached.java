@@ -15,10 +15,10 @@
  *
  * @author greg whalin <greg@meetup.com> 
  */
-package com.danga.MemCached.test;
+package com.whalin.MemCached.test;
 
-import com.danga.MemCached.MemCachedClient;
-import com.danga.MemCached.SockIOPool;
+import com.whalin.MemCached.MemCachedClient;
+import com.whalin.MemCached.SockIOPool;
 
 public class TestMemcached {
 	public static void main(String[] args) {

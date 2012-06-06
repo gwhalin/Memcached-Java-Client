@@ -2,7 +2,7 @@ package com.schooner.MemCached;
 
 import java.util.Map;
 
-import com.danga.MemCached.MemCachedClient;
+import com.whalin.MemCached.MemCachedClient;
 
 public class MemcachedClientSASLTest {
 

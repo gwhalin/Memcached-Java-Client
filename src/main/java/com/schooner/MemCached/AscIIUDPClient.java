@@ -35,8 +35,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.danga.MemCached.ErrorHandler;
-import com.danga.MemCached.MemCachedClient;
 import com.schooner.MemCached.command.DeletionCommand;
 import com.schooner.MemCached.command.FlushAllCommand;
 import com.schooner.MemCached.command.IncrdecrCommand;
@@ -45,6 +43,8 @@ import com.schooner.MemCached.command.StatsCommand;
 import com.schooner.MemCached.command.StorageCommand;
 import com.schooner.MemCached.command.SyncAllCommand;
 import com.schooner.MemCached.command.SyncCommand;
+import com.whalin.MemCached.ErrorHandler;
+import com.whalin.MemCached.MemCachedClient;
 
 /**
  * This client implements the UDP protocol of memcached in a very high

@@ -41,7 +41,7 @@ import java.util.Random;
 
 import junit.framework.TestCase;
 
-import com.danga.MemCached.MemCachedClient;
+import com.whalin.MemCached.MemCachedClient;
 
 public class MemcachedClientUDPTest extends TestCase {
 

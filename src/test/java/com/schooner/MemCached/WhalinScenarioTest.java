@@ -11,8 +11,8 @@ import java.util.Map;
 
 import junit.framework.TestCase;
 
-import com.danga.MemCached.MemCachedClient;
-import com.danga.MemCached.SockIOPool;
+import com.whalin.MemCached.MemCachedClient;
+import com.whalin.MemCached.SockIOPool;
 
 /**
  * @author newrootwang

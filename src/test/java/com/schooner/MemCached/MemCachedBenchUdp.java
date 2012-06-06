@@ -28,7 +28,7 @@
  ******************************************************************************/
 package com.schooner.MemCached;
 
-import com.danga.MemCached.MemCachedClient;
+import com.whalin.MemCached.MemCachedClient;
 
 public class MemCachedBenchUdp {
 
