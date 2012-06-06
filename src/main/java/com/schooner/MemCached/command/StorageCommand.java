@@ -35,12 +35,12 @@ import java.util.Date;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.danga.MemCached.MemCachedClient;
 import com.schooner.MemCached.NativeHandler;
 import com.schooner.MemCached.ObjectTransCoder;
 import com.schooner.MemCached.SchoonerSockIO;
 import com.schooner.MemCached.SockOutputStream;
 import com.schooner.MemCached.TransCoder;
+import com.whalin.MemCached.MemCachedClient;
 
 /**
  * This command implements the set command using memcached UDP protocol.

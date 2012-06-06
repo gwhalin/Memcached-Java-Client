@@ -15,12 +15,12 @@
  *
  * @author Greg Whalin <greg@meetup.com> 
  */
-package com.danga.MemCached.test;
+package com.whalin.MemCached.test;
 
 import java.util.Hashtable;
 
-import com.danga.MemCached.MemCachedClient;
-import com.danga.MemCached.SockIOPool;
+import com.whalin.MemCached.MemCachedClient;
+import com.whalin.MemCached.SockIOPool;
 
 public class MemcachedTest {
 

@@ -24,7 +24,7 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.List;
 
-import com.danga.MemCached.LineInputStream;
+import com.whalin.MemCached.LineInputStream;
 
 /**
  * This class will only be used in the multi-get memcached operations.

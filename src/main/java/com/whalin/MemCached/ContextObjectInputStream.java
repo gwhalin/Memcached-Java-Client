@@ -13,11 +13,12 @@
  * You should have received a copy of the BSD License along with this
  * library.
  *
- * This is an interface implemented by classes that want to receive callbacks
- * in the event of an error in {@link MemCachedClient}. The implementor can do
- * things like flush caches or perform additioonal logging.
- *
- * @author Dan Zivkovic <zivkovic@apple.com>
+ * Adds the ability for the MemCached client to be initialized
+ * with a custom class loader.  This will allow for the
+ * deserialization of classes that are not visible to the system
+ * class loader.
+ * 
+ * @author Vin Chawla <vin@tivo.com> 
  */
 
 /*******************************************************************************
@@ -48,53 +49,27 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  ******************************************************************************/
-package com.danga.MemCached;
+package com.whalin.MemCached;
 
-/**
- * You can customize your error handle processes in this class.
- * 
- */
-public interface ErrorHandler {
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectStreamClass;
 
-	/**
-	 * Called for errors thrown during initialization.
-	 */
-	public void handleErrorOnInit(final MemCachedClient client, final Throwable error);
+public class ContextObjectInputStream extends ObjectInputStream {
 
-	/**
-	 * Called for errors thrown during {@link MemCachedClient#get(String)} and
-	 * related methods.
-	 */
-	public void handleErrorOnGet(final MemCachedClient client, final Throwable error, final String cacheKey);
+	ClassLoader mLoader;
 
-	/**
-	 * Called for errors thrown during {@link MemCachedClient#getMulti(String)}
-	 * and related methods.
-	 */
-	public void handleErrorOnGet(final MemCachedClient client, final Throwable error, final String[] cacheKeys);
+	public ContextObjectInputStream(InputStream in, ClassLoader loader) throws IOException, SecurityException {
+		super(in);
+		mLoader = loader;
+	}
 
-	/**
-	 * Called for errors thrown during
-	 * {@link MemCachedClient#set(String,Object)} and related methods.
-	 */
-	public void handleErrorOnSet(final MemCachedClient client, final Throwable error, final String cacheKey);
-
-	/**
-	 * Called for errors thrown during {@link MemCachedClient#delete(String)}
-	 * and related methods.
-	 */
-	public void handleErrorOnDelete(final MemCachedClient client, final Throwable error, final String cacheKey);
-
-	/**
-	 * Called for errors thrown during {@link MemCachedClient#flushAll()} and
-	 * related methods.
-	 */
-	public void handleErrorOnFlush(final MemCachedClient client, final Throwable error);
-
-	/**
-	 * Called for errors thrown during {@link MemCachedClient#stats()} and
-	 * related methods.
-	 */
-	public void handleErrorOnStats(final MemCachedClient client, final Throwable error);
-
-} // interface
+	@Override
+	protected Class<?> resolveClass(ObjectStreamClass v) throws IOException, ClassNotFoundException {
+		if (mLoader == null)
+			return super.resolveClass(v);
+		else
+			return Class.forName(v.getName(), true, mLoader);
+	}
+}

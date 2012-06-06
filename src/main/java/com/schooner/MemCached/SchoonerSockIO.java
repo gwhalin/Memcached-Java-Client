@@ -35,7 +35,7 @@ import java.nio.channels.ByteChannel;
 
 import org.apache.commons.pool.impl.GenericObjectPool;
 
-import com.danga.MemCached.SockIOPool;
+import com.whalin.MemCached.SockIOPool;
 
 /**
  * An adapter of com.danga.MemCached.SockIOPool.SockIO.
@@ -43,7 +43,7 @@ import com.danga.MemCached.SockIOPool;
  * @author Xingen Wang
  * @since 2.5.0
  * @see SchoonerSockIO
- * @see com.danga.MemCached.SockIOPool.SockIO
+ * @see com.whalin.MemCached.SockIOPool.SockIO
  */
 public abstract class SchoonerSockIO extends SockIOPool.SockIO {
 

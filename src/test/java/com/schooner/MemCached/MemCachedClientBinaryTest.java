@@ -41,9 +41,9 @@ import java.util.Random;
 
 import junit.framework.TestCase;
 
-import com.danga.MemCached.ErrorHandler;
-import com.danga.MemCached.MemCachedClient;
-import com.danga.MemCached.SockIOPool;
+import com.whalin.MemCached.ErrorHandler;
+import com.whalin.MemCached.MemCachedClient;
+import com.whalin.MemCached.SockIOPool;
 
 public class MemCachedClientBinaryTest extends TestCase {
 

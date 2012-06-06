@@ -22,7 +22,7 @@ package com.schooner.MemCached;
 import java.io.UnsupportedEncodingException;
 import java.util.Date;
 
-import com.danga.MemCached.MemCachedClient;
+import com.whalin.MemCached.MemCachedClient;
 
 /**
  * Handle encoding standard Java types directly which can result in significant

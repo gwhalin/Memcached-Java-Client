@@ -16,7 +16,7 @@
  * @author Kevin Burton
  * @author greg whalin <greg@meetup.com> 
  */
-package com.danga.MemCached.test;
+package com.whalin.MemCached.test;
 
 import java.io.Serializable;
 import java.util.Arrays;
@@ -26,8 +26,8 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.danga.MemCached.MemCachedClient;
-import com.danga.MemCached.SockIOPool;
+import com.whalin.MemCached.MemCachedClient;
+import com.whalin.MemCached.SockIOPool;
 
 public class UnitTests {
 

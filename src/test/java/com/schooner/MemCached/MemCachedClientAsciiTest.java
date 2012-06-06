@@ -40,8 +40,8 @@ import java.util.Random;
 
 import junit.framework.TestCase;
 
-import com.danga.MemCached.MemCachedClient;
-import com.danga.MemCached.SockIOPool;
+import com.whalin.MemCached.MemCachedClient;
+import com.whalin.MemCached.SockIOPool;
 
 public class MemCachedClientAsciiTest extends TestCase {
 

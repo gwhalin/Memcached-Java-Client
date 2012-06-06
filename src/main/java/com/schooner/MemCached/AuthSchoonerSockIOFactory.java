@@ -8,7 +8,7 @@ import javax.security.sasl.SaslClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.danga.MemCached.MemCachedClient;
+import com.whalin.MemCached.MemCachedClient;
 
 /**
  * * {@link AuthSchoonerSockIOFactory} is used to create and destroy socket for

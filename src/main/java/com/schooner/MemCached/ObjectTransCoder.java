@@ -34,7 +34,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 
-import com.danga.MemCached.ContextObjectInputStream;
+import com.whalin.MemCached.ContextObjectInputStream;
 
 /**
  * {@link ObjectTransCoder} is the default TransCoder used to handle the

@@ -46,9 +46,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.zip.GZIPInputStream;
 
-import com.danga.MemCached.ErrorHandler;
-import com.danga.MemCached.LineInputStream;
-import com.danga.MemCached.MemCachedClient;
+import com.whalin.MemCached.ErrorHandler;
+import com.whalin.MemCached.LineInputStream;
+import com.whalin.MemCached.MemCachedClient;
 
 /**
  * This client implements the text protocol of memcached in a very high
