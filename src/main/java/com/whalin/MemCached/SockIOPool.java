@@ -177,7 +177,7 @@ public class SockIOPool {
 	private int poolMultiplier = 3;
 	private int minConn = 5;
 	private int maxConn = 100;
-	private long maxIdle = 1000 * 60 * 5; // max idle time for avail sockets
+	private int maxIdle = 1000 * 60 * 5; // max idle time for avail sockets
 	private long maxBusyTime = 1000 * 30; // max idle time for avail sockets
 	private int socketTO = 1000 * 3; // default timeout of socket reads
 	private int socketConnectTO = 1000 * 3; // default timeout of socket
@@ -427,7 +427,7 @@ public class SockIOPool {
 	 * @param maxIdle
 	 *            idle time in ms
 	 */
-	public void setMaxIdle(long maxIdle) {
+	public void setMaxIdle(int maxIdle) {
 		schoonerSockIOPool.setMaxIdle(maxIdle);
 	}
 
@@ -436,7 +436,7 @@ public class SockIOPool {
 	 * 
 	 * @return max idle setting in ms
 	 */
-	public long getMaxIdle() {
+	public int getMaxIdle() {
 		return schoonerSockIOPool.getMaxIdle();
 	}
 
@@ -890,28 +890,6 @@ public class SockIOPool {
 		 */
 		protected boolean isConnected() {
 			return (sock != null && sock.isConnected());
-		}
-
-		/*
-		 * checks to see that the connection is still working
-		 * 
-		 * @return true if still alive
-		 */
-		public boolean isAlive() {
-
-			if (!isConnected())
-				return false;
-
-			// try to talk to the server w/ a dumb query to ask its version
-			try {
-				this.write("version\r\n".getBytes());
-				this.flush();
-				this.readLine();
-			} catch (IOException ex) {
-				return false;
-			}
-
-			return true;
 		}
 
 		/**

@@ -55,7 +55,7 @@ public class SchoonerSockIOFactory extends BasePoolableObjectFactory {
 
 	@Override
 	public boolean validateObject(Object obj) {
-		return super.validateObject(obj);
+		return ((SchoonerSockIO) obj).isAlive();
 	}
 
 	/**
