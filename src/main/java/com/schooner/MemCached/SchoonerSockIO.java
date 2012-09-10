@@ -81,4 +81,29 @@ public abstract class SchoonerSockIO extends SockIOPool.SockIO {
 		return bufferSize;
 	}
 
+	/**
+	 * check if the connection is working
+	 * this version fix the bugs of isAlive() as follows:
+	 *  1. some servers doesn't support version command
+	 *  2. readLine shouldn't stop until
+	 * @return true if working
+	 */
+	public boolean isAlive() {		
+		if (!isConnected()) {
+			return false;
+		}
+		
+		try {
+			getByteChannel().write(ByteBuffer.wrap("get dummy\r\n".getBytes()));
+			
+			String line;
+			do {
+				line = this.readLine();
+			} while (!line.equals("END"));			
+		} catch (Exception e) {
+			return false;
+		}
+		
+		return true;
+	}
 }

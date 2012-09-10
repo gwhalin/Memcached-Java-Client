@@ -3,7 +3,7 @@
 
 	<groupId>com.whalin</groupId>
 	<artifactId>Memcached-Java-Client</artifactId>
-	<version>3.0.1-SNAPSHOT</version>
+	<version>3.0.1</version>
 	<packaging>jar</packaging>
 
 	<name>Memcached-Java-Client</name>
@@ -96,6 +96,7 @@
 					<optimize>true</optimize>
 					<source>1.6</source>
 					<target>1.6</target>
+					<encoding>UTF-8</encoding>
 				</configuration>
 			</plugin>
 			<plugin>
