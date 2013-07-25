@@ -162,7 +162,7 @@ public class SchoonerSockIOPool {
 	private static int recBufferSize = 128;// bufsize
 
 	private long maxWait = 1000; // max wait time for avail sockets
-	private int maxIdle = maxConn; 
+	private int maxIdle = maxConn;
 	private int minIdle = GenericObjectPool.DEFAULT_MIN_IDLE;
 	private boolean testOnBorrow = GenericObjectPool.DEFAULT_TEST_ON_BORROW;
 	private boolean testOnReturn = GenericObjectPool.DEFAULT_TEST_ON_RETURN;
@@ -347,9 +347,9 @@ public class SchoonerSockIOPool {
 			} else {
 				factory = new SchoonerSockIOFactory(servers[i], isTcp, bufferSize, socketTO, socketConnectTO, nagle);
 			}
-			gop = new GenericObjectPool(factory, maxConn, GenericObjectPool.WHEN_EXHAUSTED_BLOCK, maxWait, maxIdle, minIdle, testOnBorrow,
-					testOnReturn, timeBetweenEvictionRunsMillis, numTestsPerEvictionRun, minEvictableIdleTimeMillis, testWhileIdle,
-					this.softMinEvictableIdleTimeMillis, this.lifo);
+			gop = new GenericObjectPool(factory, maxConn, GenericObjectPool.WHEN_EXHAUSTED_BLOCK, maxWait, maxIdle,
+					minIdle, testOnBorrow, testOnReturn, timeBetweenEvictionRunsMillis, numTestsPerEvictionRun,
+					minEvictableIdleTimeMillis, testWhileIdle, this.softMinEvictableIdleTimeMillis, this.lifo);
 			factory.setSockets(gop);
 			socketPool.put(servers[i], gop);
 		}
@@ -395,9 +395,9 @@ public class SchoonerSockIOPool {
 				factory = new SchoonerSockIOFactory(servers[i], isTcp, bufferSize, socketTO, socketConnectTO, nagle);
 			}
 
-			gop = new GenericObjectPool(factory, maxConn, GenericObjectPool.WHEN_EXHAUSTED_BLOCK, maxWait, maxIdle, minIdle, testOnBorrow,
-					testOnReturn, timeBetweenEvictionRunsMillis, numTestsPerEvictionRun, minEvictableIdleTimeMillis, testWhileIdle,
-					this.softMinEvictableIdleTimeMillis, this.lifo);
+			gop = new GenericObjectPool(factory, maxConn, GenericObjectPool.WHEN_EXHAUSTED_BLOCK, maxWait, maxIdle,
+					minIdle, testOnBorrow, testOnReturn, timeBetweenEvictionRunsMillis, numTestsPerEvictionRun,
+					minEvictableIdleTimeMillis, testWhileIdle, this.softMinEvictableIdleTimeMillis, this.lifo);
 			factory.setSockets(gop);
 			socketPool.put(servers[i], gop);
 		}
@@ -785,86 +785,87 @@ public class SchoonerSockIOPool {
 	public int getMaxIdle() {
 		return this.maxIdle;
 	}
-	
+
 	public final long getMaxWait() {
 		return this.maxWait;
 	}
-	
+
 	public final void setMaxWait(long maxWait) {
 		this.maxWait = maxWait;
 	}
-	
+
 	public final int getMinIdle() {
 		return minIdle;
 	}
-	
+
 	public final void setMinIdle(int minIdle) {
 		this.minIdle = minIdle;
 	}
-	
+
 	public final boolean getTestOnBorrow() {
 		return testOnBorrow;
 	}
-	
+
 	public final void setTestOnBorrow(boolean testOnBorrow) {
 		this.testOnBorrow = testOnBorrow;
 	}
-	
+
 	public final boolean getTestOnReturn() {
 		return testOnReturn;
 	}
-	
+
 	public final void setTestOnReturn(boolean testOnReturn) {
 		this.testOnReturn = testOnReturn;
 	}
-	
+
 	public final long getTimeBetweenEvictionRunsMillis() {
 		return this.timeBetweenEvictionRunsMillis;
 	}
-	
+
 	public final void setTimeBetweenEvictionRunsMillis(long timeBetweenEvictionRunsMillis) {
 		this.timeBetweenEvictionRunsMillis = timeBetweenEvictionRunsMillis;
 	}
-	
+
 	public final int getNumTestsPerEvictionRun() {
 		return this.numTestsPerEvictionRun;
 	}
-	
+
 	public final void setNumTestsPerEvictionRun(int numTestsPerEvictionRun) {
 		this.numTestsPerEvictionRun = numTestsPerEvictionRun;
 	}
-	
+
 	public final long getMinEvictableIdleTimeMillis() {
 		return this.minEvictableIdleTimeMillis;
 	}
-	
+
 	public final void setMinEvictableIdleTimeMillis(long minEvictableIdleTimeMillis) {
 		this.minEvictableIdleTimeMillis = minEvictableIdleTimeMillis;
 	}
-	
+
 	public final boolean getTestWhileIdle() {
 		return this.testWhileIdle;
 	}
-	
+
 	public final void setTestWhileIdle(boolean testWhileIdle) {
 		this.testWhileIdle = testWhileIdle;
 	}
-	
+
 	public final long getSoftMinEvictableIdleTimeMillis(long softMinEvictableIdleTimeMillis) {
 		return this.softMinEvictableIdleTimeMillis;
 	}
-	
+
 	public final void setSoftMinEvictableIdleTimeMillis(long softMinEvictableIdleTimeMillis) {
 		this.softMinEvictableIdleTimeMillis = softMinEvictableIdleTimeMillis;
 	}
-	
+
 	public final boolean getLifo() {
 		return this.lifo;
 	}
-	
+
 	public final void setLifo(boolean lifo) {
 		this.lifo = lifo;
 	}
+
 	/**
 	 * Sets the failover flag for the pool.
 	 * 
@@ -1474,7 +1475,13 @@ public class SchoonerSockIOPool {
 		 */
 		protected final static Socket getSocket(String host, int port, int timeout) throws IOException {
 			SocketChannel sock = SocketChannel.open();
-			sock.socket().connect(new InetSocketAddress(host, port), timeout);
+			// fix connection leak with exception, due to elendel's fix.
+			try {
+				sock.socket().connect(new InetSocketAddress(host, port), timeout);
+			} catch (IOException e) {
+				sock.socket().close();
+				throw e;
+			}
 			return sock.socket();
 		}
 

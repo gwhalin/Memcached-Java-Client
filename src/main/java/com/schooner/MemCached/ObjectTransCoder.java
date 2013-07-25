@@ -95,8 +95,9 @@ public class ObjectTransCoder extends AbstractTransCoder {
 			obj = ois.readObject();
 		} catch (ClassNotFoundException e) {
 			throw new IOException(e.getMessage());
+		} finally {
+			ois.close();
 		}
-		ois.close();
 		return obj;
 	}
 }

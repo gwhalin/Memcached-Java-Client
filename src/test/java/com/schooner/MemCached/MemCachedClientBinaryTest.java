@@ -34,6 +34,7 @@ import java.io.InputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
+import java.net.InetSocketAddress;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.Map;
@@ -41,6 +42,12 @@ import java.util.Random;
 
 import junit.framework.TestCase;
 
+import com.thimbleware.jmemcached.CacheImpl;
+import com.thimbleware.jmemcached.Key;
+import com.thimbleware.jmemcached.LocalCacheElement;
+import com.thimbleware.jmemcached.MemCacheDaemon;
+import com.thimbleware.jmemcached.storage.CacheStorage;
+import com.thimbleware.jmemcached.storage.hash.ConcurrentLinkedHashMap;
 import com.whalin.MemCached.ErrorHandler;
 import com.whalin.MemCached.MemCachedClient;
 import com.whalin.MemCached.SockIOPool;
@@ -61,27 +68,39 @@ public class MemCachedClientBinaryTest extends TestCase {
 		return sb.toString();
 	}
 
-	static {
+	private MemCacheDaemon<LocalCacheElement> daemon = null;
+
+	protected void setUp() throws Exception {
 		String servers = System.getProperty("memcached.host");
+		if (servers == null) {
+			// create daemon and start it
+			daemon = new MemCacheDaemon<LocalCacheElement>();
+			CacheStorage<Key, LocalCacheElement> storage = ConcurrentLinkedHashMap.create(
+					ConcurrentLinkedHashMap.EvictionPolicy.FIFO, 100000, 5 * 1024 * 1024);
+			daemon.setCache(new CacheImpl(storage));
+			daemon.setBinary(false);
+			daemon.setAddr(new InetSocketAddress(11211));
+			daemon.start();
+			servers = "127.0.0.1:11211";
+		}
 		serverlist = servers.split(",");
 
 		// initialize the pool for memcache servers
 		SockIOPool pool = SockIOPool.getInstance("test");
+		pool.setBufferSize(3 * 1024 * 1024);
 		pool.setServers(serverlist);
-		pool.setBufferSize(1024 * 3 * 1024);
-		pool.setHashingAlg(SchoonerSockIOPool.CONSISTENT_HASH);
 		pool.initialize();
-	}
-
-	protected void setUp() throws Exception {
-		super.setUp();
 		mc = new MemCachedClient("test", true);
 	}
 
 	protected void tearDown() throws Exception {
 		super.tearDown();
-		assertNotNull(mc);
 		mc.flushAll();
+		SockIOPool.getInstance("test").shutDown();
+		if (daemon != null) {
+			daemon.stop();
+			daemon = null;
+		}
 	}
 
 	public void testConstructor() {

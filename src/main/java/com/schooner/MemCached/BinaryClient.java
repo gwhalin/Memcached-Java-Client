@@ -137,8 +137,7 @@ public class BinaryClient extends MemCachedClient {
 	public boolean delete(String key, Integer hashCode, Date expiry) {
 
 		if (key == null) {
-			if (log.isErrorEnabled())
-				log.error("null value for key passed to delete()");
+			log.error("null value for key passed to delete()");
 			return false;
 		}
 
@@ -148,8 +147,7 @@ public class BinaryClient extends MemCachedClient {
 			if (errorHandler != null)
 				errorHandler.handleErrorOnDelete(this, e, key);
 
-			if (log.isErrorEnabled())
-				log.error("failed to sanitize your key!", e);
+			log.error("failed to sanitize your key!", e);
 			return false;
 		}
 
@@ -182,16 +180,14 @@ public class BinaryClient extends MemCachedClient {
 			dis.readInt();
 			dis.readShort();
 			short status = dis.readShort();
-
+			dis.close();
 			if (status == STAT_NO_ERROR) {
-				if (log.isDebugEnabled())
-					log.debug("++++ deletion of key: " + key + " from cache was a success");
+				log.debug("++++ deletion of key: " + key + " from cache was a success");
 
 				// return sock to pool and bail here
 				return true;
 			} else if (status == STAT_KEY_NOT_FOUND) {
-				if (log.isDebugEnabled())
-					log.debug("++++ deletion of key: " + key + " from cache failed as the key was not found");
+				log.debug("++++ deletion of key: " + key + " from cache failed as the key was not found");
 			} else {
 				if (log.isErrorEnabled()) {
 					log.error("++++ error deleting key: " + key);
@@ -212,8 +208,7 @@ public class BinaryClient extends MemCachedClient {
 			try {
 				sock.sockets.invalidateObject(sock);
 			} catch (Exception e1) {
-				if (log.isErrorEnabled())
-					log.error("++++ failed to close socket : " + sock.toString());
+				log.error("++++ failed to close socket : " + sock.toString(), e1);
 			}
 
 			sock = null;
@@ -340,8 +335,7 @@ public class BinaryClient extends MemCachedClient {
 			boolean asString) {
 
 		if (key == null) {
-			if (log.isErrorEnabled())
-				log.error("key is null or cmd is null/empty for set()");
+			log.error("key is null or cmd is null/empty for set()");
 			return false;
 		}
 
@@ -353,14 +347,12 @@ public class BinaryClient extends MemCachedClient {
 			if (errorHandler != null)
 				errorHandler.handleErrorOnSet(this, e, key);
 
-			if (log.isErrorEnabled())
-				log.error("failed to sanitize your key!", e);
+			log.error("failed to sanitize your key!", e);
 			return false;
 		}
 
 		if (value == null) {
-			if (log.isErrorEnabled())
-				log.error("trying to store a null value to cache");
+			log.error("trying to store a null value to cache");
 			return false;
 		}
 
@@ -429,7 +421,9 @@ public class BinaryClient extends MemCachedClient {
 			DataInputStream dis = new DataInputStream(new SockInputStream(sock, Integer.MAX_VALUE));
 			dis.readInt();
 			dis.readShort();
-			if (STAT_NO_ERROR == dis.readShort()) {
+			short stat = dis.readShort();
+			dis.close();
+			if (STAT_NO_ERROR == stat) {
 				return true;
 			}
 		} catch (IOException e) {
@@ -447,8 +441,7 @@ public class BinaryClient extends MemCachedClient {
 			try {
 				sock.sockets.invalidateObject(sock);
 			} catch (Exception e1) {
-				if (log.isErrorEnabled())
-					log.error("++++ failed to close socket : " + sock.toString());
+				log.error("++++ failed to close socket : " + sock.toString(), e1);
 			}
 
 			sock = null;
@@ -492,22 +485,19 @@ public class BinaryClient extends MemCachedClient {
 	private boolean apPrepend(byte opcode, String key, Object value, Integer hashCode, Long casUnique) {
 
 		if (key == null) {
-			if (log.isErrorEnabled())
-				log.error("key is null or cmd is null/empty for set()");
+			log.error("key is null or cmd is null/empty for set()");
 			return false;
 		}
 
 		try {
 			key = sanitizeKey(key);
 		} catch (UnsupportedEncodingException e) {
-			if (log.isErrorEnabled())
-				log.error("failed to sanitize your key!", e);
+			log.error("failed to sanitize your key!", e);
 			return false;
 		}
 
 		if (value == null) {
-			if (log.isErrorEnabled())
-				log.error("trying to store a null value to cache");
+			log.error("trying to store a null value to cache");
 			return false;
 		}
 
@@ -556,7 +546,9 @@ public class BinaryClient extends MemCachedClient {
 			DataInputStream dis = new DataInputStream(new SockInputStream(sock, Integer.MAX_VALUE));
 			dis.readInt();
 			dis.readShort();
-			if (STAT_NO_ERROR == dis.readShort()) {
+			short stat = dis.readShort();
+			dis.close();
+			if (STAT_NO_ERROR == stat) {
 				return true;
 			}
 		} catch (IOException e) {
@@ -569,8 +561,7 @@ public class BinaryClient extends MemCachedClient {
 			try {
 				sock.sockets.invalidateObject(sock);
 			} catch (Exception e1) {
-				if (log.isErrorEnabled())
-					log.error("++++ failed to close socket : " + sock.toString());
+				log.error("++++ failed to close socket : " + sock.toString(), e1);
 			}
 
 			sock = null;
@@ -665,8 +656,7 @@ public class BinaryClient extends MemCachedClient {
 	private long incrdecr(byte opcode, String key, long inc, Integer hashCode) {
 
 		if (key == null) {
-			if (log.isErrorEnabled())
-				log.error("null key for incrdecr()");
+			log.error("null key for incrdecr()");
 			return -1;
 		}
 
@@ -677,8 +667,7 @@ public class BinaryClient extends MemCachedClient {
 			if (errorHandler != null)
 				errorHandler.handleErrorOnGet(this, e, key);
 
-			if (log.isErrorEnabled())
-				log.error("failed to sanitize your key!", e);
+			log.error("failed to sanitize your key!", e);
 			return -1;
 		}
 
@@ -713,7 +702,7 @@ public class BinaryClient extends MemCachedClient {
 			dis.readInt();
 			dis.readShort();
 			short status = dis.readShort();
-
+			dis.close();
 			if (status == STAT_NO_ERROR) {
 
 				dis.readLong();
@@ -741,8 +730,7 @@ public class BinaryClient extends MemCachedClient {
 			try {
 				sock.sockets.invalidateObject(sock);
 			} catch (Exception e1) {
-				if (log.isErrorEnabled())
-					log.error("++++ failed to close socket : " + sock.toString());
+				log.error("++++ failed to close socket : " + sock.toString(), e1);
 			}
 
 			sock = null;
@@ -823,8 +811,7 @@ public class BinaryClient extends MemCachedClient {
 	public Map<String, Object> getMulti(String[] keys, Integer[] hashCodes, boolean asString) {
 
 		if (keys == null || keys.length == 0) {
-			if (log.isErrorEnabled())
-				log.error("missing keys for getMulti()");
+			log.error("missing keys for getMulti()");
 			return null;
 		}
 
@@ -834,8 +821,7 @@ public class BinaryClient extends MemCachedClient {
 
 			String key = keys[i];
 			if (key == null) {
-				if (log.isErrorEnabled())
-					log.error("null key, so skipping");
+				log.error("null key, so skipping");
 				continue;
 			}
 
@@ -852,8 +838,7 @@ public class BinaryClient extends MemCachedClient {
 				if (errorHandler != null)
 					errorHandler.handleErrorOnGet(this, e, key);
 
-				if (log.isErrorEnabled())
-					log.error("failed to sanitize your key!", e);
+				log.error("failed to sanitize your key!", e);
 				continue;
 			}
 
@@ -876,8 +861,7 @@ public class BinaryClient extends MemCachedClient {
 			sock.close();
 		}
 
-		if (log.isDebugEnabled())
-			log.debug("multi get socket count : " + cmdMap.size());
+		log.debug("multi get socket count : " + cmdMap.size());
 
 		// now query memcache
 		Map<String, Object> ret = new HashMap<String, Object>(keys.length);
@@ -899,8 +883,7 @@ public class BinaryClient extends MemCachedClient {
 			// ret.put(keys[i], null);
 		}
 
-		if (log.isDebugEnabled())
-			log.debug("++++ memcache: got back " + ret.size() + " results");
+		log.debug("++++ memcache: got back " + ret.size() + " results");
 		return ret;
 	}
 
@@ -964,8 +947,7 @@ public class BinaryClient extends MemCachedClient {
 						if (errorHandler != null)
 							errorHandler.handleErrorOnGet(this, e, key);
 
-						if (log.isErrorEnabled())
-							log.error("++++ Exception thrown while trying to deserialize for key: " + key, e);
+						log.error("++++ Exception thrown while trying to deserialize for key: " + key, e);
 						e.printStackTrace();
 					}
 				} else if (transCoder != null) {
@@ -997,8 +979,7 @@ public class BinaryClient extends MemCachedClient {
 
 		// if no servers, then return early
 		if (servers == null || servers.length <= 0) {
-			if (log.isErrorEnabled())
-				log.error("++++ no servers to flush");
+			log.error("++++ no servers to flush");
 			return false;
 		}
 
@@ -1010,8 +991,7 @@ public class BinaryClient extends MemCachedClient {
 			if (sock == null) {
 				if (errorHandler != null)
 					errorHandler.handleErrorOnFlush(this, new IOException("no socket to server available"));
-				if (log.isErrorEnabled())
-					log.error("++++ unable to get connection to : " + servers[i]);
+				log.error("++++ unable to get connection to : " + servers[i]);
 				success = false;
 				continue;
 			}
@@ -1034,6 +1014,7 @@ public class BinaryClient extends MemCachedClient {
 				dis.readInt();
 				dis.readShort();
 				success = dis.readShort() == STAT_NO_ERROR ? success && true : false;
+				dis.close();
 			} catch (IOException e) {
 
 				// if we have an errorHandler, use its hook
@@ -1049,8 +1030,7 @@ public class BinaryClient extends MemCachedClient {
 				try {
 					sock.sockets.invalidateObject(sock);
 				} catch (Exception e1) {
-					if (log.isErrorEnabled())
-						log.error("++++ failed to close socket : " + sock.toString());
+					log.error("++++ failed to close socket : " + sock.toString(), e1);
 				}
 
 				success = false;
@@ -1106,8 +1086,7 @@ public class BinaryClient extends MemCachedClient {
 
 		// if no servers, then return early
 		if (servers == null || servers.length <= 0) {
-			if (log.isErrorEnabled())
-				log.error("++++ no servers to check stats");
+			log.error("++++ no servers to check stats");
 			return null;
 		}
 
@@ -1170,6 +1149,7 @@ public class BinaryClient extends MemCachedClient {
 					stats.put(new String(key), new String(value));
 				}
 				statsMaps.put(servers[i], stats);
+				input.close();
 			} catch (IOException e) {
 				// if we have an errorHandler, use its hook
 				if (errorHandler != null)
@@ -1184,8 +1164,7 @@ public class BinaryClient extends MemCachedClient {
 				try {
 					sock.sockets.invalidateObject(sock);
 				} catch (Exception e1) {
-					if (log.isErrorEnabled())
-						log.error("++++ failed to close socket : " + sock.toString());
+					log.error("++++ failed to close socket : " + sock.toString(), e1);
 				}
 
 				sock = null;
@@ -1266,15 +1245,13 @@ public class BinaryClient extends MemCachedClient {
 						return;
 					}
 				} catch (IOException e) {
-					if (log.isErrorEnabled())
-						log.warn("++++ memcache: unexpected error closing normally");
+					log.warn("++++ memcache: unexpected error closing normally", e);
 				}
 
 				try {
 					sock.sockets.invalidateObject(sock);
 				} catch (Exception e1) {
-					if (log.isErrorEnabled())
-						log.error("++++ failed to close socket : " + sock.toString());
+					log.error("++++ failed to close socket : " + sock.toString(), e1);
 				}
 			}
 
@@ -1369,8 +1346,7 @@ public class BinaryClient extends MemCachedClient {
 						// timeout likely... better check
 						// TODO: This seems like a problem area that we need to
 						// figure out how to handle.
-						if (log.isErrorEnabled())
-							log.error("selector timed out waiting for activity");
+						log.error("selector timed out waiting for activity");
 					}
 
 					timeRemaining = timeout - (System.currentTimeMillis() - startTime);
@@ -1378,8 +1354,7 @@ public class BinaryClient extends MemCachedClient {
 			} catch (IOException e) {
 				// errors can happen just about anywhere above, from
 				// connection setup to any of the mechanics
-				if (log.isErrorEnabled())
-					log.error("Caught the exception on " + e);
+				log.error("Caught the exception on " + e);
 				return;
 			} finally {
 				// run through our conns and either return them to the pool
@@ -1405,8 +1380,7 @@ public class BinaryClient extends MemCachedClient {
 						loadMulti(new DataInputStream(new ByteBufArrayInputStream(c.incoming)), ret);
 				} catch (Exception e) {
 					// shouldn't happen; we have all the data already
-					if (log.isDebugEnabled())
-						log.debug("Caught the aforementioned exception on " + c);
+					log.debug("Caught the aforementioned exception on " + c);
 				}
 			}
 		}
@@ -1487,8 +1461,7 @@ public class BinaryClient extends MemCachedClient {
 
 	private Object get(byte opCode, String key, Integer hashCode, boolean asString) {
 		if (key == null) {
-			if (log.isErrorEnabled())
-				log.error("key is null for get()");
+			log.error("key is null for get()");
 			return null;
 		}
 
@@ -1499,8 +1472,7 @@ public class BinaryClient extends MemCachedClient {
 			if (errorHandler != null)
 				errorHandler.handleErrorOnGet(this, e, key);
 
-			if (log.isErrorEnabled())
-				log.error("failed to sanitize your key!", e);
+			log.error("failed to sanitize your key!", e);
 			return null;
 		}
 
@@ -1591,8 +1563,7 @@ public class BinaryClient extends MemCachedClient {
 			try {
 				sock.sockets.invalidateObject(sock);
 			} catch (Exception e1) {
-				if (log.isErrorEnabled())
-					log.error("++++ failed to close socket : " + sock.toString());
+				log.error("++++ failed to close socket : " + sock.toString(), e1);
 			}
 			sock = null;
 		} catch (RuntimeException e) {
@@ -1607,8 +1578,7 @@ public class BinaryClient extends MemCachedClient {
 
 	private MemcachedItem gets(byte opCode, String key, Integer hashCode, boolean asString) {
 		if (key == null) {
-			if (log.isErrorEnabled())
-				log.error("key is null for get()");
+			log.error("key is null for get()");
 			return null;
 		}
 
@@ -1619,8 +1589,7 @@ public class BinaryClient extends MemCachedClient {
 			if (errorHandler != null)
 				errorHandler.handleErrorOnGet(this, e, key);
 
-			if (log.isErrorEnabled())
-				log.error("failed to sanitize your key!", e);
+			log.error("failed to sanitize your key!", e);
 			return null;
 		}
 
@@ -1713,8 +1682,7 @@ public class BinaryClient extends MemCachedClient {
 			try {
 				sock.sockets.invalidateObject(sock);
 			} catch (Exception e1) {
-				if (log.isErrorEnabled())
-					log.error("++++ failed to close socket : " + sock.toString());
+				log.error("++++ failed to close socket : " + sock.toString(), e1);
 			}
 			sock = null;
 		} finally {

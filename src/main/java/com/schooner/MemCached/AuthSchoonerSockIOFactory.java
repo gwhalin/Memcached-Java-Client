@@ -96,9 +96,10 @@ public class AuthSchoonerSockIOFactory extends SchoonerSockIOFactory {
 		} else if (status == MemCachedClient.AUTH_FAILED) {
 			if (log.isErrorEnabled())
 				log.error("Auth Failed: mechanism = " + mechanism);
+			dis.close();
 			throw new Exception();
 		}
-
+		dis.close();
 		return response;
 	}
 }
