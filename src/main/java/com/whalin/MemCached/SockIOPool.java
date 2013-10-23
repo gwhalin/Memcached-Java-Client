@@ -203,7 +203,7 @@ public class SockIOPool {
 	// set to hold sockets to close
 	private Map<String, Map<SockIO, Long>> availPool;
 	private Map<String, Map<SockIO, Long>> busyPool;
-	private Map<SockIO, Integer> deadPool;;
+	private Map<SockIO, Integer> deadPool;
 
 	private SchoonerSockIOPool schoonerSockIOPool;
 

@@ -17,15 +17,12 @@
  */
 package com.whalin.MemCached.test;
 
-import java.util.Hashtable;
+import java.util.Random;
 
 import com.whalin.MemCached.MemCachedClient;
 import com.whalin.MemCached.SockIOPool;
 
-public class MemcachedTest {
-
-	// store results from threads
-	private static Hashtable<Integer, StringBuilder> threadInfo = new Hashtable<Integer, StringBuilder>();
+public class MemcachedAvailTest {
 
 	/**
 	 * This runs through some simple tests of the MemcacheClient.
@@ -38,19 +35,17 @@ public class MemcachedTest {
 	 */
 	public static void main(String[] args) {
 
-		String[] serverlist = { "localhost:11211" };
+		String[] serverlist = { "dev12:11211" };
+
+		int threadNum = Integer.parseInt(args[0]);
+		int runs = Integer.parseInt(args[1]);
+		int size = 1024 * Integer.parseInt(args[2]); // how many kilobytes
 
 		// initialize the pool for memcache servers
 		SockIOPool pool = SockIOPool.getInstance();
 		pool.setServers(serverlist);
 
-		// pool.setMaintSleep(30);
-
 		pool.initialize();
-
-		int threads = Integer.parseInt(args[0]);
-		int runs = Integer.parseInt(args[1]);
-		int size = 1024 * Integer.parseInt(args[2]); // how many kilobytes
 
 		// get object to store
 		int[] obj = new int[size];
@@ -62,41 +57,32 @@ public class MemcachedTest {
 		for (int i = 0; i < size; i++) {
 			keys[i] = "test_key" + i;
 		}
-
-		for (int i = 0; i < threads; i++) {
-			bench b = new bench(runs, i, obj, keys);
-			b.start();
+		Bench[] bens = new Bench[threadNum];
+		for (int i = 0; i < threadNum; i++) {
+			bens[i] = new Bench(runs, i, obj, keys);
+			bens[i].start();
 		}
-
-		int i = 0;
-		while (i < threads) {
-			if (threadInfo.containsKey(new Integer(i))) {
-				System.out.println(threadInfo.get(new Integer(i)));
-				i++;
-			} else {
-				try {
-					Thread.sleep(1000);
-				} catch (InterruptedException e) {
-					e.printStackTrace();
-				}
+		for (Bench ben : bens) {
+			try {
+				ben.join();
+			} catch (InterruptedException e) {
+				e.printStackTrace();
 			}
 		}
-
 		pool.shutDown();
-		System.exit(1);
 	}
 
 	/**
 	 * Test code per thread.
 	 */
-	private static class bench extends Thread {
+	private static class Bench extends Thread {
 		private int runs;
 		private int threadNum;
 		private int[] object;
 		private String[] keys;
 		private int size;
 
-		public bench(int runs, int threadNum, int[] object, String[] keys) {
+		public Bench(int runs, int threadNum, int[] object, String[] keys) {
 			this.runs = runs;
 			this.threadNum = threadNum;
 			this.object = object;
@@ -106,41 +92,32 @@ public class MemcachedTest {
 
 		public void run() {
 
-			StringBuilder result = new StringBuilder();
-
 			// get client instance
 			MemCachedClient mc = new MemCachedClient();
 
-			// time deletes
-			long start = System.currentTimeMillis();
-			for (int i = 0; i < runs; i++) {
-				mc.delete(keys[i]);
-			}
-			long elapse = System.currentTimeMillis() - start;
-			float avg = (float) elapse / runs;
-			result.append("\nthread " + threadNum + ": runs: " + runs + " deletes of obj " + (size / 1024)
-					+ "KB -- avg time per req " + avg + " ms (total: " + elapse + " ms)");
-
 			// time stores
-			start = System.currentTimeMillis();
+			long start = System.currentTimeMillis();
 			for (int i = 0; i < runs; i++) {
 				mc.set(keys[i], object);
 			}
-			elapse = System.currentTimeMillis() - start;
-			avg = (float) elapse / runs;
-			result.append("\nthread " + threadNum + ": runs: " + runs + " stores of obj " + (size / 1024)
+			long elapse = System.currentTimeMillis() - start;
+			float avg = (float) elapse / runs;
+			System.out.println("thread " + threadNum + ": runs: " + runs + " stores of obj " + (size / 1024)
 					+ "KB -- avg time per req " + avg + " ms (total: " + elapse + " ms)");
-
-			start = System.currentTimeMillis();
+			Random r = new Random();
 			for (int i = 0; i < runs; i++) {
+				try {
+					Thread.sleep(r.nextInt(10));
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+				start = System.nanoTime();
 				mc.get(keys[i]);
+				elapse = (System.nanoTime() - start) / 1000000;
+				if (elapse > avg * 3)
+					System.err.println(elapse + "ms for get in " + Thread.currentThread().getName());
 			}
-			elapse = System.currentTimeMillis() - start;
-			avg = (float) elapse / runs;
-			result.append("\nthread " + threadNum + ": runs: " + runs + " gets of obj " + (size / 1024)
-					+ "KB -- avg time per req " + avg + " ms (total: " + elapse + " ms)");
 
-			threadInfo.put(new Integer(threadNum), result);
 		}
 	}
 }

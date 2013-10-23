@@ -26,7 +26,7 @@ public class MemcachedBench {
 
 		int runs = Integer.parseInt(args[0]);
 
-		String[] serverlist = { "localhost:11211", "localhost:11212" };
+		String[] serverlist = { "localhost:11211" };
 
 		// initialize the pool for memcache servers
 		SockIOPool pool = SockIOPool.getInstance("test");
