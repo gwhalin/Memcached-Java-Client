@@ -156,6 +156,10 @@ public class AscIIUDPClient extends MemCachedClient {
 	public boolean set(String key, Object value, Date expiry, Integer hashCode) {
 		return set("set", key, value, expiry, hashCode, 0L);
 	}
+	
+	public boolean set(String key, Object value, Date expiry, Integer hashCode, boolean asString) {
+		return set("set", key, value, expiry, hashCode, 0L);
+	}
 
 	public boolean add(String key, Object value) {
 		return set("add", key, value, null, null, 0L);

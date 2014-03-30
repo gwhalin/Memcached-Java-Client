@@ -243,6 +243,10 @@ public class AscIIClient extends MemCachedClient {
 	public boolean set(String key, Object value, Date expiry, Integer hashCode) {
 		return set("set", key, value, expiry, hashCode, 0L, primitiveAsString);
 	}
+	
+	public boolean set(String key, Object value, Date expiry, Integer hashCode, boolean asString) {
+		return set("set", key, value, expiry, hashCode, 0L, asString);
+	}
 
 	public boolean add(String key, Object value) {
 		return set("add", key, value, null, null, 0L, primitiveAsString);
@@ -334,6 +338,8 @@ public class AscIIClient extends MemCachedClient {
 	 *            expiration
 	 * @param hashCode
 	 *            if not null, then the int hashcode to use
+	 * @param asString
+	 *            if true, then store all primitives as their string value
 	 * @return true/false indicating success
 	 */
 	private boolean set(String cmdname, String key, Object value, Date expiry, Integer hashCode, Long casUnique,

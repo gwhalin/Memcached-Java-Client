@@ -183,13 +183,13 @@ public class MemCachedClientAsciiTest extends TestCase {
 
 	public void testStoreCounterStringLong() {
 		mc.storeCounter("foo", 10L);
-		Long s = (Long) mc.get("foo");
+		Long s = Long.parseLong(mc.get("foo").toString());
 		assertTrue(s == 10L);
 	}
 
 	public void testStoreCounterStringLongInteger() {
 		mc.storeCounter("foo", 10L, "foo".hashCode());
-		Long s = (Long) mc.get("foo");
+		Long s = Long.parseLong(mc.get("foo").toString());
 		assertTrue(s == 10L);
 	}
 
@@ -830,8 +830,8 @@ public class MemCachedClientAsciiTest extends TestCase {
 		final String key = "testKey" + Math.random();
 		mc.storeCounter(key, 3L);
 		mc.incr(key);
-		long value = (Long) mc.getCounter(key);
-		assertEquals(value, -1L);
+		long value = mc.getCounter(key);
+		assertEquals(value, 4L);
 	}
 
 	public void testSpecialCharacterSetString() {

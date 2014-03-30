@@ -238,6 +238,10 @@ public class BinaryClient extends MemCachedClient {
 	public boolean set(String key, Object value, Date expiry, Integer hashCode) {
 		return set(OPCODE_SET, key, value, expiry, hashCode, 0L, primitiveAsString);
 	}
+	
+	public boolean set(String key, Object value, Date expiry, Integer hashCode, boolean asString) {
+		return set(OPCODE_SET, key, value, expiry, hashCode, 0L, asString);
+	}
 
 	public boolean add(String key, Object value) {
 		return set(OPCODE_ADD, key, value, null, null, 0L, primitiveAsString);
@@ -370,7 +374,7 @@ public class BinaryClient extends MemCachedClient {
 
 		try {
 			// store flags
-			int flags = NativeHandler.getMarkerFlag(value);
+			int flags = asString ? MemCachedClient.MARKER_STRING : NativeHandler.getMarkerFlag(value);
 			byte[] buf = key.getBytes();
 			sock.writeBuf.clear();
 			sock.writeBuf.put(MAGIC_REQ);
