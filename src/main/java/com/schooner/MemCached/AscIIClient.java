@@ -1184,7 +1184,7 @@ public class AscIIClient extends MemCachedClient {
 
 				// store the object into the cache
 				hm.put(key, o);
-			} else if (END.equals(line)) {
+			} else if (END.startsWith(line)) {
 				break;
 			}
 		}
@@ -1344,7 +1344,7 @@ public class AscIIClient extends MemCachedClient {
 						String key = info.length > 1 ? info[1] : null;
 						String value = info.length > 2 ? info[2] : null;
 						stats.put(key, value);
-					} else if (END.equals(line)) {
+					} else if (END.startsWith(line)) {
 						// finish when we get end from server
 						break;
 					} else if (line.startsWith(ERROR) || line.startsWith(CLIENT_ERROR) || line.startsWith(SERVER_ERROR)) {
