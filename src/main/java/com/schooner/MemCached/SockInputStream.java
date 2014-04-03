@@ -85,7 +85,8 @@ public final class SockInputStream extends InputStream {
 		this.sock = sock;
 		willRead(limit);
 		sock.readBuf.clear();
-		sock.getChannel().read(sock.readBuf);
+		ReadableByteChannel wrappedChannel = Channels.newChannel(sock.getChannel().socket().getInputStream());
+		wrappedChannel.read(sock.readBuf);
 		sock.readBuf.flip();
 	}
 
@@ -115,7 +116,7 @@ public final class SockInputStream extends InputStream {
 		}
 		count++;
 		/*
-		 * a potencial bug for read int or read long.
+		 * a potential bug for read int or read long.
 		 */
 		return (b & 0xff);
 	}
@@ -128,7 +129,6 @@ public final class SockInputStream extends InputStream {
 	 */
 	private final void readFromChannel() throws IOException {
 		sock.readBuf.clear();
-		// sock.getChannel().read(sock.readBuf);
 		ReadableByteChannel wrappedChannel = Channels.newChannel(sock.getChannel().socket().getInputStream());
 		wrappedChannel.read(sock.readBuf);
 		sock.readBuf.flip();
