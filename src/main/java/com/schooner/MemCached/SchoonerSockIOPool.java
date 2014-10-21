@@ -375,7 +375,9 @@ public class SchoonerSockIOPool {
 			double factor = Math.floor(((double) (40 * this.servers.length * thisWeight)) / (double) this.totalWeight);
 
 			for (long j = 0; j < factor; j++) {
-				byte[] d = md5.digest((servers[i] + "-" + j).getBytes());
+				//byte[] d = md5.digest((servers[i] + "-" + j).getBytes());
+				byte[] d = md5.digest(("SHARD-" + i + "-NODE-" + j).getBytes());  //@wjw_add: 在计算虚拟节点的Hash值时,用服务器列表的位置来计算比使用服务器的"ip:port"要稳定(只要保持服务器列表的次序不变)
+				
 				for (int h = 0; h < 4; h++) {
 					Long k = ((long) (d[3 + h * 4] & 0xFF) << 24) | ((long) (d[2 + h * 4] & 0xFF) << 16)
 							| ((long) (d[1 + h * 4] & 0xFF) << 8) | ((long) (d[0 + h * 4] & 0xFF));
