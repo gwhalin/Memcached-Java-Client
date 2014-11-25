@@ -1066,7 +1066,7 @@ public class SockIOPool {
 	 * @param host host this socket is connected to
 	 * @param socket socket to add
 	 */
-	protected void addSocketToPool( Map<String,Map<SockIO,Long>> pool, String host, SockIO socket ) {
+	synchronized protected void addSocketToPool( Map<String,Map<SockIO,Long>> pool, String host, SockIO socket ) {
 
 		if ( pool.containsKey( host ) ) {
 			Map<SockIO,Long> sockets = pool.get( host );
@@ -1111,7 +1111,7 @@ public class SockIOPool {
 	 * @param pool pool to clear
 	 * @param host host to clear
 	 */
-	protected void clearHostFromPool( Map<String,Map<SockIO,Long>> pool, String host ) {
+	synchronized protected void clearHostFromPool( Map<String,Map<SockIO,Long>> pool, String host ) {
 
 		if ( pool.containsKey( host ) ) {
 			Map<SockIO,Long> sockets = pool.get( host );

@@ -11,3 +11,4 @@ dist/
 scratch/
 .cachedir/
 memcached-release*
+/bin
