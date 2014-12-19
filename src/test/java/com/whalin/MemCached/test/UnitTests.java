@@ -14,7 +14,7 @@
  * library.
  *
  * @author Kevin Burton
- * @author greg whalin <greg@meetup.com> 
+ * @author greg whalin <greg@meetup.com>
  */
 package com.whalin.MemCached.test;
 
@@ -121,8 +121,8 @@ public class UnitTests {
 		long i = 0;
 		mc.storeCounter("foo", i);
 		mc.incr("foo"); // foo now == 1
-		mc.incr("foo", (long) 5); // foo now == 6
-		long j = mc.decr("foo", (long) 2); // foo now == 4
+		mc.incr("foo", 5); // foo now == 6
+		long j = mc.decr("foo", 2); // foo now == 4
 		assert j == 4;
 		assert j == mc.getCounter("foo");
 		log.error("+ incr/decr test passed");
@@ -174,11 +174,11 @@ public class UnitTests {
 	public static void test18() {
 		mc.addOrIncr("foo"); // foo now == 0
 		mc.incr("foo"); // foo now == 1
-		mc.incr("foo", (long) 5); // foo now == 6
+		mc.incr("foo", 5); // foo now == 6
 
 		mc.addOrIncr("foo"); // foo now 7
 
-		long j = mc.decr("foo", (long) 3); // foo now == 4
+		long j = mc.decr("foo", 3); // foo now == 4
 		assert j == 4;
 		assert j == mc.getCounter("foo");
 
@@ -193,7 +193,7 @@ public class UnitTests {
 			mc.set(keys[i], "value" + i);
 		}
 
-		Map<String, Object> results = mc.getMulti(keys);
+		Map<Serializable, Object> results = mc.getMulti(keys);
 		for (int i = 0; i < max; i++) {
 			assert results.get(keys[i]).equals("value" + i);
 		}
@@ -201,7 +201,9 @@ public class UnitTests {
 	}
 
 	public static void test20(int max, int skip, int start) {
-		log.warn(String.format("test 20 starting with start=%5d skip=%5d max=%7d", start, skip, max));
+		log.warn(String.format(
+				"test 20 starting with start=%5d skip=%5d max=%7d", start,
+				skip, max));
 		int numEntries = max / skip + 1;
 		String[] keys = new String[numEntries];
 		byte[][] vals = new byte[numEntries][];
@@ -210,18 +212,22 @@ public class UnitTests {
 		for (int i = 0; i < numEntries; i++) {
 			keys[i] = Integer.toString(size);
 			vals[i] = new byte[size + 1];
-			for (int j = 0; j < size + 1; j++)
+			for (int j = 0; j < size + 1; j++) {
 				vals[i][j] = (byte) j;
+			}
 
 			mc.set(keys[i], vals[i]);
 			size += skip;
 		}
 
-		Map<String, Object> results = mc.getMulti(keys);
-		for (int i = 0; i < numEntries; i++)
+		Map<Serializable, Object> results = mc.getMulti(keys);
+		for (int i = 0; i < numEntries; i++) {
 			assert Arrays.equals((byte[]) results.get(keys[i]), vals[i]);
+		}
 
-		log.warn(String.format("test 20 finished with start=%5d skip=%5d max=%7d", start, skip, max));
+		log.warn(String.format(
+				"test 20 finished with start=%5d skip=%5d max=%7d", start,
+				skip, max));
 	}
 
 	public static void test21() {
@@ -233,8 +239,9 @@ public class UnitTests {
 
 	public static void test22() {
 		byte[] b = new byte[10];
-		for (int i = 0; i < 10; i++)
+		for (int i = 0; i < 10; i++) {
 			b[i] = (byte) i;
+		}
 
 		mc.set("foo", b);
 		assert Arrays.equals((byte[]) mc.get("foo"), b);
@@ -244,20 +251,21 @@ public class UnitTests {
 	public static void test23() {
 		TestClass tc = new TestClass("foo", "bar", new Integer(32));
 		mc.set("foo", tc);
-		assert tc.equals((TestClass) mc.get("foo"));
+		assert tc.equals(mc.get("foo"));
 		log.error("+ store/retrieve serialized object test passed");
 	}
 
 	public static void test24() {
 
-		String[] allKeys = { "key1", "key2", "key3", "key4", "key5", "key6", "key7" };
+		String[] allKeys = { "key1", "key2", "key3", "key4", "key5", "key6",
+				"key7" };
 		String[] setKeys = { "key1", "key3", "key5", "key7" };
 
 		for (String key : setKeys) {
 			mc.set(key, key);
 		}
 
-		Map<String, Object> results = mc.getMulti(allKeys);
+		Map<Serializable, Object> results = mc.getMulti(allKeys);
 
 		assert allKeys.length == results.size();
 		for (String key : setKeys) {
@@ -293,8 +301,9 @@ public class UnitTests {
 			test23();
 			test24();
 
-			for (int i = 0; i < 3; i++)
+			for (int i = 0; i < 3; i++) {
 				test19();
+			}
 
 			test20(8191, 1, 0);
 			test20(8192, 1, 0);
@@ -321,10 +330,10 @@ public class UnitTests {
 
 	/**
 	 * This runs through some simple tests of the MemcacheClient.
-	 * 
+	 *
 	 * Command line args: args[0] = number of threads to spawn args[1] = number
 	 * of runs per thread args[2] = size of object to store
-	 * 
+	 *
 	 * @param args
 	 *            the command line arguments
 	 */
@@ -342,8 +351,9 @@ public class UnitTests {
 
 		Integer[] weights = { 1 };
 
-		if (args.length > 0)
+		if (args.length > 0) {
 			serverlist = args;
+		}
 
 		// initialize the pool for memcache servers
 		SockIOPool pool = SockIOPool.getInstance("test");
@@ -360,7 +370,7 @@ public class UnitTests {
 
 	/**
 	 * Class for testing serializing of objects.
-	 * 
+	 *
 	 * @author $Author: $
 	 * @version $Revision: $ $Date: $
 	 */
@@ -389,17 +399,23 @@ public class UnitTests {
 			return this.field3;
 		}
 
+		@Override
 		public boolean equals(Object o) {
-			if (this == o)
+			if (this == o) {
 				return true;
-			if (!(o instanceof TestClass))
+			}
+			if (!(o instanceof TestClass)) {
 				return false;
+			}
 
 			TestClass obj = (TestClass) o;
 
-			return ((this.field1 == obj.getField1() || (this.field1 != null && this.field1.equals(obj.getField1())))
-					&& (this.field2 == obj.getField2() || (this.field2 != null && this.field2.equals(obj.getField2()))) && (this.field3 == obj
-					.getField3() || (this.field3 != null && this.field3.equals(obj.getField3()))));
+			return ((this.field1 == obj.getField1() || (this.field1 != null && this.field1
+					.equals(obj.getField1())))
+					&& (this.field2 == obj.getField2() || (this.field2 != null && this.field2
+							.equals(obj.getField2()))) && (this.field3 == obj
+					.getField3() || (this.field3 != null && this.field3
+					.equals(obj.getField3()))));
 		}
 	}
 }

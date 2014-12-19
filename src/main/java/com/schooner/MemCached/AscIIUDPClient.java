@@ -1,9 +1,9 @@
 /*******************************************************************************
  * Copyright (c) 2009 Schooner Information Technology, Inc.
  * All rights reserved.
- * 
+ *
  * http://www.schoonerinfotech.com/
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
@@ -14,7 +14,7 @@
  *    documentation and/or other materials provided with the distribution.
  * 3. The name of the author may not be used to endorse or promote products
  *    derived from this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
  * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
  * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
@@ -29,8 +29,7 @@
 package com.schooner.MemCached;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
+import java.io.Serializable;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -53,23 +52,25 @@ import com.whalin.MemCached.MemCachedClient;
  * Please use the wrapper class {@link MemCachedClient} for accessing the
  * memcached server.<br>
  * <br>
- * 
+ *
  * When you are using memcached UDP protocol, pay attention that the data size
  * limit is about 64K due to the datagram length limit of UDP protocol.<br>
  * <br>
- * 
+ *
  * A UDP datagram length field specifies the length in bytes of the entire
  * datagram: header and data. The minimum length is 8 bytes since that's the
  * length of the header. The field size sets a theoretical limit of 65,535 bytes
  * (8 byte header + 65,527 bytes of data) for a UDP datagram. The practical
  * limit for the data length which is imposed by the underlying IPv4 protocol is
  * 65,507 bytes (65,535 − 8 byte UDP header − 20 byte IP header).
- * 
+ *
  * @author Xingen Wang
  * @since 2.5.0
  * @see BinaryClient
  */
 public class AscIIUDPClient extends MemCachedClient {
+	private TransBytecode keyTransCoder = new KeyTransCoder();
+
 	private TransCoder transCoder = new ObjectTransCoder();
 
 	// pool instance
@@ -78,8 +79,6 @@ public class AscIIUDPClient extends MemCachedClient {
 	// which pool to use
 	private String poolName;
 
-	// flags
-	private boolean sanitizeKeys;
 	@SuppressWarnings("unused")
 	private boolean primitiveAsString;
 	@SuppressWarnings("unused")
@@ -92,6 +91,7 @@ public class AscIIUDPClient extends MemCachedClient {
 	public static final byte B_DELIMITER = 32;
 	public static final byte B_RETURN = (byte) 13;
 
+	@Override
 	public boolean isUseBinaryProtocol() {
 		return false;
 	}
@@ -106,13 +106,14 @@ public class AscIIUDPClient extends MemCachedClient {
 	/**
 	 * Creates a new instance of MemCachedClient accepting a passed in pool
 	 * name.
-	 * 
+	 *
 	 * @param poolName
 	 *            name of SockIOPool
 	 * @param binaryProtocal
 	 *            whether use binary protocol.
 	 */
 	public AscIIUDPClient(String poolName) {
+		super((MemCachedClient) null);
 		this.poolName = poolName;
 		init();
 	}
@@ -126,11 +127,10 @@ public class AscIIUDPClient extends MemCachedClient {
 
 	/**
 	 * Initializes client object to defaults.
-	 * 
+	 *
 	 * This enables compression and sets compression threshhold to 15 KB.
 	 */
 	private void init() {
-		this.sanitizeKeys = true;
 		this.primitiveAsString = false;
 		this.compressEnable = true;
 		this.compressThreshold = COMPRESS_THRESH;
@@ -138,96 +138,126 @@ public class AscIIUDPClient extends MemCachedClient {
 		this.poolName = (this.poolName == null) ? "default" : this.poolName;
 
 		// get a pool instance to work with for the life of this instance
-		this.pool = SchoonerSockIOPool.getInstance(poolName);
+		this.pool = SchoonerSockIOPool.getInstance(poolName, false);
 	}
 
-	public boolean set(String key, Object value) {
+	@Override
+	public boolean set(Serializable key, Serializable value) {
 		return set("set", key, value, null, null, 0L);
 	}
 
-	public boolean set(String key, Object value, Integer hashCode) {
+	@Override
+	public boolean set(Serializable key, Serializable value, Integer hashCode) {
 		return set("set", key, value, null, hashCode, 0L);
 	}
 
-	public boolean set(String key, Object value, Date expiry) {
+	@Override
+	public boolean set(Serializable key, Serializable value, Date expiry) {
 		return set("set", key, value, expiry, null, 0L);
 	}
 
-	public boolean set(String key, Object value, Date expiry, Integer hashCode) {
-		return set("set", key, value, expiry, hashCode, 0L);
-	}
-	
-	public boolean set(String key, Object value, Date expiry, Integer hashCode, boolean asString) {
+	@Override
+	public boolean set(Serializable key, Serializable value, Date expiry,
+			Integer hashCode) {
 		return set("set", key, value, expiry, hashCode, 0L);
 	}
 
-	public boolean add(String key, Object value) {
+	@Override
+	public boolean set(Serializable key, Serializable value, Date expiry,
+			Integer hashCode, boolean asString) {
+		return set("set", key, value, expiry, hashCode, 0L);
+	}
+
+	@Override
+	public boolean add(Serializable key, Serializable value) {
 		return set("add", key, value, null, null, 0L);
 	}
 
-	public boolean add(String key, Object value, Integer hashCode) {
+	@Override
+	public boolean add(Serializable key, Serializable value, Integer hashCode) {
 		return set("add", key, value, null, hashCode, 0L);
 	}
 
-	public boolean add(String key, Object value, Date expiry) {
+	@Override
+	public boolean add(Serializable key, Serializable value, Date expiry) {
 		return set("add", key, value, expiry, null, 0L);
 	}
 
-	public boolean add(String key, Object value, Date expiry, Integer hashCode) {
+	@Override
+	public boolean add(Serializable key, Serializable value, Date expiry,
+			Integer hashCode) {
 		return set("add", key, value, expiry, hashCode, 0L);
 	}
 
-	public boolean append(String key, Object value, Integer hashCode) {
+	@Override
+	public boolean append(Serializable key, Serializable value, Integer hashCode) {
 		return set("append", key, value, null, hashCode, 0L);
 	}
 
-	public boolean append(String key, Object value) {
+	@Override
+	public boolean append(Serializable key, Serializable value) {
 		return set("append", key, value, null, null, 0L);
 	}
 
-	public boolean cas(String key, Object value, Integer hashCode, long casUnique) {
+	@Override
+	public boolean cas(Serializable key, Serializable value, Integer hashCode,
+			long casUnique) {
 		return set("cas", key, value, null, hashCode, casUnique);
 	}
 
-	public boolean cas(String key, Object value, Date expiry, long casUnique) {
+	@Override
+	public boolean cas(Serializable key, Serializable value, Date expiry,
+			long casUnique) {
 		return set("cas", key, value, expiry, null, casUnique);
 	}
 
-	public boolean cas(String key, Object value, Date expiry, Integer hashCode, long casUnique) {
+	@Override
+	public boolean cas(Serializable key, Serializable value, Date expiry,
+			Integer hashCode, long casUnique) {
 		return set("cas", key, value, expiry, hashCode, casUnique);
 	}
 
-	public boolean cas(String key, Object value, long casUnique) {
+	@Override
+	public boolean cas(Serializable key, Serializable value, long casUnique) {
 		return set("cas", key, value, null, null, casUnique);
 	}
 
-	public boolean prepend(String key, Object value, Integer hashCode) {
+	@Override
+	public boolean prepend(Serializable key, Serializable value,
+			Integer hashCode) {
 		return set("prepend", key, value, null, hashCode, 0L);
 	}
 
-	public boolean prepend(String key, Object value) {
+	@Override
+	public boolean prepend(Serializable key, Serializable value) {
 		return set("prepend", key, value, null, null, 0L);
 	}
 
-	public boolean replace(String key, Object value) {
+	@Override
+	public boolean replace(Serializable key, Serializable value) {
 		return set("replace", key, value, null, null, 0L);
 	}
 
-	public boolean replace(String key, Object value, Integer hashCode) {
+	@Override
+	public boolean replace(Serializable key, Serializable value,
+			Integer hashCode) {
 		return set("replace", key, value, null, hashCode, 0L);
 	}
 
-	public boolean replace(String key, Object value, Date expiry) {
+	@Override
+	public boolean replace(Serializable key, Serializable value, Date expiry) {
 		return set("replace", key, value, expiry, null, 0L);
 	}
 
-	public boolean replace(String key, Object value, Date expiry, Integer hashCode) {
+	@Override
+	public boolean replace(Serializable key, Serializable value, Date expiry,
+			Integer hashCode) {
 		return set("replace", key, value, expiry, hashCode, 0L);
 	}
 
 	/**
 	 * Stores data to cache.
-	 * 
+	 *
 	 * If data does not already exist for this key on the server, or if the key
 	 * is being<br/>
 	 * deleted, the specified value will not be stored.<br/>
@@ -240,7 +270,7 @@ public class AscIIUDPClient extends MemCachedClient {
 	 * <br/>
 	 * As of the current release, all objects stored will use java
 	 * serialization.
-	 * 
+	 *
 	 * @param cmdname
 	 *            action to take (set, add, replace)
 	 * @param key
@@ -253,24 +283,15 @@ public class AscIIUDPClient extends MemCachedClient {
 	 *            if not null, then the int hashcode to use
 	 * @return true/false indicating success
 	 */
-	private boolean set(String cmdname, String key, Object value, Date expiry, Integer hashCode, Long casUnique) {
+	private boolean set(String cmdname, Serializable originKey,
+			Serializable value, Date expiry, Integer hashCode, Long casUnique) {
 
-		if (cmdname == null || key == null) {
+		if (cmdname == null || originKey == null) {
 			log.error("key is null or cmd is null/empty for set()");
 			return false;
 		}
 
-		try {
-			key = sanitizeKey(key);
-		} catch (UnsupportedEncodingException e) {
-
-			// if we have an errorHandler, use its hook
-			if (errorHandler != null)
-				errorHandler.handleErrorOnSet(this, e, key);
-
-			log.error("failed to sanitize your key!", e);
-			return false;
-		}
+		String key = keyTransCoder.encode(originKey);
 
 		if (value == null) {
 			log.error("trying to store a null value to cache");
@@ -281,22 +302,27 @@ public class AscIIUDPClient extends MemCachedClient {
 		SchoonerSockIO sock = pool.getSock(key, hashCode);
 
 		if (sock == null) {
-			if (errorHandler != null)
-				errorHandler.handleErrorOnSet(this, new IOException("no socket to server available"), key);
+			if (errorHandler != null) {
+				errorHandler.handleErrorOnSet(this, new IOException(
+						"no socket to server available"), key);
+			}
 			return false;
 		}
 
-		if (expiry == null)
+		if (expiry == null) {
 			expiry = new Date(0);
+		}
 
 		try {
-			StorageCommand setCmd = new StorageCommand(cmdname, key, value, expiry, hashCode, casUnique, transCoder);
+			StorageCommand setCmd = new StorageCommand(cmdname, key, value,
+					expiry, hashCode, casUnique, transCoder);
 			short rid = setCmd.request(sock);
 			return setCmd.response(sock, rid);
 		} catch (IOException e) {
 			// if we have an errorHandler, use its hook
-			if (errorHandler != null)
+			if (errorHandler != null) {
 				errorHandler.handleErrorOnSet(this, e, key);
+			}
 
 			// exception thrown
 			if (log.isErrorEnabled()) {
@@ -307,7 +333,8 @@ public class AscIIUDPClient extends MemCachedClient {
 			try {
 				sock.sockets.invalidateObject(sock);
 			} catch (Exception e1) {
-				log.error("++++ failed to close socket : " + sock.toString(), e1);
+				log.error("++++ failed to close socket : " + sock.toString(),
+						e1);
 			}
 			sock = null;
 		} finally {
@@ -320,24 +347,38 @@ public class AscIIUDPClient extends MemCachedClient {
 	}
 
 	/**
+	 * set key transcoder
+	 *
+	 * @param keyTransCoder
+	 */
+	@Override
+	public void setKeyTransCoder(TransBytecode keyTransCoder) {
+		this.keyTransCoder = keyTransCoder;
+	}
+
+	/**
 	 * set transcoder. TransCoder is used to customize the serialization and
 	 * deserialization.
-	 * 
+	 *
 	 * @param transCoder
 	 */
+	@Override
 	public void setTransCoder(TransCoder transCoder) {
 		this.transCoder = transCoder;
 	}
 
-	public long addOrDecr(String key) {
+	@Override
+	public long addOrDecr(Serializable key) {
 		return addOrDecr(key, 0, null);
 	}
 
-	public long addOrDecr(String key, long inc) {
+	@Override
+	public long addOrDecr(Serializable key, long inc) {
 		return addOrDecr(key, inc, null);
 	}
 
-	public long addOrDecr(String key, long inc, Integer hashCode) {
+	@Override
+	public long addOrDecr(Serializable key, long inc, Integer hashCode) {
 		boolean ret = add(key, "" + inc, hashCode);
 		if (ret) {
 			return inc;
@@ -346,15 +387,18 @@ public class AscIIUDPClient extends MemCachedClient {
 		}
 	}
 
-	public long addOrIncr(String key) {
+	@Override
+	public long addOrIncr(Serializable key) {
 		return addOrIncr(key, 0, null);
 	}
 
-	public long addOrIncr(String key, long inc) {
+	@Override
+	public long addOrIncr(Serializable key, long inc) {
 		return addOrIncr(key, inc, null);
 	}
 
-	public long addOrIncr(String key, long inc, Integer hashCode) {
+	@Override
+	public long addOrIncr(Serializable key, long inc, Integer hashCode) {
 		boolean ret = add(key, "" + inc, hashCode);
 
 		if (ret) {
@@ -364,30 +408,37 @@ public class AscIIUDPClient extends MemCachedClient {
 		}
 	}
 
-	public long decr(String key) {
+	@Override
+	public long decr(Serializable key) {
 		return incrdecr("decr", key, 1, null);
 	}
 
-	public long decr(String key, long inc) {
+	@Override
+	public long decr(Serializable key, long inc) {
 		return incrdecr("decr", key, inc, null);
 	}
 
-	public long decr(String key, long inc, Integer hashCode) {
+	@Override
+	public long decr(Serializable key, long inc, Integer hashCode) {
 		return incrdecr("decr", key, inc, hashCode);
 	}
 
-	public boolean delete(String key) {
+	@Override
+	public boolean delete(Serializable key) {
 		return delete(key, null, null);
 	}
 
-	public boolean delete(String key, Date expiry) {
+	@Override
+	public boolean delete(Serializable key, Date expiry) {
 		return delete(key, null, expiry);
 	}
 
+	@Override
 	public boolean flushAll() {
 		return flushAll(null);
 	}
 
+	@Override
 	public boolean flushAll(String[] servers) {
 		// get SockIOPool instance
 		// return false if unable to get SockIO obj
@@ -411,8 +462,10 @@ public class AscIIUDPClient extends MemCachedClient {
 
 			SchoonerSockIO sock = pool.getConnection(servers[i]);
 			if (sock == null) {
-				if (errorHandler != null)
-					errorHandler.handleErrorOnFlush(this, new IOException("no socket to server available"));
+				if (errorHandler != null) {
+					errorHandler.handleErrorOnFlush(this, new IOException(
+							"no socket to server available"));
+				}
 
 				log.error("++++ unable to get connection to : " + servers[i]);
 				success = false;
@@ -440,7 +493,9 @@ public class AscIIUDPClient extends MemCachedClient {
 				try {
 					sock.sockets.invalidateObject(sock);
 				} catch (Exception e1) {
-					log.error("++++ failed to close socket : " + sock.toString(), e1);
+					log.error(
+							"++++ failed to close socket : " + sock.toString(),
+							e1);
 				}
 
 				success = false;
@@ -456,64 +511,76 @@ public class AscIIUDPClient extends MemCachedClient {
 		return success;
 	}
 
-	public Object get(String key) {
+	@Override
+	public Object get(Serializable key) {
 		return get(key, null);
 	}
 
-	public Object get(String key, Integer hashCode) {
+	@Override
+	public Object get(Serializable key, Integer hashCode) {
 		return get("get", key, hashCode).value;
 	}
 
-	public Map<String, Object> getMulti(String[] keys) {
+	@Override
+	public Map<Serializable, Object> getMulti(Serializable[] keys) {
 		return getMulti(keys, null);
 	}
 
-	public Map<String, Object> getMulti(String[] keys, Integer[] hashCodes) {
-
+	@Override
+	public Map<Serializable, Object> getMulti(Serializable[] keys,
+			Integer[] hashCodes) {
 		if (keys == null || keys.length == 0) {
 			log.error("missing keys for getMulti()");
 			return null;
 		}
 
-		Map<String, Object> ret = new HashMap<String, Object>(keys.length);
+		Map<Serializable, Object> ret = new HashMap<Serializable, Object>(
+				keys.length);
 
 		for (int i = 0; i < keys.length; ++i) {
 
-			String key = keys[i];
-			if (key == null) {
+			Serializable originKey = keys[i];
+			if (originKey == null) {
 				log.error("null key, so skipping");
 				continue;
 			}
 
+			String key = keyTransCoder.encode(originKey);
+
 			Integer hash = null;
-			if (hashCodes != null && hashCodes.length > i)
+			if (hashCodes != null && hashCodes.length > i) {
 				hash = hashCodes[i];
+			}
 
 			// get SockIO obj from cache key
 			SchoonerSockIO sock = pool.getSock(key, hash);
 
 			if (sock == null) {
-				if (errorHandler != null)
-					errorHandler.handleErrorOnGet(this, new IOException("no socket to server available"), key);
+				if (errorHandler != null) {
+					errorHandler.handleErrorOnGet(this, new IOException(
+							"no socket to server available"), key);
+				}
 				continue;
 			}
 
-			ret.put(key, get("get", key, hash).value);
+			ret.put(originKey, get("get", key, hash).value);
 			sock.close();
 		}
 		return ret;
 	}
 
-	public Object[] getMultiArray(String[] keys) {
+	@Override
+	public Object[] getMultiArray(Serializable[] keys) {
 		return getMultiArray(keys, null);
 	}
 
-	public Object[] getMultiArray(String[] keys, Integer[] hashCodes) {
+	@Override
+	public Object[] getMultiArray(Serializable[] keys, Integer[] hashCodes) {
+		Map<Serializable, Object> data = getMulti(keys, hashCodes);
 
-		Map<String, Object> data = getMulti(keys, hashCodes);
-
-		if (data == null)
+		if (data == null) {
 			return null;
+		}
 
 		Object[] res = new Object[keys.length];
 		for (int i = 0; i < keys.length; i++) {
@@ -525,11 +592,11 @@ public class AscIIUDPClient extends MemCachedClient {
 
 	/**
 	 * Retrieve multiple objects from the memcache.
-	 * 
+	 *
 	 * This is recommended over repeated calls to {@link #get(String) get()},
 	 * since it<br/>
 	 * is more efficient.<br/>
-	 * 
+	 *
 	 * @param keys
 	 *            String array of keys to retrieve
 	 * @param hashCodes
@@ -539,12 +606,15 @@ public class AscIIUDPClient extends MemCachedClient {
 	 * @return Object array ordered in same order as key array containing
 	 *         results
 	 */
-	public Object[] getMultiArray(String[] keys, Integer[] hashCodes, boolean asString) {
+	@Override
+	public Object[] getMultiArray(Serializable[] keys, Integer[] hashCodes,
+			boolean asString) {
 
-		Map<String, Object> data = getMulti(keys, hashCodes, asString);
+		Map<Serializable, Object> data = getMulti(keys, hashCodes, asString);
 
-		if (data == null)
+		if (data == null) {
 			return null;
+		}
 
 		Object[] res = new Object[keys.length];
 		for (int i = 0; i < keys.length; i++) {
@@ -554,17 +624,19 @@ public class AscIIUDPClient extends MemCachedClient {
 		return res;
 	}
 
-	public MemcachedItem gets(String key) {
+	@Override
+	public MemcachedItem gets(Serializable key) {
 		return gets(key, null);
 	}
 
-	public MemcachedItem gets(String key, Integer hashCode) {
+	@Override
+	public MemcachedItem gets(Serializable key, Integer hashCode) {
 		return get("gets", key, hashCode);
 	}
 
 	/**
 	 * get memcached item from server.
-	 * 
+	 *
 	 * @param cmd
 	 *            cmd to be used, get/gets
 	 * @param key
@@ -573,31 +645,25 @@ public class AscIIUDPClient extends MemCachedClient {
 	 *            specified hashcode
 	 * @return memcached item with value in it.
 	 */
-	private MemcachedItem get(String cmd, String key, Integer hashCode) {
+	private MemcachedItem get(String cmd, Serializable originKey,
+			Integer hashCode) {
 		MemcachedItem item = new MemcachedItem();
 
-		if (key == null) {
+		if (originKey == null) {
 			log.error("key is null for get()");
 			return item;
 		}
 
-		try {
-			key = sanitizeKey(key);
-		} catch (UnsupportedEncodingException e) {
-			// if we have an errorHandler, use its hook
-			if (errorHandler != null)
-				errorHandler.handleErrorOnGet(this, e, key);
-
-			log.error("failed to sanitize your key!", e);
-			return null;
-		}
+		String key = keyTransCoder.encode(originKey);
 
 		// get SockIO obj using cache key
 		SchoonerSockIO sock = pool.getSock(key, hashCode);
 
 		if (sock == null) {
-			if (errorHandler != null)
-				errorHandler.handleErrorOnGet(this, new IOException("no socket to server available"), key);
+			if (errorHandler != null) {
+				errorHandler.handleErrorOnGet(this, new IOException(
+						"no socket to server available"), key);
+			}
 			return item;
 		}
 
@@ -609,7 +675,8 @@ public class AscIIUDPClient extends MemCachedClient {
 			try {
 				sock.sockets.invalidateObject(sock);
 			} catch (Exception e1) {
-				log.error("++++ failed to close socket : " + sock.toString(), e1);
+				log.error("++++ failed to close socket : " + sock.toString(),
+						e1);
 			}
 			sock = null;
 		} finally {
@@ -622,60 +689,80 @@ public class AscIIUDPClient extends MemCachedClient {
 
 	}
 
-	public long incr(String key) {
+	@Override
+	public long incr(Serializable key) {
 		return incrdecr("incr", key, 1, null);
 	}
 
-	public long incr(String key, long inc) {
+	@Override
+	public long incr(Serializable key, long inc) {
 		return incrdecr("incr", key, inc, null);
 	}
 
-	public long incr(String key, long inc, Integer hashCode) {
+	@Override
+	public long incr(Serializable key, long inc, Integer hashCode) {
 		return incrdecr("incr", key, inc, hashCode);
 	}
 
-	public boolean keyExists(String key) {
+	@Override
+	public boolean keyExists(Serializable key) {
 		return (this.get(key, null) != null);
 	}
 
+	@Override
 	public Map<String, Map<String, String>> stats() {
 		return stats(null);
 	}
 
+	@Override
 	public Map<String, Map<String, String>> stats(String[] servers) {
 		return stats(servers, "stats\r\n", STATS);
 	}
 
-	public Map<String, Map<String, String>> statsCacheDump(int slabNumber, int limit) {
+	@Override
+	public Map<String, Map<String, String>> statsCacheDump(int slabNumber,
+			int limit) {
 		return statsCacheDump(null, slabNumber, limit);
 	}
 
-	public Map<String, Map<String, String>> statsCacheDump(String[] servers, int slabNumber, int limit) {
-		return stats(servers, String.format("stats cachedump %d %d\r\n", slabNumber, limit), ITEM);
+	@Override
+	public Map<String, Map<String, String>> statsCacheDump(String[] servers,
+			int slabNumber, int limit) {
+		return stats(servers,
+				String.format("stats cachedump %d %d\r\n", slabNumber, limit),
+				ITEM);
 	}
 
+	@Override
 	public Map<String, Map<String, String>> statsItems() {
 		return statsItems(null);
 	}
 
+	@Override
 	public Map<String, Map<String, String>> statsItems(String[] servers) {
 		return stats(servers, "stats items\r\n", STATS);
 	}
 
+	@Override
 	public Map<String, Map<String, String>> statsSlabs() {
 		return statsSlabs(null);
 	}
 
+	@Override
 	public Map<String, Map<String, String>> statsSlabs(String[] servers) {
 		return stats(servers, "stats slabs\r\n", STATS);
 	}
 
-	public boolean sync(String key, Integer hashCode) {
-		if (key == null) {
-			if (log.isErrorEnabled())
+	@Override
+	public boolean sync(Serializable originKey, Integer hashCode) {
+		if (originKey == null) {
+			if (log.isErrorEnabled()) {
 				log.error("null value for key passed to delete()");
+			}
 			return false;
 		}
+
+		String key = keyTransCoder.encode(originKey);
 
 		// get SockIO obj from hash or from key
 		SchoonerSockIO sock = pool.getSock(key, hashCode);
@@ -699,7 +786,8 @@ public class AscIIUDPClient extends MemCachedClient {
 			try {
 				sock.sockets.invalidateObject(sock);
 			} catch (Exception e1) {
-				log.error("++++ failed to close socket : " + sock.toString(), e1);
+				log.error("++++ failed to close socket : " + sock.toString(),
+						e1);
 			}
 
 			sock = null;
@@ -713,14 +801,17 @@ public class AscIIUDPClient extends MemCachedClient {
 		return false;
 	}
 
-	public boolean sync(String key) {
+	@Override
+	public boolean sync(Serializable key) {
 		return sync(key, null);
 	}
 
+	@Override
 	public boolean syncAll() {
 		return syncAll(null);
 	}
 
+	@Override
 	public boolean syncAll(String[] servers) {
 		// get SockIOPool instance
 		// return false if unable to get SockIO obj
@@ -754,8 +845,9 @@ public class AscIIUDPClient extends MemCachedClient {
 				short rid = syncCmd.request(sock);
 				success = syncCmd.response(sock, rid);
 
-				if (!success)
+				if (!success) {
 					return false;
+				}
 			} catch (IOException e) {
 				// exception thrown
 				if (log.isErrorEnabled()) {
@@ -766,7 +858,9 @@ public class AscIIUDPClient extends MemCachedClient {
 				try {
 					sock.sockets.invalidateObject(sock);
 				} catch (Exception e1) {
-					log.error("++++ failed to close socket : " + sock.toString(), e1);
+					log.error(
+							"++++ failed to close socket : " + sock.toString(),
+							e1);
 				}
 
 				success = false;
@@ -782,30 +876,36 @@ public class AscIIUDPClient extends MemCachedClient {
 		return success;
 	}
 
-	public boolean delete(String key, Integer hashCode, Date expiry) {
-
-		if (key == null) {
+	@Override
+	public boolean delete(Serializable originKey, Integer hashCode, Date expiry) {
+		if (originKey == null) {
 			log.error("null value for key passed to delete()");
 			return false;
 		}
+
+		String key = keyTransCoder.encode(originKey);
 
 		// get SockIO obj from hash or from key
 		SchoonerSockIO sock = pool.getSock(key, hashCode);
 
 		// return false if unable to get SockIO obj
 		if (sock == null) {
-			if (errorHandler != null)
-				errorHandler.handleErrorOnDelete(this, new IOException("no socket to server available"), key);
+			if (errorHandler != null) {
+				errorHandler.handleErrorOnDelete(this, new IOException(
+						"no socket to server available"), key);
+			}
 			return false;
 		}
 
 		try {
-			DeletionCommand deletion = new DeletionCommand(key, hashCode, expiry);
+			DeletionCommand deletion = new DeletionCommand(key, hashCode,
+					expiry);
 			short rid = deletion.request(sock);
 			return deletion.response(sock, rid);
 		} catch (IOException e) {
-			if (errorHandler != null)
+			if (errorHandler != null) {
 				errorHandler.handleErrorOnDelete(this, e, key);
+			}
 
 			// exception thrown
 			if (log.isErrorEnabled()) {
@@ -815,7 +915,8 @@ public class AscIIUDPClient extends MemCachedClient {
 			try {
 				sock.sockets.invalidateObject(sock);
 			} catch (Exception e1) {
-				log.error("++++ failed to close socket : " + sock.toString(), e1);
+				log.error("++++ failed to close socket : " + sock.toString(),
+						e1);
 			}
 			sock = null;
 		} finally {
@@ -829,13 +930,13 @@ public class AscIIUDPClient extends MemCachedClient {
 
 	/**
 	 * Increments/decrements the value at the specified key by inc.
-	 * 
+	 *
 	 * Note that the server uses a 32-bit unsigned integer, and checks for<br/>
 	 * underflow. In the event of underflow, the result will be zero. Because<br/>
 	 * Java lacks unsigned types, the value is returned as a 64-bit integer.<br/>
 	 * The server will only decrement a value if it already exists;<br/>
 	 * if a value is not found, -1 will be returned.
-	 * 
+	 *
 	 * @param cmdname
 	 *            increment/decrement
 	 * @param key
@@ -846,35 +947,30 @@ public class AscIIUDPClient extends MemCachedClient {
 	 *            if not null, then the int hashcode to use
 	 * @return new value or -1 if not exist
 	 */
-	private long incrdecr(String cmdname, String key, long inc, Integer hashCode) {
+	private long incrdecr(String cmdname, Serializable originKey, long inc,
+			Integer hashCode) {
 
-		if (key == null) {
+		if (originKey == null) {
 			log.error("null key for incrdecr()");
 			return -1;
 		}
 
-		try {
-			key = sanitizeKey(key);
-		} catch (UnsupportedEncodingException e) {
-			// if we have an errorHandler, use its hook
-			if (errorHandler != null)
-				errorHandler.handleErrorOnGet(this, e, key);
-
-			log.error("failed to sanitize your key!", e);
-			return -1;
-		}
+		String key = keyTransCoder.encode(originKey);
 
 		// get SockIO obj for given cache key
 		SchoonerSockIO sock = pool.getSock(key, hashCode);
 
 		if (sock == null) {
-			if (errorHandler != null)
-				errorHandler.handleErrorOnSet(this, new IOException("no socket to server available"), key);
+			if (errorHandler != null) {
+				errorHandler.handleErrorOnSet(this, new IOException(
+						"no socket to server available"), key);
+			}
 			return -1;
 		}
 
 		try {
-			IncrdecrCommand idCmd = new IncrdecrCommand(cmdname, key, inc, hashCode);
+			IncrdecrCommand idCmd = new IncrdecrCommand(cmdname, key, inc,
+					hashCode);
 			short rid = idCmd.request(sock);
 			if (idCmd.response(sock, rid)) {
 				return idCmd.getResult();
@@ -883,8 +979,9 @@ public class AscIIUDPClient extends MemCachedClient {
 			}
 		} catch (IOException e) {
 			// if we have an errorHandler, use its hook
-			if (errorHandler != null)
+			if (errorHandler != null) {
 				errorHandler.handleErrorOnGet(this, e, key);
+			}
 
 			// exception thrown
 			if (log.isErrorEnabled()) {
@@ -895,7 +992,8 @@ public class AscIIUDPClient extends MemCachedClient {
 			try {
 				sock.sockets.invalidateObject(sock);
 			} catch (Exception e1) {
-				log.error("++++ failed to close socket : " + sock.toString(), e1);
+				log.error("++++ failed to close socket : " + sock.toString(),
+						e1);
 			}
 
 			sock = null;
@@ -909,7 +1007,8 @@ public class AscIIUDPClient extends MemCachedClient {
 		return -1;
 	}
 
-	private Map<String, Map<String, String>> stats(String[] servers, String command, String lineStart) {
+	private Map<String, Map<String, String>> stats(String[] servers,
+			String command, String lineStart) {
 
 		if (command == null || command.trim().equals("")) {
 			log.error("++++ invalid / missing command for stats()");
@@ -932,8 +1031,10 @@ public class AscIIUDPClient extends MemCachedClient {
 
 			SchoonerSockIO sock = pool.getConnection(servers[i]);
 			if (sock == null) {
-				if (errorHandler != null)
-					errorHandler.handleErrorOnStats(this, new IOException("no socket to server available"));
+				if (errorHandler != null) {
+					errorHandler.handleErrorOnStats(this, new IOException(
+							"no socket to server available"));
+				}
 				continue;
 			}
 			// build command
@@ -944,8 +1045,9 @@ public class AscIIUDPClient extends MemCachedClient {
 				statsMaps.put(servers[i], stats);
 			} catch (IOException e) {
 				// if we have an errorHandler, use its hook
-				if (errorHandler != null)
+				if (errorHandler != null) {
 					errorHandler.handleErrorOnStats(this, e);
+				}
 
 				// exception thrown
 				if (log.isErrorEnabled()) {
@@ -956,7 +1058,9 @@ public class AscIIUDPClient extends MemCachedClient {
 				try {
 					sock.sockets.invalidateObject(sock);
 				} catch (Exception e1) {
-					log.error("++++ failed to close socket : " + sock.toString(), e1);
+					log.error(
+							"++++ failed to close socket : " + sock.toString(),
+							e1);
 				}
 
 				sock = null;
@@ -982,22 +1086,13 @@ public class AscIIUDPClient extends MemCachedClient {
 	}
 
 	@Override
-	public void setSanitizeKeys(boolean sanitizeKeys) {
-		this.sanitizeKeys = sanitizeKeys;
-	}
-
-	private String sanitizeKey(String key) throws UnsupportedEncodingException {
-		return (sanitizeKeys) ? URLEncoder.encode(key, "UTF-8") : key;
-	}
-
-	@Override
-	public Object get(String key, Integer hashCode, boolean asString) {
+	public Object get(Serializable key, Integer hashCode, boolean asString) {
 		return get("get", key, hashCode).value;
 	}
 
 	@Override
-	public Map<String, Object> getMulti(String[] keys, Integer[] hashCodes, boolean asString) {
+	public Map<Serializable, Object> getMulti(Serializable[] keys,
+			Integer[] hashCodes, boolean asString) {
 		return getMulti(keys, hashCodes);
 	}
-
 }

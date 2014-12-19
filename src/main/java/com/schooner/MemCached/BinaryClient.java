@@ -1,9 +1,9 @@
 /*******************************************************************************
  * Copyright (c) 2009 Schooner Information Technology, Inc.
  * All rights reserved.
- * 
+ *
  * http://www.schoonerinfotech.com/
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
@@ -14,7 +14,7 @@
  *    documentation and/or other materials provided with the distribution.
  * 3. The name of the author may not be used to endorse or promote products
  *    derived from this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
  * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
  * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
@@ -33,8 +33,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
+import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -56,12 +55,13 @@ import com.whalin.MemCached.MemCachedClient;
  * <br>
  * Please use the wrapper class {@link MemCachedClient} for accessing the
  * memcached server.
- * 
+ *
  * @author Xingen Wang
  * @since 2.5.0
  * @see AscIIClient
  */
 public class BinaryClient extends MemCachedClient {
+	private TransBytecode keyTransCoder = new KeyTransCoder();
 
 	private TransCoder transCoder = new ObjectTransCoder();
 
@@ -71,8 +71,6 @@ public class BinaryClient extends MemCachedClient {
 	// which pool to use
 	private String poolName;
 
-	// flags
-	private boolean sanitizeKeys;
 	private boolean primitiveAsString;
 	@SuppressWarnings("unused")
 	private boolean compressEnable;
@@ -80,6 +78,7 @@ public class BinaryClient extends MemCachedClient {
 	private long compressThreshold;
 	private String defaultEncoding = "utf-8";
 
+	@Override
 	public boolean isUseBinaryProtocol() {
 		return true;
 	}
@@ -94,7 +93,7 @@ public class BinaryClient extends MemCachedClient {
 	/**
 	 * Creates a new instance of MemCachedClient accepting a passed in pool
 	 * name.
-	 * 
+	 *
 	 * @param poolName
 	 *            name of SockIOPool
 	 */
@@ -112,7 +111,7 @@ public class BinaryClient extends MemCachedClient {
 
 	/**
 	 * Initializes client object to defaults.
-	 * 
+	 *
 	 * This enables compression and sets compression threshhold to 15 KB.
 	 */
 	private void init() {
@@ -122,42 +121,39 @@ public class BinaryClient extends MemCachedClient {
 		this.pool = SchoonerSockIOPool.getInstance(poolName);
 	}
 
-	public boolean keyExists(String key) {
+	@Override
+	public boolean keyExists(Serializable key) {
 		return (this.get(key, null) != null);
 	}
 
-	public boolean delete(String key) {
+	@Override
+	public boolean delete(Serializable key) {
 		return delete(key, null, null);
 	}
 
-	public boolean delete(String key, Date expiry) {
+	@Override
+	public boolean delete(Serializable key, Date expiry) {
 		return delete(key, null, expiry);
 	}
 
-	public boolean delete(String key, Integer hashCode, Date expiry) {
-
-		if (key == null) {
+	@Override
+	public boolean delete(Serializable originKey, Integer hashCode, Date expiry) {
+		if (originKey == null) {
 			log.error("null value for key passed to delete()");
 			return false;
 		}
 
-		try {
-			key = sanitizeKey(key);
-		} catch (UnsupportedEncodingException e) {
-			if (errorHandler != null)
-				errorHandler.handleErrorOnDelete(this, e, key);
-
-			log.error("failed to sanitize your key!", e);
-			return false;
-		}
+		String key = keyTransCoder.encode(originKey);
 
 		// get SockIO obj from hash or from key
 		SchoonerSockIO sock = pool.getSock(key, hashCode);
 
 		// return false if unable to get SockIO obj
 		if (sock == null) {
-			if (errorHandler != null)
-				errorHandler.handleErrorOnDelete(this, new IOException("no socket to server available"), key);
+			if (errorHandler != null) {
+				errorHandler.handleErrorOnDelete(this, new IOException(
+						"no socket to server available"), key);
+			}
 			return false;
 		}
 
@@ -182,12 +178,14 @@ public class BinaryClient extends MemCachedClient {
 			short status = dis.readShort();
 			dis.close();
 			if (status == STAT_NO_ERROR) {
-				log.debug("++++ deletion of key: " + key + " from cache was a success");
+				log.debug("++++ deletion of key: " + key
+						+ " from cache was a success");
 
 				// return sock to pool and bail here
 				return true;
 			} else if (status == STAT_KEY_NOT_FOUND) {
-				log.debug("++++ deletion of key: " + key + " from cache failed as the key was not found");
+				log.debug("++++ deletion of key: " + key
+						+ " from cache failed as the key was not found");
 			} else {
 				if (log.isErrorEnabled()) {
 					log.error("++++ error deleting key: " + key);
@@ -196,8 +194,9 @@ public class BinaryClient extends MemCachedClient {
 			}
 		} catch (IOException e) {
 			// if we have an errorHandler, use its hook
-			if (errorHandler != null)
+			if (errorHandler != null) {
 				errorHandler.handleErrorOnDelete(this, e, key);
+			}
 
 			// exception thrown
 			if (log.isErrorEnabled()) {
@@ -208,7 +207,8 @@ public class BinaryClient extends MemCachedClient {
 			try {
 				sock.sockets.invalidateObject(sock);
 			} catch (Exception e1) {
-				log.error("++++ failed to close socket : " + sock.toString(), e1);
+				log.error("++++ failed to close socket : " + sock.toString(),
+						e1);
 			}
 
 			sock = null;
@@ -223,93 +223,135 @@ public class BinaryClient extends MemCachedClient {
 		return false;
 	}
 
-	public boolean set(String key, Object value) {
+	@Override
+	public boolean set(Serializable key, Serializable value) {
 		return set(OPCODE_SET, key, value, null, null, 0L, primitiveAsString);
 	}
 
-	public boolean set(String key, Object value, Integer hashCode) {
-		return set(OPCODE_SET, key, value, null, hashCode, 0L, primitiveAsString);
+	@Override
+	public boolean set(Serializable key, Serializable value, Integer hashCode) {
+		return set(OPCODE_SET, key, value, null, hashCode, 0L,
+				primitiveAsString);
 	}
 
-	public boolean set(String key, Object value, Date expiry) {
+	@Override
+	public boolean set(Serializable key, Serializable value, Date expiry) {
 		return set(OPCODE_SET, key, value, expiry, null, 0L, primitiveAsString);
 	}
 
-	public boolean set(String key, Object value, Date expiry, Integer hashCode) {
-		return set(OPCODE_SET, key, value, expiry, hashCode, 0L, primitiveAsString);
+	@Override
+	public boolean set(Serializable key, Serializable value, Date expiry,
+			Integer hashCode) {
+		return set(OPCODE_SET, key, value, expiry, hashCode, 0L,
+				primitiveAsString);
 	}
-	
-	public boolean set(String key, Object value, Date expiry, Integer hashCode, boolean asString) {
+
+	@Override
+	public boolean set(Serializable key, Serializable value, Date expiry,
+			Integer hashCode, boolean asString) {
 		return set(OPCODE_SET, key, value, expiry, hashCode, 0L, asString);
 	}
 
-	public boolean add(String key, Object value) {
+	@Override
+	public boolean add(Serializable key, Serializable value) {
 		return set(OPCODE_ADD, key, value, null, null, 0L, primitiveAsString);
 	}
 
-	public boolean add(String key, Object value, Integer hashCode) {
-		return set(OPCODE_ADD, key, value, null, hashCode, 0L, primitiveAsString);
+	@Override
+	public boolean add(Serializable key, Serializable value, Integer hashCode) {
+		return set(OPCODE_ADD, key, value, null, hashCode, 0L,
+				primitiveAsString);
 	}
 
-	public boolean add(String key, Object value, Date expiry) {
+	@Override
+	public boolean add(Serializable key, Serializable value, Date expiry) {
 		return set(OPCODE_ADD, key, value, expiry, null, 0L, primitiveAsString);
 	}
 
-	public boolean add(String key, Object value, Date expiry, Integer hashCode) {
-		return set(OPCODE_ADD, key, value, expiry, hashCode, 0L, primitiveAsString);
+	@Override
+	public boolean add(Serializable key, Serializable value, Date expiry,
+			Integer hashCode) {
+		return set(OPCODE_ADD, key, value, expiry, hashCode, 0L,
+				primitiveAsString);
 	}
 
-	public boolean append(String key, Object value, Integer hashCode) {
+	@Override
+	public boolean append(Serializable key, Serializable value, Integer hashCode) {
 		return apPrepend(OPCODE_APPEND, key, value, hashCode, 0L);
 	}
 
-	public boolean append(String key, Object value) {
+	@Override
+	public boolean append(Serializable key, Serializable value) {
 		return apPrepend(OPCODE_APPEND, key, value, null, 0L);
 	}
 
-	public boolean cas(String key, Object value, Integer hashCode, long casUnique) {
-		return set(OPCODE_SET, key, value, null, hashCode, casUnique, primitiveAsString);
+	@Override
+	public boolean cas(Serializable key, Serializable value, Integer hashCode,
+			long casUnique) {
+		return set(OPCODE_SET, key, value, null, hashCode, casUnique,
+				primitiveAsString);
 	}
 
-	public boolean cas(String key, Object value, Date expiry, long casUnique) {
-		return set(OPCODE_SET, key, value, expiry, null, casUnique, primitiveAsString);
+	@Override
+	public boolean cas(Serializable key, Serializable value, Date expiry,
+			long casUnique) {
+		return set(OPCODE_SET, key, value, expiry, null, casUnique,
+				primitiveAsString);
 	}
 
-	public boolean cas(String key, Object value, Date expiry, Integer hashCode, long casUnique) {
-		return set(OPCODE_SET, key, value, expiry, hashCode, casUnique, primitiveAsString);
+	@Override
+	public boolean cas(Serializable key, Serializable value, Date expiry,
+			Integer hashCode, long casUnique) {
+		return set(OPCODE_SET, key, value, expiry, hashCode, casUnique,
+				primitiveAsString);
 	}
 
-	public boolean cas(String key, Object value, long casUnique) {
-		return set(OPCODE_SET, key, value, null, null, casUnique, primitiveAsString);
+	@Override
+	public boolean cas(Serializable key, Serializable value, long casUnique) {
+		return set(OPCODE_SET, key, value, null, null, casUnique,
+				primitiveAsString);
 	}
 
-	public boolean prepend(String key, Object value, Integer hashCode) {
+	@Override
+	public boolean prepend(Serializable key, Serializable value,
+			Integer hashCode) {
 		return apPrepend(OPCODE_PREPEND, key, value, hashCode, 0L);
 	}
 
-	public boolean prepend(String key, Object value) {
+	@Override
+	public boolean prepend(Serializable key, Serializable value) {
 		return apPrepend(OPCODE_PREPEND, key, value, null, 0L);
 	}
 
-	public boolean replace(String key, Object value) {
-		return set(OPCODE_REPLACE, key, value, null, null, 0L, primitiveAsString);
+	@Override
+	public boolean replace(Serializable key, Serializable value) {
+		return set(OPCODE_REPLACE, key, value, null, null, 0L,
+				primitiveAsString);
 	}
 
-	public boolean replace(String key, Object value, Integer hashCode) {
-		return set(OPCODE_REPLACE, key, value, null, hashCode, 0L, primitiveAsString);
+	@Override
+	public boolean replace(Serializable key, Serializable value,
+			Integer hashCode) {
+		return set(OPCODE_REPLACE, key, value, null, hashCode, 0L,
+				primitiveAsString);
 	}
 
-	public boolean replace(String key, Object value, Date expiry) {
-		return set(OPCODE_REPLACE, key, value, expiry, null, 0L, primitiveAsString);
+	@Override
+	public boolean replace(Serializable key, Serializable value, Date expiry) {
+		return set(OPCODE_REPLACE, key, value, expiry, null, 0L,
+				primitiveAsString);
 	}
 
-	public boolean replace(String key, Object value, Date expiry, Integer hashCode) {
-		return set(OPCODE_REPLACE, key, value, expiry, hashCode, 0L, primitiveAsString);
+	@Override
+	public boolean replace(Serializable key, Serializable value, Date expiry,
+			Integer hashCode) {
+		return set(OPCODE_REPLACE, key, value, expiry, hashCode, 0L,
+				primitiveAsString);
 	}
 
 	/**
 	 * Set, Add, Replace data to cache.
-	 * 
+	 *
 	 * If data does not already exist for this key on the server, or if the key
 	 * is being<br/>
 	 * deleted, the specified value will not be stored.<br/>
@@ -322,7 +364,7 @@ public class BinaryClient extends MemCachedClient {
 	 * <br/>
 	 * As of the current release, all objects stored will use java
 	 * serialization.
-	 * 
+	 *
 	 * @param cmdname
 	 *            action to take (set, add, replace)
 	 * @param key
@@ -335,25 +377,15 @@ public class BinaryClient extends MemCachedClient {
 	 *            if not null, then the int hashcode to use
 	 * @return true/false indicating success
 	 */
-	private boolean set(byte opcode, String key, Object value, Date expiry, Integer hashCode, long casUnique,
+	private boolean set(byte opcode, Serializable originKey,
+			Serializable value, Date expiry, Integer hashCode, long casUnique,
 			boolean asString) {
-
-		if (key == null) {
+		if (originKey == null) {
 			log.error("key is null or cmd is null/empty for set()");
 			return false;
 		}
 
-		try {
-			key = sanitizeKey(key);
-		} catch (UnsupportedEncodingException e) {
-
-			// if we have an errorHandler, use its hook
-			if (errorHandler != null)
-				errorHandler.handleErrorOnSet(this, e, key);
-
-			log.error("failed to sanitize your key!", e);
-			return false;
-		}
+		String key = keyTransCoder.encode(originKey);
 
 		if (value == null) {
 			log.error("trying to store a null value to cache");
@@ -364,17 +396,21 @@ public class BinaryClient extends MemCachedClient {
 		SchoonerSockIO sock = pool.getSock(key, hashCode);
 
 		if (sock == null) {
-			if (errorHandler != null)
-				errorHandler.handleErrorOnSet(this, new IOException("no socket to server available"), key);
+			if (errorHandler != null) {
+				errorHandler.handleErrorOnSet(this, new IOException(
+						"no socket to server available"), key);
+			}
 			return false;
 		}
 
-		if (expiry == null)
+		if (expiry == null) {
 			expiry = new Date(0);
+		}
 
 		try {
 			// store flags
-			int flags = asString ? MemCachedClient.MARKER_STRING : NativeHandler.getMarkerFlag(value);
+			int flags = asString ? MemCachedClient.MARKER_STRING
+					: NativeHandler.getMarkerFlag(value);
 			byte[] buf = key.getBytes();
 			sock.writeBuf.clear();
 			sock.writeBuf.put(MAGIC_REQ);
@@ -422,7 +458,8 @@ public class BinaryClient extends MemCachedClient {
 			// now write the data to the cache server
 			sock.flush();
 			// get result code
-			DataInputStream dis = new DataInputStream(new SockInputStream(sock, Integer.MAX_VALUE));
+			DataInputStream dis = new DataInputStream(new SockInputStream(sock,
+					Integer.MAX_VALUE));
 			dis.readInt();
 			dis.readShort();
 			short stat = dis.readShort();
@@ -433,8 +470,9 @@ public class BinaryClient extends MemCachedClient {
 		} catch (IOException e) {
 
 			// if we have an errorHandler, use its hook
-			if (errorHandler != null)
+			if (errorHandler != null) {
 				errorHandler.handleErrorOnSet(this, e, key);
+			}
 
 			// exception thrown
 			if (log.isErrorEnabled()) {
@@ -445,7 +483,8 @@ public class BinaryClient extends MemCachedClient {
 			try {
 				sock.sockets.invalidateObject(sock);
 			} catch (Exception e1) {
-				log.error("++++ failed to close socket : " + sock.toString(), e1);
+				log.error("++++ failed to close socket : " + sock.toString(),
+						e1);
 			}
 
 			sock = null;
@@ -462,7 +501,7 @@ public class BinaryClient extends MemCachedClient {
 
 	/**
 	 * Append & Prepend data to cache.
-	 * 
+	 *
 	 * If data does not already exist for this key on the server, or if the key
 	 * is being<br/>
 	 * deleted, the specified value will not be stored.<br/>
@@ -475,7 +514,7 @@ public class BinaryClient extends MemCachedClient {
 	 * <br/>
 	 * As of the current release, all objects stored will use java
 	 * serialization.
-	 * 
+	 *
 	 * @param cmdname
 	 *            action to take (set, add, replace)
 	 * @param key
@@ -486,19 +525,14 @@ public class BinaryClient extends MemCachedClient {
 	 *            if not null, then the int hashcode to use
 	 * @return true/false indicating success
 	 */
-	private boolean apPrepend(byte opcode, String key, Object value, Integer hashCode, Long casUnique) {
-
-		if (key == null) {
+	private boolean apPrepend(byte opcode, Serializable originKey,
+			Serializable value, Integer hashCode, Long casUnique) {
+		if (originKey == null) {
 			log.error("key is null or cmd is null/empty for set()");
 			return false;
 		}
 
-		try {
-			key = sanitizeKey(key);
-		} catch (UnsupportedEncodingException e) {
-			log.error("failed to sanitize your key!", e);
-			return false;
-		}
+		String key = keyTransCoder.encode(originKey);
 
 		if (value == null) {
 			log.error("trying to store a null value to cache");
@@ -547,7 +581,8 @@ public class BinaryClient extends MemCachedClient {
 			// now write the data to the cache server
 			sock.flush();
 			// get result code
-			DataInputStream dis = new DataInputStream(new SockInputStream(sock, Integer.MAX_VALUE));
+			DataInputStream dis = new DataInputStream(new SockInputStream(sock,
+					Integer.MAX_VALUE));
 			dis.readInt();
 			dis.readShort();
 			short stat = dis.readShort();
@@ -565,7 +600,8 @@ public class BinaryClient extends MemCachedClient {
 			try {
 				sock.sockets.invalidateObject(sock);
 			} catch (Exception e1) {
-				log.error("++++ failed to close socket : " + sock.toString(), e1);
+				log.error("++++ failed to close socket : " + sock.toString(),
+						e1);
 			}
 
 			sock = null;
@@ -579,15 +615,18 @@ public class BinaryClient extends MemCachedClient {
 		return false;
 	}
 
-	public long addOrIncr(String key) {
+	@Override
+	public long addOrIncr(Serializable key) {
 		return addOrIncr(key, 0, null);
 	}
 
-	public long addOrIncr(String key, long inc) {
+	@Override
+	public long addOrIncr(Serializable key, long inc) {
 		return addOrIncr(key, inc, null);
 	}
 
-	public long addOrIncr(String key, long inc, Integer hashCode) {
+	@Override
+	public long addOrIncr(Serializable key, long inc, Integer hashCode) {
 		boolean ret = add(key, "" + inc, hashCode);
 
 		if (ret) {
@@ -597,15 +636,18 @@ public class BinaryClient extends MemCachedClient {
 		}
 	}
 
-	public long addOrDecr(String key) {
+	@Override
+	public long addOrDecr(Serializable key) {
 		return addOrDecr(key, 0, null);
 	}
 
-	public long addOrDecr(String key, long inc) {
+	@Override
+	public long addOrDecr(Serializable key, long inc) {
 		return addOrDecr(key, inc, null);
 	}
 
-	public long addOrDecr(String key, long inc, Integer hashCode) {
+	@Override
+	public long addOrDecr(Serializable key, long inc, Integer hashCode) {
 		boolean ret = add(key, "" + inc, hashCode);
 		if (ret) {
 			return inc;
@@ -614,39 +656,45 @@ public class BinaryClient extends MemCachedClient {
 		}
 	}
 
-	public long incr(String key) {
+	@Override
+	public long incr(Serializable key) {
 		return incrdecr(OPCODE_INCREMENT, key, 1, null);
 	}
 
-	public long incr(String key, long inc) {
+	@Override
+	public long incr(Serializable key, long inc) {
 		return incrdecr(OPCODE_INCREMENT, key, inc, null);
 	}
 
-	public long incr(String key, long inc, Integer hashCode) {
+	@Override
+	public long incr(Serializable key, long inc, Integer hashCode) {
 		return incrdecr(OPCODE_INCREMENT, key, inc, hashCode);
 	}
 
-	public long decr(String key) {
+	@Override
+	public long decr(Serializable key) {
 		return incrdecr(OPCODE_DECREMENT, key, 1, null);
 	}
 
-	public long decr(String key, long inc) {
+	@Override
+	public long decr(Serializable key, long inc) {
 		return incrdecr(OPCODE_DECREMENT, key, inc, null);
 	}
 
-	public long decr(String key, long inc, Integer hashCode) {
+	@Override
+	public long decr(Serializable key, long inc, Integer hashCode) {
 		return incrdecr(OPCODE_DECREMENT, key, inc, hashCode);
 	}
 
 	/**
 	 * Increments/decrements the value at the specified key by inc.
-	 * 
+	 *
 	 * Note that the server uses a 32-bit unsigned integer, and checks for<br/>
 	 * underflow. In the event of underflow, the result will be zero. Because<br/>
 	 * Java lacks unsigned types, the value is returned as a 64-bit integer.<br/>
 	 * The server will only decrement a value if it already exists;<br/>
 	 * if a value is not found, -1 will be returned.
-	 * 
+	 *
 	 * @param opcode
 	 *            increment/decrement
 	 * @param key
@@ -657,30 +705,23 @@ public class BinaryClient extends MemCachedClient {
 	 *            if not null, then the int hashcode to use
 	 * @return new value or -1 if not exist
 	 */
-	private long incrdecr(byte opcode, String key, long inc, Integer hashCode) {
-
-		if (key == null) {
+	private long incrdecr(byte opcode, Serializable originKey, long inc,
+			Integer hashCode) {
+		if (originKey == null) {
 			log.error("null key for incrdecr()");
 			return -1;
 		}
 
-		try {
-			key = sanitizeKey(key);
-		} catch (UnsupportedEncodingException e) {
-			// if we have an errorHandler, use its hook
-			if (errorHandler != null)
-				errorHandler.handleErrorOnGet(this, e, key);
-
-			log.error("failed to sanitize your key!", e);
-			return -1;
-		}
+		String key = keyTransCoder.encode(originKey);
 
 		// get SockIO obj for given cache key
 		SchoonerSockIO sock = pool.getSock(key, hashCode);
 
 		if (sock == null) {
-			if (errorHandler != null)
-				errorHandler.handleErrorOnSet(this, new IOException("no socket to server available"), key);
+			if (errorHandler != null) {
+				errorHandler.handleErrorOnSet(this, new IOException(
+						"no socket to server available"), key);
+			}
 			return -1;
 		}
 
@@ -702,7 +743,8 @@ public class BinaryClient extends MemCachedClient {
 			sock.writeBuf.put(keyBuf);
 			sock.flush();
 			// get result code
-			DataInputStream dis = new DataInputStream(new SockInputStream(sock, Integer.MAX_VALUE));
+			DataInputStream dis = new DataInputStream(new SockInputStream(sock,
+					Integer.MAX_VALUE));
 			dis.readInt();
 			dis.readShort();
 			short status = dis.readShort();
@@ -715,15 +757,20 @@ public class BinaryClient extends MemCachedClient {
 				return res;
 			} else {
 				if (log.isErrorEnabled()) {
-					log.error(new StringBuffer().append("++++ error incr/decr key: ").append(key).toString());
-					log.error(new StringBuffer().append("++++ server response: ").append(status).toString());
+					log.error(new StringBuffer()
+							.append("++++ error incr/decr key: ").append(key)
+							.toString());
+					log.error(new StringBuffer()
+							.append("++++ server response: ").append(status)
+							.toString());
 				}
 			}
 		} catch (IOException e) {
 
 			// if we have an errorHandler, use its hook
-			if (errorHandler != null)
+			if (errorHandler != null) {
 				errorHandler.handleErrorOnGet(this, e, key);
+			}
 
 			// exception thrown
 			if (log.isErrorEnabled()) {
@@ -734,7 +781,8 @@ public class BinaryClient extends MemCachedClient {
 			try {
 				sock.sockets.invalidateObject(sock);
 			} catch (Exception e1) {
-				log.error("++++ failed to close socket : " + sock.toString(), e1);
+				log.error("++++ failed to close socket : " + sock.toString(),
+						e1);
 			}
 
 			sock = null;
@@ -748,36 +796,48 @@ public class BinaryClient extends MemCachedClient {
 		return -1;
 	}
 
-	public Object get(String key) {
+	@Override
+	public Object get(Serializable key) {
 		return get(key, null);
 	}
 
-	public Object get(String key, Integer hashCode) {
+	@Override
+	public Object get(Serializable key, Integer hashCode) {
 		return get(OPCODE_GET, key, hashCode, false);
 	}
 
-	public MemcachedItem gets(String key) {
+	@Override
+	public MemcachedItem gets(Serializable key) {
 		return gets(key, null);
 	}
 
-	public MemcachedItem gets(String key, Integer hashCode) {
+	@Override
+	public MemcachedItem gets(Serializable key, Integer hashCode) {
 		return gets(OPCODE_GET, key, hashCode, false);
 	}
 
+	@Override
+	public void setKeyTransCoder(TransBytecode keyTransCoder) {
+		this.keyTransCoder = keyTransCoder;
+	}
+
+	@Override
 	public void setTransCoder(TransCoder transCoder) {
 		this.transCoder = transCoder;
 	}
 
-	public Object[] getMultiArray(String[] keys) {
+	@Override
+	public Object[] getMultiArray(Serializable[] keys) {
 		return getMultiArray(keys, null);
 	}
 
-	public Object[] getMultiArray(String[] keys, Integer[] hashCodes) {
+	@Override
+	public Object[] getMultiArray(Serializable[] keys, Integer[] hashCodes) {
+		Map<Serializable, Object> data = getMulti(keys, hashCodes);
 
-		Map<String, Object> data = getMulti(keys, hashCodes);
-
-		if (data == null)
+		if (data == null) {
 			return null;
+		}
 
 		Object[] res = new Object[keys.length];
 		for (int i = 0; i < keys.length; i++) {
@@ -787,21 +847,24 @@ public class BinaryClient extends MemCachedClient {
 		return res;
 	}
 
-	public Map<String, Object> getMulti(String[] keys) {
+	@Override
+	public Map<Serializable, Object> getMulti(Serializable[] keys) {
 		return getMulti(keys, null);
 	}
 
-	public Map<String, Object> getMulti(String[] keys, Integer[] hashCodes) {
+	@Override
+	public Map<Serializable, Object> getMulti(Serializable[] keys,
+			Integer[] hashCodes) {
 		return getMulti(keys, hashCodes, false);
 	}
 
 	/**
 	 * Retrieve multiple keys from the memcache.
-	 * 
+	 *
 	 * This is recommended over repeated calls to {@link #get(String) get()},
 	 * since it<br/>
 	 * is more efficient.<br/>
-	 * 
+	 *
 	 * @param keys
 	 *            keys to retrieve
 	 * @param hashCodes
@@ -812,8 +875,9 @@ public class BinaryClient extends MemCachedClient {
 	 *         that are not found are not entered into the hashmap, but
 	 *         attempting to retrieve them from the hashmap gives you null.
 	 */
-	public Map<String, Object> getMulti(String[] keys, Integer[] hashCodes, boolean asString) {
-
+	@Override
+	public Map<Serializable, Object> getMulti(Serializable[] keys,
+			Integer[] hashCodes, boolean asString) {
 		if (keys == null || keys.length == 0) {
 			log.error("missing keys for getMulti()");
 			return null;
@@ -822,42 +886,36 @@ public class BinaryClient extends MemCachedClient {
 		Map<String, ArrayList<String>> cmdMap = new HashMap<String, ArrayList<String>>();
 		String[] cleanKeys = new String[keys.length];
 		for (int i = 0; i < keys.length; ++i) {
-
-			String key = keys[i];
-			if (key == null) {
+			Serializable originKey = keys[i];
+			if (originKey == null) {
 				log.error("null key, so skipping");
 				continue;
 			}
 
+			String key = keyTransCoder.encode(originKey);
+
 			Integer hash = null;
-			if (hashCodes != null && hashCodes.length > i)
+			if (hashCodes != null && hashCodes.length > i) {
 				hash = hashCodes[i];
+			}
 
 			cleanKeys[i] = key;
-			try {
-				cleanKeys[i] = sanitizeKey(key);
-			} catch (UnsupportedEncodingException e) {
-
-				// if we have an errorHandler, use its hook
-				if (errorHandler != null)
-					errorHandler.handleErrorOnGet(this, e, key);
-
-				log.error("failed to sanitize your key!", e);
-				continue;
-			}
 
 			// get SockIO obj from cache key
 			SchoonerSockIO sock = pool.getSock(cleanKeys[i], hash);
 
 			if (sock == null) {
-				if (errorHandler != null)
-					errorHandler.handleErrorOnGet(this, new IOException("no socket to server available"), key);
+				if (errorHandler != null) {
+					errorHandler.handleErrorOnGet(this, new IOException(
+							"no socket to server available"), key);
+				}
 				continue;
 			}
 
 			// store in map and list if not already
-			if (!cmdMap.containsKey(sock.getHost()))
+			if (!cmdMap.containsKey(sock.getHost())) {
 				cmdMap.put(sock.getHost(), new ArrayList<String>());
+			}
 
 			cmdMap.get(sock.getHost()).add(cleanKeys[i]);
 
@@ -868,7 +926,8 @@ public class BinaryClient extends MemCachedClient {
 		log.debug("multi get socket count : " + cmdMap.size());
 
 		// now query memcache
-		Map<String, Object> ret = new HashMap<String, Object>(keys.length);
+		Map<Serializable, Object> ret = new HashMap<Serializable, Object>(
+				keys.length);
 
 		// now use new NIO implementation
 		(new NIOLoader(this)).doMulti(asString, cmdMap, keys, ret);
@@ -893,10 +952,10 @@ public class BinaryClient extends MemCachedClient {
 
 	/**
 	 * This method loads the data from cache into a Map.
-	 * 
+	 *
 	 * Pass a SockIO object which is ready to receive data and a HashMap<br/>
 	 * to store the results.
-	 * 
+	 *
 	 * @param sock
 	 *            socket waiting to pass back data
 	 * @param hm
@@ -906,7 +965,8 @@ public class BinaryClient extends MemCachedClient {
 	 * @throws IOException
 	 *             if io exception happens while reading from socket
 	 */
-	private void loadMulti(DataInputStream input, Map<String, Object> hm) throws IOException {
+	private void loadMulti(DataInputStream input, Map<Serializable, Object> hm)
+			throws IOException {
 
 		while (true) {
 			input.readByte();
@@ -930,8 +990,10 @@ public class BinaryClient extends MemCachedClient {
 				Object o = null;
 				// we can only take out serialized objects
 				if ((flag & F_COMPRESSED) == F_COMPRESSED) {
-					GZIPInputStream gzi = new GZIPInputStream(new ByteArrayInputStream(buf));
-					ByteArrayOutputStream bos = new ByteArrayOutputStream(buf.length);
+					GZIPInputStream gzi = new GZIPInputStream(
+							new ByteArrayInputStream(buf));
+					ByteArrayOutputStream bos = new ByteArrayOutputStream(
+							buf.length);
 					int count;
 					byte[] tmp = new byte[2048];
 					while ((count = gzi.read(tmp)) != -1) {
@@ -948,10 +1010,13 @@ public class BinaryClient extends MemCachedClient {
 					} catch (Exception e) {
 
 						// if we have an errorHandler, use its hook
-						if (errorHandler != null)
+						if (errorHandler != null) {
 							errorHandler.handleErrorOnGet(this, e, key);
+						}
 
-						log.error("++++ Exception thrown while trying to deserialize for key: " + key, e);
+						log.error(
+								"++++ Exception thrown while trying to deserialize for key: "
+										+ key, e);
 						e.printStackTrace();
 					}
 				} else if (transCoder != null) {
@@ -965,12 +1030,13 @@ public class BinaryClient extends MemCachedClient {
 		}
 	}
 
+	@Override
 	public boolean flushAll() {
 		return flushAll(null);
 	}
 
+	@Override
 	public boolean flushAll(String[] servers) {
-
 		// get SockIOPool instance
 		// return false if unable to get SockIO obj
 		if (pool == null) {
@@ -993,8 +1059,10 @@ public class BinaryClient extends MemCachedClient {
 
 			SchoonerSockIO sock = pool.getConnection(servers[i]);
 			if (sock == null) {
-				if (errorHandler != null)
-					errorHandler.handleErrorOnFlush(this, new IOException("no socket to server available"));
+				if (errorHandler != null) {
+					errorHandler.handleErrorOnFlush(this, new IOException(
+							"no socket to server available"));
+				}
 				log.error("++++ unable to get connection to : " + servers[i]);
 				success = false;
 				continue;
@@ -1014,16 +1082,19 @@ public class BinaryClient extends MemCachedClient {
 				sock.flush();
 				// if we get appropriate response back, then we return true
 				// get result code
-				DataInputStream dis = new DataInputStream(new SockInputStream(sock, Integer.MAX_VALUE));
+				DataInputStream dis = new DataInputStream(new SockInputStream(
+						sock, Integer.MAX_VALUE));
 				dis.readInt();
 				dis.readShort();
-				success = dis.readShort() == STAT_NO_ERROR ? success && true : false;
+				success = dis.readShort() == STAT_NO_ERROR ? success && true
+						: false;
 				dis.close();
 			} catch (IOException e) {
 
 				// if we have an errorHandler, use its hook
-				if (errorHandler != null)
+				if (errorHandler != null) {
 					errorHandler.handleErrorOnFlush(this, e);
+				}
 
 				// exception thrown
 				if (log.isErrorEnabled()) {
@@ -1034,7 +1105,9 @@ public class BinaryClient extends MemCachedClient {
 				try {
 					sock.sockets.invalidateObject(sock);
 				} catch (Exception e1) {
-					log.error("++++ failed to close socket : " + sock.toString(), e1);
+					log.error(
+							"++++ failed to close socket : " + sock.toString(),
+							e1);
 				}
 
 				success = false;
@@ -1050,39 +1123,51 @@ public class BinaryClient extends MemCachedClient {
 		return success;
 	}
 
+	@Override
 	public Map<String, Map<String, String>> stats() {
 		return stats(null);
 	}
 
+	@Override
 	public Map<String, Map<String, String>> stats(String[] servers) {
 		return stats(servers, OPCODE_STAT, null);
 	}
 
+	@Override
 	public Map<String, Map<String, String>> statsItems() {
 		return statsItems(null);
 	}
 
+	@Override
 	public Map<String, Map<String, String>> statsItems(String[] servers) {
 		return stats(servers, OPCODE_STAT, "items".getBytes());
 	}
 
+	@Override
 	public Map<String, Map<String, String>> statsSlabs() {
 		return statsSlabs(null);
 	}
 
+	@Override
 	public Map<String, Map<String, String>> statsSlabs(String[] servers) {
 		return stats(servers, OPCODE_STAT, "slabs".getBytes());
 	}
 
-	public Map<String, Map<String, String>> statsCacheDump(int slabNumber, int limit) {
+	@Override
+	public Map<String, Map<String, String>> statsCacheDump(int slabNumber,
+			int limit) {
 		return statsCacheDump(null, slabNumber, limit);
 	}
 
-	public Map<String, Map<String, String>> statsCacheDump(String[] servers, int slabNumber, int limit) {
-		return stats(servers, OPCODE_STAT, String.format("cachedump %d %d", slabNumber, limit).getBytes());
+	@Override
+	public Map<String, Map<String, String>> statsCacheDump(String[] servers,
+			int slabNumber, int limit) {
+		return stats(servers, OPCODE_STAT,
+				String.format("cachedump %d %d", slabNumber, limit).getBytes());
 	}
 
-	private Map<String, Map<String, String>> stats(String[] servers, byte opcode, byte[] reqKey) {
+	private Map<String, Map<String, String>> stats(String[] servers,
+			byte opcode, byte[] reqKey) {
 
 		// get all servers and iterate over them
 
@@ -1106,8 +1191,10 @@ public class BinaryClient extends MemCachedClient {
 
 			SchoonerSockIO sock = pool.getConnection(servers[i]);
 			if (sock == null) {
-				if (errorHandler != null)
-					errorHandler.handleErrorOnStats(this, new IOException("no socket to server available"));
+				if (errorHandler != null) {
+					errorHandler.handleErrorOnStats(this, new IOException(
+							"no socket to server available"));
+				}
 				continue;
 			}
 
@@ -1137,15 +1224,17 @@ public class BinaryClient extends MemCachedClient {
 				sock.getChannel().write(sock.writeBuf);
 
 				// response
-				DataInputStream input = new DataInputStream(new SockInputStream(sock, Integer.MAX_VALUE));
+				DataInputStream input = new DataInputStream(
+						new SockInputStream(sock, Integer.MAX_VALUE));
 				while (true) {
 					input.skip(2);
 					statKeyLen = input.readShort();
 					input.skip(4);
 					statValLen = input.readInt() - statKeyLen;
 					input.skip(12);
-					if (statKeyLen == 0)
+					if (statKeyLen == 0) {
 						break;
+					}
 					key = new byte[statKeyLen];
 					value = new byte[statValLen];
 					input.read(key);
@@ -1156,8 +1245,9 @@ public class BinaryClient extends MemCachedClient {
 				input.close();
 			} catch (IOException e) {
 				// if we have an errorHandler, use its hook
-				if (errorHandler != null)
+				if (errorHandler != null) {
 					errorHandler.handleErrorOnStats(this, e);
+				}
 
 				// exception thrown
 				if (log.isErrorEnabled()) {
@@ -1168,7 +1258,9 @@ public class BinaryClient extends MemCachedClient {
 				try {
 					sock.sockets.invalidateObject(sock);
 				} catch (Exception e1) {
-					log.error("++++ failed to close socket : " + sock.toString(), e1);
+					log.error(
+							"++++ failed to close socket : " + sock.toString(),
+							e1);
 				}
 
 				sock = null;
@@ -1200,10 +1292,13 @@ public class BinaryClient extends MemCachedClient {
 			public SchoonerSockIO sock;
 			public SocketChannel channel;
 			private boolean isDone = false;
-			private final byte[] NOOPFLAG = { MAGIC_RESP, OPCODE_NOOP, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+			private final byte[] NOOPFLAG = { MAGIC_RESP, OPCODE_NOOP, 0x00,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0x00 };
 
-			public Connection(SchoonerSockIO sock, ArrayList<String> keys) throws IOException {
+			public Connection(SchoonerSockIO sock, ArrayList<String> keys)
+					throws IOException {
 				this.sock = sock;
 				List<byte[]> bufList = new ArrayList<byte[]>(keys.size());
 				int size = 0;
@@ -1233,9 +1328,11 @@ public class BinaryClient extends MemCachedClient {
 				outgoing.putLong(0L);
 				outgoing.putLong(0L);
 				outgoing.flip();
-				channel = (SocketChannel) sock.getChannel();
-				if (channel == null)
-					throw new IOException("dead connection to: " + sock.getHost());
+				channel = sock.getChannel();
+				if (channel == null) {
+					throw new IOException("dead connection to: "
+							+ sock.getHost());
+				}
 
 				channel.configureBlocking(false);
 				channel.register(selector, SelectionKey.OP_WRITE, this);
@@ -1249,20 +1346,25 @@ public class BinaryClient extends MemCachedClient {
 						return;
 					}
 				} catch (IOException e) {
-					log.warn("++++ memcache: unexpected error closing normally", e);
+					log.warn(
+							"++++ memcache: unexpected error closing normally",
+							e);
 				}
 
 				try {
 					sock.sockets.invalidateObject(sock);
 				} catch (Exception e1) {
-					log.error("++++ failed to close socket : " + sock.toString(), e1);
+					log.error(
+							"++++ failed to close socket : " + sock.toString(),
+							e1);
 				}
 			}
 
 			public boolean isDone() {
 				// if we know we're done, just say so
-				if (isDone)
+				if (isDone) {
 					return true;
+				}
 
 				// else find out the hard way
 				int strPos = NOOPFLAG.length - 1;
@@ -1272,8 +1374,9 @@ public class BinaryClient extends MemCachedClient {
 					ByteBuffer buf = incoming.get(bi);
 					int pos = buf.position() - 1;
 					while (pos >= 0 && strPos >= 0) {
-						if (buf.get(pos--) != NOOPFLAG[strPos--])
+						if (buf.get(pos--) != NOOPFLAG[strPos--]) {
 							return false;
+						}
 					}
 
 					bi--;
@@ -1294,19 +1397,23 @@ public class BinaryClient extends MemCachedClient {
 				}
 			}
 
+			@Override
 			public String toString() {
-				return new StringBuffer().append("Connection to ").append(sock.getHost()).append(" with ")
-						.append(incoming.size()).append(" bufs; done is ").append(isDone).toString();
+				return new StringBuffer().append("Connection to ")
+						.append(sock.getHost()).append(" with ")
+						.append(incoming.size()).append(" bufs; done is ")
+						.append(isDone).toString();
 			}
 		}
 
-		public void doMulti(Map<String, ArrayList<String>> sockKeys, String[] keys, Map<String, Object> ret) {
+		public void doMulti(Map<String, ArrayList<String>> sockKeys,
+				String[] keys, Map<Serializable, Object> ret) {
 			doMulti(false, sockKeys, keys, ret);
 		}
 
-		public void doMulti(boolean asString, Map<String, ArrayList<String>> sockKeys, String[] keys,
-				Map<String, Object> ret) {
-
+		public void doMulti(boolean asString,
+				Map<String, ArrayList<String>> sockKeys, Serializable[] keys,
+				Map<Serializable, Object> ret) {
 			long timeRemaining = 0;
 			try {
 				selector = Selector.open();
@@ -1315,7 +1422,8 @@ public class BinaryClient extends MemCachedClient {
 				// structures
 				conns = new Connection[sockKeys.keySet().size()];
 				numConns = 0;
-				for (Iterator<String> i = sockKeys.keySet().iterator(); i.hasNext();) {
+				for (Iterator<String> i = sockKeys.keySet().iterator(); i
+						.hasNext();) {
 					// get SockIO obj from hostname
 					String host = i.next();
 
@@ -1340,7 +1448,8 @@ public class BinaryClient extends MemCachedClient {
 					int n = selector.select(Math.min(timeout, 5000));
 					if (n > 0) {
 						// we've got some activity; handle it
-						Iterator<SelectionKey> it = selector.selectedKeys().iterator();
+						Iterator<SelectionKey> it = selector.selectedKeys()
+								.iterator();
 						while (it.hasNext()) {
 							SelectionKey key = it.next();
 							it.remove();
@@ -1353,7 +1462,8 @@ public class BinaryClient extends MemCachedClient {
 						log.error("selector timed out waiting for activity");
 					}
 
-					timeRemaining = timeout - (System.currentTimeMillis() - startTime);
+					timeRemaining = timeout
+							- (System.currentTimeMillis() - startTime);
 				}
 			} catch (IOException e) {
 				// errors can happen just about anywhere above, from
@@ -1364,14 +1474,16 @@ public class BinaryClient extends MemCachedClient {
 				// run through our conns and either return them to the pool
 				// or forcibly close them
 				try {
-					if (selector != null)
+					if (selector != null) {
 						selector.close();
+					}
 				} catch (IOException ignoreMe) {
 				}
 
 				for (Connection c : conns) {
-					if (c != null)
+					if (c != null) {
 						c.close();
+					}
 				}
 			}
 
@@ -1380,8 +1492,10 @@ public class BinaryClient extends MemCachedClient {
 			// not done. But we'll return what we've got...
 			for (Connection c : conns) {
 				try {
-					if (c.incoming.size() > 0 && c.isDone())
-						loadMulti(new DataInputStream(new ByteBufArrayInputStream(c.incoming)), ret);
+					if (c.incoming.size() > 0 && c.isDone()) {
+						loadMulti(new DataInputStream(
+								new ByteBufArrayInputStream(c.incoming)), ret);
+					}
 				} catch (Exception e) {
 					// shouldn't happen; we have all the data already
 					log.debug("Caught the aforementioned exception on " + c);
@@ -1390,10 +1504,11 @@ public class BinaryClient extends MemCachedClient {
 		}
 
 		private void handleKey(SelectionKey key) throws IOException {
-			if (key.isReadable())
+			if (key.isReadable()) {
 				readResponse(key);
-			else if (key.isWritable())
+			} else if (key.isWritable()) {
 				writeRequest(key);
+			}
 		}
 
 		public void writeRequest(SelectionKey key) throws IOException {
@@ -1423,18 +1538,22 @@ public class BinaryClient extends MemCachedClient {
 		}
 	}
 
-	public boolean sync(String key, Integer hashCode) {
+	@Override
+	public boolean sync(Serializable key, Integer hashCode) {
 		return false;
 	}
 
-	public boolean sync(String key) {
+	@Override
+	public boolean sync(Serializable key) {
 		return sync(key, null);
 	}
 
+	@Override
 	public boolean syncAll() {
 		return syncAll(null);
 	}
 
+	@Override
 	public boolean syncAll(String[] servers) {
 		return false;
 	}
@@ -1450,42 +1569,27 @@ public class BinaryClient extends MemCachedClient {
 	}
 
 	@Override
-	public void setSanitizeKeys(boolean sanitizeKeys) {
-		this.sanitizeKeys = sanitizeKeys;
-	}
-
-	private String sanitizeKey(String key) throws UnsupportedEncodingException {
-		return (sanitizeKeys) ? URLEncoder.encode(key, "UTF-8") : key;
-	}
-
-	@Override
-	public Object get(String key, Integer hashCode, boolean asString) {
+	public Object get(Serializable key, Integer hashCode, boolean asString) {
 		return get(OPCODE_GET, key, hashCode, asString);
 	}
 
-	private Object get(byte opCode, String key, Integer hashCode, boolean asString) {
-		if (key == null) {
+	private Object get(byte opCode, Serializable originKey, Integer hashCode,
+			boolean asString) {
+		if (originKey == null) {
 			log.error("key is null for get()");
 			return null;
 		}
 
-		try {
-			key = sanitizeKey(key);
-		} catch (UnsupportedEncodingException e) {
-			// if we have an errorHandler, use its hook
-			if (errorHandler != null)
-				errorHandler.handleErrorOnGet(this, e, key);
-
-			log.error("failed to sanitize your key!", e);
-			return null;
-		}
+		String key = keyTransCoder.encode(originKey);
 
 		// get SockIO obj using cache key
 		SchoonerSockIO sock = pool.getSock(key, hashCode);
 
 		if (sock == null) {
-			if (errorHandler != null)
-				errorHandler.handleErrorOnGet(this, new IOException("no socket to server available"), key);
+			if (errorHandler != null) {
+				errorHandler.handleErrorOnGet(this, new IOException(
+						"no socket to server available"), key);
+			}
 			return null;
 		}
 
@@ -1528,8 +1632,10 @@ public class BinaryClient extends MemCachedClient {
 					// decoding object
 					buf = input.getBuffer();
 					if ((flag & F_COMPRESSED) == F_COMPRESSED) {
-						GZIPInputStream gzi = new GZIPInputStream(new ByteArrayInputStream(buf));
-						ByteArrayOutputStream bos = new ByteArrayOutputStream(buf.length);
+						GZIPInputStream gzi = new GZIPInputStream(
+								new ByteArrayInputStream(buf));
+						ByteArrayOutputStream bos = new ByteArrayOutputStream(
+								buf.length);
 						int count;
 						byte[] tmp = new byte[2048];
 						while ((count = gzi.read(tmp)) != -1) {
@@ -1541,23 +1647,28 @@ public class BinaryClient extends MemCachedClient {
 					}
 					if (primitiveAsString || asString) {
 						o = new String(buf, defaultEncoding);
-					} else
+					} else {
 						o = NativeHandler.decode(buf, flag);
+					}
 				} else if (transCoder != null) {
 					// decode object with default transcoder.
 					InputStream in = input;
-					if ((flag & F_COMPRESSED) == F_COMPRESSED)
+					if ((flag & F_COMPRESSED) == F_COMPRESSED) {
 						in = new GZIPInputStream(in);
-					if (classLoader == null)
+					}
+					if (classLoader == null) {
 						o = transCoder.decode(in);
-					else
-						o = ((ObjectTransCoder) transCoder).decode(in, classLoader);
+					} else {
+						o = ((ObjectTransCoder) transCoder).decode(in,
+								classLoader);
+					}
 				}
 			}
 			return o;
 		} catch (IOException e) {
-			if (errorHandler != null)
+			if (errorHandler != null) {
 				errorHandler.handleErrorOnDelete(this, e, key);
+			}
 
 			// exception thrown
 			if (log.isErrorEnabled()) {
@@ -1567,7 +1678,8 @@ public class BinaryClient extends MemCachedClient {
 			try {
 				sock.sockets.invalidateObject(sock);
 			} catch (Exception e1) {
-				log.error("++++ failed to close socket : " + sock.toString(), e1);
+				log.error("++++ failed to close socket : " + sock.toString(),
+						e1);
 			}
 			sock = null;
 		} catch (RuntimeException e) {
@@ -1580,29 +1692,23 @@ public class BinaryClient extends MemCachedClient {
 		return null;
 	}
 
-	private MemcachedItem gets(byte opCode, String key, Integer hashCode, boolean asString) {
-		if (key == null) {
+	private MemcachedItem gets(byte opCode, Serializable originKey,
+			Integer hashCode, boolean asString) {
+		if (originKey == null) {
 			log.error("key is null for get()");
 			return null;
 		}
 
-		try {
-			key = sanitizeKey(key);
-		} catch (UnsupportedEncodingException e) {
-			// if we have an errorHandler, use its hook
-			if (errorHandler != null)
-				errorHandler.handleErrorOnGet(this, e, key);
-
-			log.error("failed to sanitize your key!", e);
-			return null;
-		}
+		String key = keyTransCoder.encode(originKey);
 
 		// get SockIO obj using cache key
 		SchoonerSockIO sock = pool.getSock(key, hashCode);
 
 		if (sock == null) {
-			if (errorHandler != null)
-				errorHandler.handleErrorOnGet(this, new IOException("no socket to server available"), key);
+			if (errorHandler != null) {
+				errorHandler.handleErrorOnGet(this, new IOException(
+						"no socket to server available"), key);
+			}
 			return null;
 		}
 
@@ -1646,8 +1752,10 @@ public class BinaryClient extends MemCachedClient {
 					// decoding object
 					buf = input.getBuffer();
 					if ((flag & F_COMPRESSED) == F_COMPRESSED) {
-						GZIPInputStream gzi = new GZIPInputStream(new ByteArrayInputStream(buf));
-						ByteArrayOutputStream bos = new ByteArrayOutputStream(buf.length);
+						GZIPInputStream gzi = new GZIPInputStream(
+								new ByteArrayInputStream(buf));
+						ByteArrayOutputStream bos = new ByteArrayOutputStream(
+								buf.length);
 						int count;
 						byte[] tmp = new byte[2048];
 						while ((count = gzi.read(tmp)) != -1) {
@@ -1659,24 +1767,29 @@ public class BinaryClient extends MemCachedClient {
 					}
 					if (primitiveAsString || asString) {
 						o = new String(buf, defaultEncoding);
-					} else
+					} else {
 						o = NativeHandler.decode(buf, flag);
+					}
 				} else if (transCoder != null) {
 					// decode object with default transcoder.
 					InputStream in = input;
-					if ((flag & F_COMPRESSED) == F_COMPRESSED)
+					if ((flag & F_COMPRESSED) == F_COMPRESSED) {
 						in = new GZIPInputStream(in);
-					if (classLoader == null)
+					}
+					if (classLoader == null) {
 						o = transCoder.decode(in);
-					else
-						o = ((ObjectTransCoder) transCoder).decode(in, classLoader);
+					} else {
+						o = ((ObjectTransCoder) transCoder).decode(in,
+								classLoader);
+					}
 				}
 			}
 			item.value = o;
 			return item;
 		} catch (IOException e) {
-			if (errorHandler != null)
+			if (errorHandler != null) {
 				errorHandler.handleErrorOnDelete(this, e, key);
+			}
 
 			// exception thrown
 			if (log.isErrorEnabled()) {
@@ -1686,7 +1799,8 @@ public class BinaryClient extends MemCachedClient {
 			try {
 				sock.sockets.invalidateObject(sock);
 			} catch (Exception e1) {
-				log.error("++++ failed to close socket : " + sock.toString(), e1);
+				log.error("++++ failed to close socket : " + sock.toString(),
+						e1);
 			}
 			sock = null;
 		} finally {
@@ -1698,11 +1812,14 @@ public class BinaryClient extends MemCachedClient {
 		return null;
 	}
 
-	public Object[] getMultiArray(String[] keys, Integer[] hashCodes, boolean asString) {
-		Map<String, Object> data = getMulti(keys, hashCodes, asString);
+	@Override
+	public Object[] getMultiArray(Serializable[] keys, Integer[] hashCodes,
+			boolean asString) {
+		Map<Serializable, Object> data = getMulti(keys, hashCodes, asString);
 
-		if (data == null)
+		if (data == null) {
 			return null;
+		}
 
 		Object[] res = new Object[keys.length];
 		for (int i = 0; i < keys.length; i++) {

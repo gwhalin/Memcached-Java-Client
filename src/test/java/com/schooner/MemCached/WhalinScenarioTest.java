@@ -1,5 +1,5 @@
 /**
- * 
+ *
  */
 package com.schooner.MemCached;
 
@@ -16,7 +16,7 @@ import com.whalin.MemCached.SockIOPool;
 
 /**
  * @author newrootwang
- * 
+ *
  */
 public class WhalinScenarioTest extends TestCase {
 
@@ -47,17 +47,23 @@ public class WhalinScenarioTest extends TestCase {
 			return this.field3;
 		}
 
+		@Override
 		public boolean equals(Object o) {
-			if (this == o)
+			if (this == o) {
 				return true;
-			if (!(o instanceof TestClass))
+			}
+			if (!(o instanceof TestClass)) {
 				return false;
+			}
 
 			TestClass obj = (TestClass) o;
 
-			return ((this.field1 == obj.getField1() || (this.field1 != null && this.field1.equals(obj.getField1())))
-					&& (this.field2 == obj.getField2() || (this.field2 != null && this.field2.equals(obj.getField2()))) && (this.field3 == obj
-					.getField3() || (this.field3 != null && this.field3.equals(obj.getField3()))));
+			return ((this.field1 == obj.getField1() || (this.field1 != null && this.field1
+					.equals(obj.getField1())))
+					&& (this.field2 == obj.getField2() || (this.field2 != null && this.field2
+							.equals(obj.getField2()))) && (this.field3 == obj
+					.getField3() || (this.field3 != null && this.field3
+					.equals(obj.getField3()))));
 		}
 	}
 
@@ -102,7 +108,9 @@ public class WhalinScenarioTest extends TestCase {
 		assertEquals(19, pool.getMaxConn());
 		final MemCachedClient mc = new MemCachedClient();
 		Thread[] threads = new Thread[20];
-		assertEquals(pool.getInitConn(), SchoonerSockIOPool.getInstance().socketPool.get(hosts[0]).getNumIdle());
+		assertEquals(pool.getInitConn(),
+				SchoonerSockIOPool.getInstance().socketPool.get(hosts[0])
+						.getNumIdle());
 		for (int i = 0; i < 20; ++i) {
 			threads[i] = new Thread() {
 				@Override
@@ -124,7 +132,8 @@ public class WhalinScenarioTest extends TestCase {
 				e.printStackTrace();
 			}
 		}
-		assertTrue(SchoonerSockIOPool.getInstance().socketPool.get(hosts[0]).getNumActive() < 20);
+		assertTrue(SchoonerSockIOPool.getInstance().socketPool.get(hosts[0])
+				.getNumActive() < 20);
 		mc.flushAll();
 		pool.shutDown();
 	}
@@ -137,7 +146,9 @@ public class WhalinScenarioTest extends TestCase {
 		assertEquals(2, pool.getMinConn());
 		final MemCachedClient mc = new MemCachedClient();
 		Thread thread = new Thread();
-		assertEquals(2, SchoonerSockIOPool.getInstance().socketPool.get(hosts[0]).getMinIdle());
+		assertEquals(2,
+				SchoonerSockIOPool.getInstance().socketPool.get(hosts[0])
+						.getMinIdle());
 		thread = new Thread() {
 			@Override
 			public void run() {
@@ -155,7 +166,9 @@ public class WhalinScenarioTest extends TestCase {
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
-		assertEquals(2, SchoonerSockIOPool.getInstance().socketPool.get(hosts[0]).getNumActive());
+		assertEquals(2,
+				SchoonerSockIOPool.getInstance().socketPool.get(hosts[0])
+						.getNumActive());
 		mc.flushAll();
 		pool.shutDown();
 	}
@@ -167,8 +180,9 @@ public class WhalinScenarioTest extends TestCase {
 		pool.setWeights(weights);
 		pool.initialize();
 		MemCachedClient mc = new MemCachedClient();
-		for (int i = 0; i < 100; i++)
+		for (int i = 0; i < 100; i++) {
 			mc.set("key " + i, "value " + i);
+		}
 		pool.shutDown();
 
 		pool = SockIOPool.getInstance("check");
@@ -177,8 +191,9 @@ public class WhalinScenarioTest extends TestCase {
 		pool.initialize();
 		mc = new MemCachedClient("check");
 		for (int i = 0; i < 100; i++) {
-			if (mc.get("key " + i) != null)
+			if (mc.get("key " + i) != null) {
 				count++;
+			}
 		}
 		assertTrue(count <= 95 && count >= 85);
 		pool.shutDown();
@@ -389,7 +404,7 @@ public class WhalinScenarioTest extends TestCase {
 			values[i] = "value " + i;
 			mc.set(keys[i], values[i]);
 		}
-		Map<String, Object> rValues = mc.getMulti(keys, null, false);
+		Map<Serializable, Object> rValues = mc.getMulti(keys, null, false);
 		for (int i = 0; i < 10; i++) {
 			assertEquals(values[i], rValues.get(keys[i]));
 		}
@@ -428,10 +443,13 @@ public class WhalinScenarioTest extends TestCase {
 		assertEquals(expect, actual);
 		mc.setTransCoder(new TransCoder() {
 
-			public int encode(SockOutputStream out, Object object) throws IOException {
+			@Override
+			public int encode(SockOutputStream out, Object object)
+					throws IOException {
 				throw new IOException();
 			}
 
+			@Override
 			public Object decode(InputStream input) throws IOException {
 				throw new IOException();
 			}
@@ -455,10 +473,13 @@ public class WhalinScenarioTest extends TestCase {
 		assertEquals(expect, actual);
 		mc.setTransCoder(new TransCoder() {
 
-			public int encode(SockOutputStream out, Object object) throws IOException {
+			@Override
+			public int encode(SockOutputStream out, Object object)
+					throws IOException {
 				throw new IOException();
 			}
 
+			@Override
 			public Object decode(InputStream input) throws IOException {
 				throw new IOException();
 			}
@@ -476,10 +497,13 @@ public class WhalinScenarioTest extends TestCase {
 		final MemCachedClient mc = new MemCachedClient(true, false);
 		mc.setTransCoder(new TransCoder() {
 
-			public int encode(SockOutputStream out, Object object) throws IOException {
+			@Override
+			public int encode(SockOutputStream out, Object object)
+					throws IOException {
 				throw new IOException();
 			}
 
+			@Override
 			public Object decode(InputStream input) throws IOException {
 				throw new IOException();
 			}
@@ -522,7 +546,7 @@ public class WhalinScenarioTest extends TestCase {
 			values[i] = "value " + i;
 			mc.set(keys[i], values[i]);
 		}
-		Map<String, Object> rValues = mc.getMulti(keys);
+		Map<Serializable, Object> rValues = mc.getMulti(keys);
 		for (int i = 0; i < 10; i++) {
 			assertEquals(values[i], rValues.get("key/ " + i));
 		}
@@ -543,7 +567,7 @@ public class WhalinScenarioTest extends TestCase {
 			values[i] = "value " + i;
 			mc.set(keys[i], values[i]);
 		}
-		Map<String, Object> rValues = mc.getMulti(keys);
+		Map<Serializable, Object> rValues = mc.getMulti(keys);
 		for (int i = 0; i < 10; i++) {
 			assertEquals(values[i], rValues.get("key/ " + i));
 		}
