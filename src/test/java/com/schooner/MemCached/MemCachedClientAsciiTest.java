@@ -1,9 +1,9 @@
 /*******************************************************************************
  * Copyright (c) 2009 Schooner Information Technology, Inc.
  * All rights reserved.
- * 
+ *
  * http://www.schoonerinfotech.com/
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
@@ -14,7 +14,7 @@
  *    documentation and/or other materials provided with the distribution.
  * 3. The name of the author may not be used to endorse or promote products
  *    derived from this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
  * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
  * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
@@ -68,13 +68,15 @@ public class MemCachedClientAsciiTest extends TestCase {
 
 	private MemCacheDaemon<LocalCacheElement> daemon = null;
 
+	@Override
 	protected void setUp() throws Exception {
 		String servers = System.getProperty("memcached.host");
 		if (servers == null) {
 			// create daemon and start it
 			daemon = new MemCacheDaemon<LocalCacheElement>();
-			CacheStorage<Key, LocalCacheElement> storage = ConcurrentLinkedHashMap.create(
-					ConcurrentLinkedHashMap.EvictionPolicy.FIFO, 100000, 5 * 1024 * 1024);
+			CacheStorage<Key, LocalCacheElement> storage = ConcurrentLinkedHashMap
+					.create(ConcurrentLinkedHashMap.EvictionPolicy.FIFO,
+							100000, 5 * 1024 * 1024);
 			daemon.setCache(new CacheImpl(storage));
 			daemon.setBinary(false);
 			daemon.setAddr(new InetSocketAddress(11211));
@@ -91,6 +93,7 @@ public class MemCachedClientAsciiTest extends TestCase {
 		mc = new MemCachedClient("test");
 	}
 
+	@Override
 	protected void tearDown() throws Exception {
 		super.tearDown();
 		mc.flushAll();
@@ -269,8 +272,8 @@ public class MemCachedClientAsciiTest extends TestCase {
 		long j = mc.addOrIncr("foo", i); // now == 0
 		assertEquals(mc.get("foo"), new Long(i).toString());
 		j = mc.incr("foo"); // foo now == 1
-		j = mc.incr("foo", (long) 5); // foo now == 6
-		j = mc.decr("foo", (long) 2); // foo now == 4
+		j = mc.incr("foo", 5); // foo now == 6
+		j = mc.decr("foo", 2); // foo now == 4
 		assertEquals(4, j);
 		j = mc.incr("foo1");
 		assertEquals(-1, j);
@@ -318,11 +321,11 @@ public class MemCachedClientAsciiTest extends TestCase {
 		j = mc.addOrIncr("foo"); // foo now == 0
 		assertEquals(0, j);
 		j = mc.incr("foo"); // foo now == 1
-		j = mc.incr("foo", (long) 5); // foo now == 6
+		j = mc.incr("foo", 5); // foo now == 6
 
 		j = mc.addOrIncr("foo", 1); // foo now 7
 
-		j = mc.decr("foo", (long) 3); // foo now == 4
+		j = mc.decr("foo", 3); // foo now == 4
 		assertEquals(4, j);
 	}
 
@@ -383,7 +386,7 @@ public class MemCachedClientAsciiTest extends TestCase {
 			mc.set(keys[i], "value" + i);
 		}
 
-		Map<String, Object> results = mc.getMulti(keys);
+		Map<Serializable, Object> results = mc.getMulti(keys);
 		for (int i = 0; i < max; i++) {
 			assertEquals(results.get(keys[i]), "value" + i);
 		}
@@ -430,8 +433,9 @@ public class MemCachedClientAsciiTest extends TestCase {
 
 	public void testSetByteArray() {
 		byte[] b = new byte[10];
-		for (int i = 0; i < 10; i++)
+		for (int i = 0; i < 10; i++) {
 			b[i] = (byte) i;
+		}
 
 		mc.set("foo", b);
 		assertTrue(Arrays.equals((byte[]) mc.get("foo"), b));
@@ -447,13 +451,15 @@ public class MemCachedClientAsciiTest extends TestCase {
 	public void testCusTransCoder() {
 		TransCoder coder = new ObjectTransCoder() {
 			@Override
-			public void encode(OutputStream out, Object object) throws IOException {
+			public void encode(OutputStream out, Object object)
+					throws IOException {
 				ByteArrayOutputStream bOut = new ByteArrayOutputStream();
 				ObjectOutputStream oOut = new ObjectOutputStream(bOut);
 				oOut.writeObject(object);
 				byte[] bytes = bOut.toByteArray();
-				for (byte b : bytes)
+				for (byte b : bytes) {
 					out.write(b);
+				}
 			}
 		};
 		mc.setTransCoder(coder);
@@ -493,14 +499,15 @@ public class MemCachedClientAsciiTest extends TestCase {
 
 	public void testMultiKey() {
 
-		String[] allKeys = { "key1", "key2", "key3", "key4", "key5", "key6", "key7" };
+		String[] allKeys = { "key1", "key2", "key3", "key4", "key5", "key6",
+				"key7" };
 		String[] setKeys = { "key1", "key3", "key5", "key7" };
 
 		for (String key : setKeys) {
 			mc.set(key, key);
 		}
 
-		Map<String, Object> results = mc.getMulti(allKeys);
+		Map<Serializable, Object> results = mc.getMulti(allKeys);
 
 		assert allKeys.length == results.size();
 		for (String key : setKeys) {
@@ -654,60 +661,61 @@ public class MemCachedClientAsciiTest extends TestCase {
 	 * assertEquals("bb", item.getValue()); mc.set("aa", "cc");
 	 * assertEquals("cc", mc.get("aa")); mc.cas("aa", "dd",
 	 * item.getCasUnique()); assertEquals("cc", mc.get("aa")); }
-	 * 
+	 *
 	 * public void testCasStringObjectIntegerLong() { String expected, actual;
 	 * mc.set("foo", "bar", 10); MemcachedItem item = mc.gets("foo", 10);
 	 * expected = "bar"; actual = (String) item.getValue();
 	 * assertEquals(expected, actual);
-	 * 
+	 *
 	 * mc.cas("foo", "bar1", 10, item.getCasUnique()); expected = "bar1"; actual
 	 * = (String) mc.get("foo", 10); assertEquals(expected, actual);
-	 * 
+	 *
 	 * mc.set("foo", "bar2", 10); expected = "bar2"; actual = (String)
 	 * mc.get("foo", 10); assertEquals(expected, actual);
-	 * 
+	 *
 	 * boolean res = mc.cas("foo", "bar3", 10, item.getCasUnique());
 	 * assertFalse(res); }
-	 * 
+	 *
 	 * public void testCasStringObjectDateLong() { String expected, actual;
 	 * mc.set("foo", "bar"); MemcachedItem item = mc.gets("foo"); expected =
 	 * "bar"; actual = (String) item.getValue(); assertEquals(expected, actual);
-	 * 
+	 *
 	 * Date expiry = new Date(1000); mc.cas("foo", "bar1", expiry,
 	 * item.getCasUnique()); expected = "bar1"; actual = (String) mc.get("foo");
 	 * assertEquals(expected, actual);
-	 * 
+	 *
 	 * try { Thread.sleep(2000); } catch (InterruptedException e) {
 	 * e.printStackTrace(); } assertNull(mc.get("foo"));
-	 * 
+	 *
 	 * mc.set("foo", "bar2"); expected = "bar2"; actual = (String)
 	 * mc.get("foo"); assertEquals(expected, actual);
-	 * 
+	 *
 	 * boolean res = mc.cas("foo", "bar3", expiry, item.getCasUnique());
 	 * assertFalse(res); }
-	 * 
+	 *
 	 * public void testCasStringObjectDateIntegerLong() { String expected,
 	 * actual; mc.set("foo", "bar", 10); MemcachedItem item = mc.gets("foo",
 	 * 10); expected = "bar"; actual = (String) item.getValue();
 	 * assertEquals(expected, actual);
-	 * 
+	 *
 	 * Date expiry = new Date(1000); mc.cas("foo", "bar1", expiry, 10,
 	 * item.getCasUnique()); expected = "bar1"; actual = (String) mc.get("foo",
 	 * 10); assertEquals(expected, actual);
-	 * 
+	 *
 	 * try { Thread.sleep(2000); } catch (InterruptedException e) {
 	 * e.printStackTrace(); } actual = (String) mc.get("foo", 10);
 	 * assertNull(actual);
-	 * 
+	 *
 	 * mc.set("foo", "bar2", 10); expected = "bar2"; actual = (String)
 	 * mc.get("foo", 10); assertEquals(expected, actual);
-	 * 
+	 *
 	 * boolean res = mc.cas("foo", "bar3", expiry, 10, item.getCasUnique());
 	 * assertFalse(res); }
 	 */
 
 	public void testBigData() {
-		TestClass cls = new TestClass(initString(1024), initString(10240), 10240);
+		TestClass cls = new TestClass(initString(1024), initString(10240),
+				10240);
 		for (int i = 0; i < 10; ++i) {
 			mc.set("foo" + i, cls);
 			assertEquals(cls, mc.get("foo" + i));
@@ -721,7 +729,8 @@ public class MemCachedClientAsciiTest extends TestCase {
 	}
 
 	public void testExtremeBigData() {
-		TestClass cls = new TestClass(initString(1024), initString(10240), 10240);
+		TestClass cls = new TestClass(initString(1024), initString(10240),
+				10240);
 		for (int i = 0; i < 10; ++i) {
 			mc.set("foo" + i, cls);
 			assertEquals(cls, mc.get("foo" + i));
@@ -823,7 +832,7 @@ public class MemCachedClientAsciiTest extends TestCase {
 		mc.storeCounter(key, 3L);
 		mc.incr(key);
 
-		assertTrue((Long) mc.getCounter(key) == 4);
+		assertTrue(mc.getCounter(key) == 4);
 	}
 
 	public void testStoreCounterWithoutAsString() {
@@ -882,17 +891,23 @@ public class MemCachedClientAsciiTest extends TestCase {
 			return this.field3;
 		}
 
+		@Override
 		public boolean equals(Object o) {
-			if (this == o)
+			if (this == o) {
 				return true;
-			if (!(o instanceof TestClass))
+			}
+			if (!(o instanceof TestClass)) {
 				return false;
+			}
 
 			TestClass obj = (TestClass) o;
 
-			return ((this.field1 == obj.getField1() || (this.field1 != null && this.field1.equals(obj.getField1())))
-					&& (this.field2 == obj.getField2() || (this.field2 != null && this.field2.equals(obj.getField2()))) && (this.field3 == obj
-					.getField3() || (this.field3 != null && this.field3.equals(obj.getField3()))));
+			return ((this.field1 == obj.getField1() || (this.field1 != null && this.field1
+					.equals(obj.getField1())))
+					&& (this.field2 == obj.getField2() || (this.field2 != null && this.field2
+							.equals(obj.getField2()))) && (this.field3 == obj
+					.getField3() || (this.field3 != null && this.field3
+					.equals(obj.getField3()))));
 		}
 	}
 

@@ -1,9 +1,9 @@
 /*******************************************************************************
  * Copyright (c) 2009 Schooner Information Technology, Inc.
  * All rights reserved.
- * 
+ *
  * http://www.schoonerinfotech.com/
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
@@ -14,7 +14,7 @@
  *    documentation and/or other materials provided with the distribution.
  * 3. The name of the author may not be used to endorse or promote products
  *    derived from this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
  * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
  * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
@@ -29,6 +29,7 @@
 package com.schooner.MemCached.command;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Date;
 
@@ -44,7 +45,7 @@ import com.whalin.MemCached.MemCachedClient;
 
 /**
  * This command implements the set command using memcached UDP protocol.
- * 
+ *
  * @author Meng Li
  * @since 2.5.0
  * @see com.schooner.Memcached.StorageCommand
@@ -61,7 +62,7 @@ public class StorageCommand extends Command {
 
 	private TransCoder transCoder = new ObjectTransCoder();
 
-	private Object value;
+	private Serializable value;
 
 	private int valLen = 0;
 
@@ -72,28 +73,31 @@ public class StorageCommand extends Command {
 	/**
 	 * set request textline:
 	 * "set <key> <key> <flags> <exptime> <bytes> [noreply]\r\n"
-	 * 
+	 *
 	 */
-	public StorageCommand(String cmdname, String key, Object value, Date expiry, Integer hashCode, Long casUnique) {
+	public StorageCommand(String cmdname, String key, Serializable value,
+			Date expiry, Integer hashCode, Long casUnique) {
 		init(cmdname, key, value, expiry, hashCode, casUnique);
 	}
 
 	/**
 	 * set request textline:
 	 * "set <key> <key> <flags> <exptime> <bytes> [noreply]\r\n"
-	 * 
+	 *
 	 */
-	public StorageCommand(String cmdname, String key, Object value, Date expiry, Integer hashCode, Long casUnique,
-			TransCoder transCoder) {
+	public StorageCommand(String cmdname, String key, Serializable value,
+			Date expiry, Integer hashCode, Long casUnique, TransCoder transCoder) {
 		init(cmdname, key, value, expiry, hashCode, casUnique);
 		this.transCoder = transCoder;
 	}
 
-	private void init(String cmdname, String key, Object value, Date expiry, Integer hashCode, Long casUnique) {
+	private void init(String cmdname, String key, Serializable value,
+			Date expiry, Integer hashCode, Long casUnique) {
 		// store flags
 		flags = NativeHandler.getMarkerFlag(value);
 		// construct the command
-		String cmd = new StringBuffer().append(cmdname).append(" ").append(key).append(" ").append(flags).append(" ")
+		String cmd = new StringBuffer().append(cmdname).append(" ").append(key)
+				.append(" ").append(flags).append(" ")
 				.append(expiry.getTime() / 1000).append(" ").toString();
 
 		textLine = cmd.getBytes();
@@ -132,6 +136,7 @@ public class StorageCommand extends Command {
 		return true;
 	}
 
+	@Override
 	public short request(SchoonerSockIO sock) throws IOException {
 		short rid = sock.preWrite();
 		sock.writeBuf.put(textLine);
@@ -139,8 +144,9 @@ public class StorageCommand extends Command {
 		offset = sock.writeBuf.position();
 		// write blank bytes size.
 		sock.writeBuf.put(BLAND_DATA_SIZE);
-		if (casUnique != 0)
+		if (casUnique != 0) {
 			sock.writeBuf.put((" " + casUnique.toString()).getBytes());
+		}
 
 		sock.writeBuf.put(B_RETURN);
 

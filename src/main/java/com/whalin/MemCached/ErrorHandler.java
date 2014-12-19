@@ -23,9 +23,9 @@
 /*******************************************************************************
  * Copyright (c) 2009 Schooner Information Technology, Inc.
  * All rights reserved.
- * 
+ *
  * http://www.schoonerinfotech.com/
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
@@ -36,7 +36,7 @@
  *    documentation and/or other materials provided with the distribution.
  * 3. The name of the author may not be used to endorse or promote products
  *    derived from this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
  * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
  * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
@@ -50,51 +50,60 @@
  ******************************************************************************/
 package com.whalin.MemCached;
 
+import java.io.Serializable;
+
 /**
  * You can customize your error handle processes in this class.
- * 
+ *
  */
 public interface ErrorHandler {
 
 	/**
 	 * Called for errors thrown during initialization.
 	 */
-	public void handleErrorOnInit(final MemCachedClient client, final Throwable error);
+	public void handleErrorOnInit(final MemCachedClient client,
+			final Throwable error);
 
 	/**
 	 * Called for errors thrown during {@link MemCachedClient#get(String)} and
 	 * related methods.
 	 */
-	public void handleErrorOnGet(final MemCachedClient client, final Throwable error, final String cacheKey);
+	public void handleErrorOnGet(final MemCachedClient client,
+			final Throwable error, final String cacheKey);
 
 	/**
 	 * Called for errors thrown during {@link MemCachedClient#getMulti(String)}
 	 * and related methods.
 	 */
-	public void handleErrorOnGet(final MemCachedClient client, final Throwable error, final String[] cacheKeys);
+	public void handleErrorOnGet(final MemCachedClient client,
+			final Throwable error, final Serializable[] cacheKeys);
 
 	/**
 	 * Called for errors thrown during
 	 * {@link MemCachedClient#set(String,Object)} and related methods.
 	 */
-	public void handleErrorOnSet(final MemCachedClient client, final Throwable error, final String cacheKey);
+	public void handleErrorOnSet(final MemCachedClient client,
+			final Throwable error, final String cacheKey);
 
 	/**
 	 * Called for errors thrown during {@link MemCachedClient#delete(String)}
 	 * and related methods.
 	 */
-	public void handleErrorOnDelete(final MemCachedClient client, final Throwable error, final String cacheKey);
+	public void handleErrorOnDelete(final MemCachedClient client,
+			final Throwable error, final String cacheKey);
 
 	/**
 	 * Called for errors thrown during {@link MemCachedClient#flushAll()} and
 	 * related methods.
 	 */
-	public void handleErrorOnFlush(final MemCachedClient client, final Throwable error);
+	public void handleErrorOnFlush(final MemCachedClient client,
+			final Throwable error);
 
 	/**
 	 * Called for errors thrown during {@link MemCachedClient#stats()} and
 	 * related methods.
 	 */
-	public void handleErrorOnStats(final MemCachedClient client, final Throwable error);
+	public void handleErrorOnStats(final MemCachedClient client,
+			final Throwable error);
 
 } // interface
