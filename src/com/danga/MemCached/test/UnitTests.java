@@ -16,9 +16,9 @@
  * @author Kevin Burton
  * @author greg whalin <greg@meetup.com> 
  */
-package com.meetup.memcached.test;
+package com.danga.MemCached.test;
 
-import com.meetup.memcached.*;
+import com.danga.MemCached.*;
 import java.util.*;
 import java.io.Serializable;
 
@@ -32,7 +32,7 @@ public class UnitTests {
 	private static Logger log =
 		Logger.getLogger( UnitTests.class.getName() );
 
-    public static MemcachedClient mc  = null;
+    public static MemCachedClient mc  = null;
 
     public static void test1() {
         mc.set( "foo", Boolean.TRUE );
@@ -264,7 +264,7 @@ public class UnitTests {
 		log.error( "+ getMulti w/ keys that don't exist test passed" );
 	}
 
-	public static void runAlTests( MemcachedClient mc ) {
+	public static void runAlTests( MemCachedClient mc ) {
 		test14();
 		for ( int t = 0; t < 2; t++ ) {
 			mc.setCompressEnable( ( t&1 ) == 1 );
@@ -363,7 +363,7 @@ public class UnitTests {
 		pool.setHashingAlg( SockIOPool.CONSISTENT_HASH );
 		pool.initialize();
 
-        mc = new MemcachedClient( "test" );
+        mc = new MemCachedClient( "test" );
 		runAlTests( mc );
 	}
 

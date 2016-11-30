@@ -2,11 +2,11 @@
 <project name="memcached" default="package" basedir=".">
 
 	<property name="project.title"   value="java memcached client" />
-	<property name="code.dir"        value="src/com/meetup/memcached" />
+	<property name="code.dir"        value="src/com/danga/MemCached" />
 	<property name="doc.dir"         value="doc" />
 	<property name="src.dir"         value="src" />
 	<property name="build.dir"       value="classes" />
-	
+
 	<property environment="env"/>
 	<property file="build.properties"/>
 	<property name="project" value="memcached"/>
@@ -44,12 +44,12 @@
 	<target name="setup">
 		<mkdir dir="memcached-${ver}"/>
 		<mkdir dir="memcached-${ver}/javadocs"/>
-		<mkdir dir="memcached-${ver}/src/com/meetup/memcached"/>
+		<mkdir dir="memcached-${ver}/src/com/danga/MemCached"/>
 		<mkdir dir="memcached-${ver}/classes"/>
 		<mkdir dir="memcached-${ver}/doc"/>
 
 		<!-- copy source -->
-		<copy todir="memcached-${ver}/src/com/meetup/memcached">
+		<copy todir="memcached-${ver}/src/com/danga/MemCached">
 			<fileset dir="${code.dir}" defaultexcludes="true" excludes="**/*.xml **/*.swp **/*.swo"/>
         </copy>
 
@@ -67,13 +67,13 @@
 
 	<!-- if logger is log4j then need to filter to make sure import exists -->
 	<target name="log4j" if="log4j" depends="clean, setup">
-		<replace dir="memcached-${ver}/src/com/meetup/memcached" token="//import org.apache.log4j.Logger;" value="import org.apache.log4j.Logger;">
+		<replace dir="memcached-${ver}/src/com/danga/MemCached" token="//import org.apache.log4j.Logger;" value="import org.apache.log4j.Logger;">
 			<include name="**/*.java"/>
 		</replace>
 	</target>
 
 	<target name="logger" unless="log4j" depends="clean, setup">
-		<replace dir="memcached-${ver}/src/com/meetup/memcached" token="import org.apache.log4j.Logger;" value="//import org.apache.log4j.Logger;">
+		<replace dir="memcached-${ver}/src/com/danga/MemCached" token="import org.apache.log4j.Logger;" value="//import org.apache.log4j.Logger;">
 			<include name="**/*.java"/>
 		</replace>
 	</target>
@@ -86,7 +86,7 @@
 
 		<javadoc sourcepath="memcached-${ver}/src"
 			destdir="memcached-${ver}/javadocs"
-			packagenames= "com.meetup.*"
+			packagenames= "com.danga.*"
 			author= "true"
 			private="true"
 			version="true"
@@ -97,7 +97,7 @@
 			doctitle="&lt;h1&gt;${project.title} documentation (Version ${ver})&lt;/h1&gt;"
 			bottom="Copyright &#169; 2005 - greg whalin">
     	</javadoc>
-	</target> 
+	</target>
 
 	<!-- compilation target for packeging operations -->
 	<target name="pkg-compile" depends="clean, setup, log4j, logger">

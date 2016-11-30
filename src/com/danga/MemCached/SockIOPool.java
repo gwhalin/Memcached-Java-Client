@@ -15,7 +15,7 @@
  *
  * @author greg whalin <greg@meetup.com> 
  */
-package com.meetup.memcached;
+package com.danga.MemCached;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
