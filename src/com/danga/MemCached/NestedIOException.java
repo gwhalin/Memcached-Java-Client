@@ -15,7 +15,7 @@
  *
  * @author Kevin A. Burton <burton@peerfear.org> 
  */
-package com.meetup.memcached;
+package com.danga.MemCached;
 
 import java.io.*;
 

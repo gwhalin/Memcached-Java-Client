@@ -15,7 +15,7 @@
  *
  * @author greg whalin <greg@meetup.com> 
  */
-package com.meetup.memcached;
+package com.danga.MemCached;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -159,6 +159,7 @@ public class SockIOPool {
 
 	// Pool data
 	private MaintThread maintThread;
+	private TrafficThread trafficThread;
 	private boolean initialized        = false;
 	private int maxCreate              = 1;					// this will be initialized by pool when the pool is initialized
 
@@ -170,6 +171,7 @@ public class SockIOPool {
 	private long maxIdle              = 1000 * 60 * 5;		// max idle time for avail sockets
 	private long maxBusyTime          = 1000 * 30;			// max idle time for avail sockets
 	private long maintSleep           = 1000 * 30;			// maintenance thread sleep time
+	private long traffictSleep		  =	1000 * 120;
 	private int socketTO              = 1000 * 3;			// default timeout of socket reads
 	private int socketConnectTO       = 1000 * 3;	        // default timeout of socket connections
 	private boolean aliveCheck        = false;				// default to not check each connection for being alive
@@ -345,6 +347,22 @@ public class SockIOPool {
 	 * @return sleep time in ms
 	 */
 	public long getMaintSleep() { return this.maintSleep; }
+
+
+	/**
+	 * Set the sleep time between runs of the pool traffic thread.
+	 * If set to 0, then the traffic thread will not be started.
+	 *
+	 * @param maintSleep sleep time in ms
+	 */
+	public void setTraffictSleep( long traffictSleep ) { this.traffictSleep = traffictSleep; }
+
+	/**
+	 * Returns the current traffic thread sleep time.
+	 *
+	 * @return sleep time in ms
+	 */
+	public long getTraffictSleep() { return this.traffictSleep; }
 
 	/** 
 	 * Sets the socket timeout for reads.
@@ -637,6 +655,10 @@ public class SockIOPool {
 			// start maint thread
 			if ( this.maintSleep > 0 )
 				this.startMaintThread();
+
+			if ( this.traffictSleep > 0 ) {
+				this.startTrafficThread();
+			}
 		}
 	}
 
@@ -1282,6 +1304,74 @@ public class SockIOPool {
 			maintThread.stopThread();
 	}
 
+
+	/**
+	 * Starts the traffic thread.
+	 *
+	 * This thread will send fake traffic to ELB<br/>
+	 * in order to avoid ELB closing the connection<br/>
+	 * after an idle time.
+	 */
+	protected void startTrafficThread() {
+
+		if ( trafficThread != null ) {
+
+			if ( trafficThread.isRunning() ) {
+				log.error( "traffic thread already running" );
+			}
+			else {
+				trafficThread.start();
+			}
+		}
+		else {
+			trafficThread = new TrafficThread( this );
+			trafficThread.setInterval( this.traffictSleep );
+			trafficThread.start();
+		}
+	}
+
+	/**
+	 * Stops the traffic thread.
+	 */
+	protected void stopTrafficThread() {
+		if ( trafficThread != null && trafficThread.isRunning() )
+			trafficThread.stopThread();
+	}
+
+
+	/**
+	 *Fake traffic on avaliable pool to avoid ELB idle timeout
+	 *
+	 * This is typically called by the traffic thread to fake traffic.
+	 */
+	protected  void sendTrafficToAvailablePool() {
+		if ( log.isDebugEnabled() )
+			log.debug( "++++ Traffic thread started" );
+
+		synchronized( this ) {
+			if ( availPool != null && !availPool.isEmpty() ) {
+				for (Iterator<String> i = availPool.keySet().iterator(); i.hasNext(); ) {
+					String host = i.next();
+					Map<SockIO, Long> sockets = availPool.get(host);
+
+					for (Iterator<SockIO> j = sockets.keySet().iterator(); j.hasNext(); ) {
+						SockIO socket = j.next();
+						try {
+							socket.write( "version\r\n".getBytes() );
+							socket.flush();
+
+							if (log.isDebugEnabled())
+								log.debug("Version: " + socket.readLine());
+						} catch ( IOException ex ) {
+							if (log.isDebugEnabled())
+								log.debug("Fake traffic: " + ex);
+						}
+					}
+				}
+			}
+		}
+	}
+
 	/** 
 	 * Runs self maintenance on all internal pools.
 	 *
@@ -1493,6 +1583,67 @@ public class SockIOPool {
 					// run the maintenance method on itself
 					if ( pool.isInitialized() )
 						pool.selfMaint();
+
+				}
+				catch ( Exception e ) {
+					break;
+				}
+			}
+
+			this.running = false;
+		}
+	}
+
+	/**
+	 * Class which extends thread and send traffic to ELB by period.
+	 *
+	 */
+	protected static class TrafficThread extends Thread {
+
+		// logger
+		private static Logger log =
+				Logger.getLogger( TrafficThread.class.getName() );
+
+		private SockIOPool pool;
+		private long intervalFakeTraffic      = 10000 * 3; // every 3 seconds
+		private boolean stopThread = false;
+		private boolean running;
+
+		protected TrafficThread( SockIOPool pool ) {
+			this.pool = pool;
+			this.setDaemon( true );
+			this.setName( "TrafficThread" );
+		}
+
+		public void setInterval( long interval ) { this.intervalFakeTraffic = interval; }
+
+		public boolean isRunning() {
+			return this.running;
+		}
+
+		/**
+		 * sets stop variable
+		 * and interupts any wait
+		 */
+		public void stopThread() {
+			this.stopThread = true;
+			this.interrupt();
+		}
+
+		/**
+		 * Start the thread.
+		 */
+		public void run() {
+			this.running = true;
+
+			while ( !this.stopThread ) {
+				try {
+					Thread.sleep( intervalFakeTraffic );
+
+					// if pool is initialized, then
+					// run the sendTrafficToAvailablePool method on itself
+					if ( pool.isInitialized() )
+						pool.sendTrafficToAvailablePool();
 
 				}
 				catch ( Exception e ) {

@@ -20,7 +20,7 @@
  * 
  * @author Vin Chawla <vin@tivo.com> 
  */
-package com.meetup.memcached;
+package com.danga.MemCached;
 
 import java.util.*;
 import java.util.zip.*;

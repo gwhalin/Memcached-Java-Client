@@ -15,9 +15,9 @@
  *
  * @author Greg Whalin <greg@meetup.com> 
  */
-package com.meetup.memcached.test;
+package com.danga.MemCached.test;
 
-import com.meetup.memcached.*;
+import com.danga.MemCached.*;
 import java.util.*;
 
 public class MemcachedTest {
@@ -115,7 +115,7 @@ public class MemcachedTest {
 			StringBuilder result = new StringBuilder();
 
 			// get client instance
-			MemcachedClient mc = new MemcachedClient();
+			MemCachedClient mc = new MemCachedClient();
 			mc.setCompressEnable(false);
 			mc.setCompressThreshold(0);
 

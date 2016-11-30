@@ -15,7 +15,7 @@
  *
  * @author Greg Whalin <greg@meetup.com> 
  */
-package com.meetup.memcached;
+package com.danga.MemCached;
 
 import java.util.*;
 

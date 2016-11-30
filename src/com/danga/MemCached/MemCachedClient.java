@@ -15,7 +15,7 @@
  *
  * @author Greg Whalin <greg@meetup.com> 
  */
-package com.meetup.memcached;
+package com.danga.MemCached;
 
 import java.util.*;
 import java.util.zip.*;
@@ -154,11 +154,11 @@ import org.apache.log4j.Logger;
  * @author Vin Chawla <vin@tivo.com>
  * @version 1.5
  */
-public class MemcachedClient {
+public class MemCachedClient {
 
 	// logger
 	private static Logger log =
-		Logger.getLogger( MemcachedClient.class.getName() );
+		Logger.getLogger( MemCachedClient.class.getName() );
 
 	// return codes
 	private static final String VALUE        = "VALUE";			// start of value line from server
@@ -222,7 +222,7 @@ public class MemcachedClient {
 	/**
 	 * Creates a new instance of MemCachedClient.
 	 */
-	public MemcachedClient() {
+	public MemCachedClient() {
 		init();
 	}
 
@@ -232,7 +232,7 @@ public class MemcachedClient {
 	 * 
 	 * @param poolName name of SockIOPool
 	 */
-	public MemcachedClient( String poolName ) {
+	public MemCachedClient( String poolName ) {
 		this.poolName = poolName;
 		init();
 	}
@@ -243,7 +243,7 @@ public class MemcachedClient {
 	 * 
 	 * @param classLoader ClassLoader object.
 	 */
-	public MemcachedClient( ClassLoader classLoader ) {
+	public MemCachedClient( ClassLoader classLoader ) {
 		this.classLoader = classLoader;
 		init();
 	}
@@ -256,7 +256,7 @@ public class MemcachedClient {
 	 * @param classLoader ClassLoader object.
 	 * @param errorHandler ErrorHandler object.
 	 */
-	public MemcachedClient( ClassLoader classLoader, ErrorHandler errorHandler ) {
+	public MemCachedClient( ClassLoader classLoader, ErrorHandler errorHandler ) {
 		this.classLoader  = classLoader;
 		this.errorHandler = errorHandler;
 		init();
@@ -271,7 +271,7 @@ public class MemcachedClient {
 	 * @param errorHandler ErrorHandler object.
 	 * @param poolName SockIOPool name
 	 */
-	public MemcachedClient( ClassLoader classLoader, ErrorHandler errorHandler, String poolName ) {
+	public MemCachedClient( ClassLoader classLoader, ErrorHandler errorHandler, String poolName ) {
 		this.classLoader  = classLoader;
 		this.errorHandler = errorHandler;
 		this.poolName     = poolName;
@@ -2066,10 +2066,10 @@ public class MemcachedClient {
 	protected final class NIOLoader {
 		protected Selector selector;
 		protected int numConns = 0;
-		protected MemcachedClient mc;
+		protected MemCachedClient mc;
 		protected Connection[] conns;
 
-		public NIOLoader( MemcachedClient mc ) {
+		public NIOLoader( MemCachedClient mc ) {
 			this.mc = mc;
 		}
 
@@ -2258,7 +2258,7 @@ public class MemcachedClient {
 		private void handleError( Throwable e, String[] keys ) {
 		    // if we have an errorHandler, use its hook
 		    if ( errorHandler != null )
-		        errorHandler.handleErrorOnGet( MemcachedClient.this, e, keys );
+		        errorHandler.handleErrorOnGet( MemCachedClient.this, e, keys );
 		
 		    // exception thrown
 		    log.error( "++++ exception thrown while getting from cache on getMulti" );

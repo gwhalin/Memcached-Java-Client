@@ -15,9 +15,9 @@
  *
  * @author greg whalin <greg@meetup.com> 
  */
-package com.meetup.memcached.test;
+package com.danga.MemCached.test;
 
-import com.meetup.memcached.*;
+import com.danga.MemCached.*;
 import org.apache.log4j.*;
 
 public class TestMemcached  {  
@@ -38,10 +38,10 @@ public class TestMemcached  {
 		pool.setAliveCheck( true );
 		pool.initialize();
 
-		MemcachedClient mcc = new MemcachedClient();
+		MemCachedClient mcc = new MemCachedClient();
 
 		// turn off most memcached client logging:
-		com.meetup.memcached.Logger.getLogger( MemcachedClient.class.getName() ).setLevel( com.meetup.memcached.Logger.LEVEL_WARN );
+		com.danga.MemCached.Logger.getLogger( MemCachedClient.class.getName() ).setLevel( com.danga.MemCached.Logger.LEVEL_WARN );
 
 		for ( int i = 0; i < 10; i++ ) {
 			boolean success = mcc.set( "" + i, "Hello!" );

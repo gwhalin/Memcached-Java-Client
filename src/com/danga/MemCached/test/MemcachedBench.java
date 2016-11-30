@@ -15,9 +15,9 @@
  *
  * @author Greg Whalin <greg@meetup.com> 
  */
-package com.meetup.memcached.test;
+package com.danga.MemCached.test;
 
-import com.meetup.memcached.*;
+import com.danga.MemCached.*;
 import java.util.*;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
@@ -52,7 +52,7 @@ public class MemcachedBench {
 		pool.initialize();
 
 		// get client instance
-		MemcachedClient mc = new MemcachedClient( "test" );
+		MemCachedClient mc = new MemCachedClient( "test" );
 		mc.setCompressEnable( false );
 
 		String keyBase = "testKey";
